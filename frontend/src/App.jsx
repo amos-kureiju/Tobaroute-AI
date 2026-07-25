@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, useLocation } from 'react-router-dom';
-import { Compass } from 'lucide-react';
+import { Compass, WifiOff } from 'lucide-react';
 import Home from './pages/Home';
 import Explore from './pages/Explore';
 import About from './pages/About';
@@ -19,8 +19,45 @@ import {
 import './App.css';
 
 const MainLayout = ({ children }) => {
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   return (
     <div className="app-container">
+      {/* Offline Status Warning Banner */}
+      {isOffline && (
+        <div className="offline-banner fade-in" style={{
+          background: '#fef2f2',
+          color: '#991b1b',
+          borderBottom: '1px solid #fecaca',
+          padding: '0.5rem 1rem',
+          textAlign: 'center',
+          fontSize: '0.85rem',
+          fontWeight: 600,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.4rem',
+          position: 'sticky',
+          top: 0,
+          zIndex: 10000
+        }}>
+          <WifiOff size={16} /> Mode Offline: Koneksi jaringan terputus. TobaRoute tetap dapat digunakan dengan data tersimpan tanpa reload otomatis.
+        </div>
+      )}
+
       {/* Navbar */}
       <nav className="navbar glass-panel">
         <div className="container nav-content">

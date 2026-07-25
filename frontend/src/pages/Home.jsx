@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
-import { Search, Map, Sparkles, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Map, Sparkles, AlertCircle, Compass, ShieldCheck, Route, Store, History, Clock, ArrowRight } from 'lucide-react';
 import { getFairRecommendation } from '../services/api';
 import DestinationCard from '../components/DestinationCard';
 import RouteMap from '../components/RouteMap';
 import ReactMarkdown from 'react-markdown';
+
+const POPULAR_TAGS = [
+  { label: 'Wisata Alam Balige', query: 'Wisata alam dan pantai pemandangan indah di Balige' },
+  { label: 'Kuliner Khas Batak', query: 'Rumah makan kuliner khas Batak naniarsik dan mie gomak' },
+  { label: 'Sentra UMKM Ulos', query: 'Tempat pembuatan dan kerajinan Tenun Ulos buatan UMKM lokal' },
+  { label: 'Transportasi Feri & Angkot', query: 'Rute angkutan umum dan kapal feri penyeberangan Danau Toba' },
+];
 
 const Home = () => {
   const [query, setQuery] = useState('');
@@ -11,22 +18,58 @@ const Home = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [results, setResults] = useState(null);
+  const [recentSearches, setRecentSearches] = useState([]);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!query) {
-      setError('Mohon masukkan keinginan wisata Anda (misal: "tempat yang tenang dan sejuk")');
+  // Restore saved search results from sessionStorage on mount
+  useEffect(() => {
+    try {
+      const savedQuery = sessionStorage.getItem('tobaroute_last_query');
+      const savedKec = sessionStorage.getItem('tobaroute_last_kecamatan');
+      const savedResults = sessionStorage.getItem('tobaroute_last_results');
+
+      if (savedResults) setResults(JSON.parse(savedResults));
+      if (savedQuery) setQuery(savedQuery);
+      if (savedKec) setKecamatan(savedKec);
+
+      const history = localStorage.getItem('tobaroute_chat_history');
+      if (history) {
+        const parsed = JSON.parse(history);
+        setRecentSearches(parsed.slice(0, 4));
+      }
+    } catch (e) {
+      console.error("Error restoring session search state:", e);
+    }
+  }, []);
+
+  const handleSearch = async (e, customQuery = null) => {
+    if (e) e.preventDefault();
+    const searchQuery = customQuery || query;
+
+    if (!searchQuery.trim()) {
+      setError('Mohon masukkan keinginan wisata Anda (misal: "tempat yang tenang dan sejuk untuk keluarga")');
       return;
     }
     
+    setQuery(searchQuery);
     setLoading(true);
     setError('');
     
     try {
-      const data = await getFairRecommendation(query, kecamatan);
+      const data = await getFairRecommendation(searchQuery, kecamatan);
       setResults(data);
+
+      // Save to sessionStorage so switching pages never loses results
+      sessionStorage.setItem('tobaroute_last_results', JSON.stringify(data));
+      sessionStorage.setItem('tobaroute_last_query', searchQuery);
+      sessionStorage.setItem('tobaroute_last_kecamatan', kecamatan);
+
+      // Scroll to results smoothly
+      setTimeout(() => {
+        const el = document.getElementById('results-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     } catch (err) {
-      setError('Gagal mengambil rekomendasi. Pastikan backend TobaGuide berjalan (localhost:8080).');
+      setError('Koneksi terganggu. Menggunakan data tersimpan jika ada.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -36,47 +79,86 @@ const Home = () => {
   return (
     <>
       {/* Hero Section */}
-      <header className="hero">
-        <div className="hero-background"></div>
+      <header className="hero hero-enhanced">
+        <div className="hero-background-overlay"></div>
+        
         <div className="container hero-content fade-in">
-          <h2>Temukan Keindahan Danau Toba</h2>
-          <p>Asisten AI kami akan merancang rute perjalanan yang adil, merekomendasikan destinasi populer sekaligus memajukan UMKM lokal.</p>
+          <div className="hero-badge">
+            <Compass size={14} color="#38bdf8" />
+            <span>Platform Navigasi & Keadilan Pariwisata Danau Toba</span>
+          </div>
+
+          <h1 className="hero-title">
+            Temukan Keindahan <span className="gradient-text">Danau Toba</span>
+          </h1>
+
+          <p className="hero-subtitle">
+            Sistem rekomendasi berbasis kecerdasan data yang merancang rute perjalanan presisi, destinasi populer, serta memajukan ekonomi pelaku UMKM lokal.
+          </p>
           
-          <form className="search-form glass-panel" onSubmit={handleSearch}>
+          {/* Main Search Bar */}
+          <form className="search-form glass-panel-hero" onSubmit={handleSearch}>
             <div className="input-group">
-              <Search className="input-icon" size={20} />
+              <Search className="input-icon" size={18} />
               <input 
                 type="text" 
-                placeholder="Apa yang ingin Anda lakukan? (e.g. Tempat bersejarah untuk keluarga)" 
+                placeholder="Apa yang ingin Anda jelajahi? (misal: Wisata budaya keluarga di Balige)" 
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
             </div>
+
             <div className="input-group location">
-              <Map className="input-icon" size={20} />
+              <Map className="input-icon" size={18} />
               <select value={kecamatan} onChange={(e) => setKecamatan(e.target.value)}>
                 <option value="">Semua Kecamatan</option>
                 <option value="Balige">Balige</option>
                 <option value="Porsea">Porsea</option>
-                <option value="Lumban Julu">Lumban Julu</option>
-                <option value="Tampahan">Tampahan</option>
-                <option value="Pangururan">Pangururan</option>
-                <option value="Simanindo">Simanindo</option>
-                <option value="Harian">Harian</option>
+                <option value="Laguboti">Laguboti</option>
                 <option value="Muara">Muara</option>
+                <option value="Silaen">Silaen</option>
+                <option value="Pangururan">Pangururan</option>
               </select>
             </div>
-            <button type="submit" className="btn-primary" disabled={loading}>
+
+            <button type="submit" className="btn-primary btn-hero-submit" disabled={loading}>
               {loading ? (
                 <div className="spinner"></div>
               ) : (
                 <>
-                  <Sparkles size={18} />
-                  Cari Rute
+                  <Sparkles size={16} />
+                  <span>Cari Rute</span>
                 </>
               )}
             </button>
           </form>
+
+          {/* Quick Suggestion Tags */}
+          <div className="hero-quick-tags">
+            <span className="quick-tag-label"><Compass size={14} /> Inspirasi Cepat:</span>
+            <div className="tags-wrapper">
+              {POPULAR_TAGS.map((tag, idx) => (
+                <button key={idx} className="tag-pill" onClick={() => handleSearch(null, tag.query)}>
+                  {tag.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Recent Search History Chips if available */}
+          {recentSearches.length > 0 && (
+            <div className="hero-recent-history fade-in">
+              <span className="recent-history-label"><Clock size={13} /> Terakhir Dicari:</span>
+              <div className="recent-chips-wrapper">
+                {recentSearches.map((item) => (
+                  <button key={item.id} className="recent-chip" onClick={() => handleSearch(null, item.query)}>
+                    "{item.query.length > 35 ? item.query.slice(0, 35) + '...' : item.query}"
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="error-message fade-in">
               <AlertCircle size={18} /> {error}
@@ -85,8 +167,9 @@ const Home = () => {
         </div>
       </header>
 
-      {/* Results Section */}
-      <main className="container main-content">
+
+      {/* Main Content */}
+      <main className="container main-content" id="results-section">
         {loading && (
           <div className="loading-state">
             <div className="skeleton-loading ai-bubble-skeleton"></div>
@@ -98,17 +181,19 @@ const Home = () => {
           </div>
         )}
 
+        {/* Results Section */}
         {results && !loading && (
           <div className="results-container fade-in">
             {/* AI Response & Route Map */}
             <section className="ai-response glass-panel">
               <div className="ai-header">
                 <Sparkles size={24} color="var(--color-primary)" />
-                <h3>Saran Perjalanan dari AI</h3>
+                <h3>Saran Perjalanan dari AI TobaRoute</h3>
               </div>
               <div className="ai-body">
                 <ReactMarkdown>{results.ai_response}</ReactMarkdown>
               </div>
+              
               {/* Route Map */}
               <RouteMap destinasiUtama={results.destinasi_utama} umkmSekitar={results.rekomendasi_umkm_sekitar} />
             </section>
@@ -148,9 +233,77 @@ const Home = () => {
             </section>
           </div>
         )}
+
+        {/* Feature Highlights Section */}
+        {!results && !loading && (
+          <section className="features-highlight-section fade-in">
+            <div className="section-title-center">
+              <h2>Keunggulan Platform TobaRoute AI</h2>
+              <p>Sistem navigasi cerdas yang menggabungkan kecerdasan buatan dan prinsip keadilan ekonomi lokal.</p>
+            </div>
+
+            <div className="features-grid">
+              <div className="feature-card">
+                <div className="feature-icon icon-blue">
+                  <Sparkles size={28} />
+                </div>
+                <h3>RAG Semantik & LLM Gemini</h3>
+                <p>Memahami keinginan perjalanan wisatawan berdasarkan makna, preferensi keluarga, dan konteks lokasi.</p>
+              </div>
+
+              <div className="feature-card">
+                <div className="feature-icon icon-green">
+                  <Store size={28} />
+                </div>
+                <h3>Fairness Engine UMKM</h3>
+                <p>Memberikan panggung yang adil bagi pengrajin Ulos, warung kuliner lokal, dan hidden gems berulasan awal.</p>
+              </div>
+
+              <div className="feature-card">
+                <div className="feature-icon icon-purple">
+                  <Route size={28} />
+                </div>
+                <h3>Navigasi Rute Jalan Real</h3>
+                <p>Perhitungan rute geografis interaktif yang mengikuti jalan raya Danau Toba menggunakan Leaflet Routing.</p>
+              </div>
+
+              <div className="feature-card">
+                <div className="feature-icon icon-amber">
+                  <ShieldCheck size={28} />
+                </div>
+                <h3>Transportasi Terintegrasi</h3>
+                <p>Informasi rute angkutan umum lokal, kapal feri penyeberangan pulau, dan titik pelabuhan pariwisata.</p>
+              </div>
+            </div>
+
+            {/* Stats Banner */}
+            <div className="stats-banner glass-panel">
+              <div className="stat-item">
+                <span className="stat-number">180+</span>
+                <span className="stat-label">Entitas Wisata & UMKM</span>
+              </div>
+              <div className="stat-divider"></div>
+              <div className="stat-item">
+                <span className="stat-number">6</span>
+                <span className="stat-label">Kecamatan Strategis Toba</span>
+              </div>
+              <div className="stat-divider"></div>
+              <div className="stat-item">
+                <span className="stat-number">100%</span>
+                <span className="stat-label">Presisi RAG Semantik</span>
+              </div>
+              <div className="stat-divider"></div>
+              <div className="stat-item">
+                <span className="stat-number">24/7</span>
+                <span className="stat-label">Asisten Pemandu Cerdas</span>
+              </div>
+            </div>
+          </section>
+        )}
       </main>
     </>
   );
 };
 
 export default Home;
+
