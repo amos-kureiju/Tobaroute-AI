@@ -139,7 +139,7 @@ const Explore = () => {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatEndRef = useRef(null);
 
-  // Fetch initial batch of destinations for background map
+  // Fetch initial batch of destinations for background map & request silent GPS permission
   useEffect(() => {
     const fetchAllDestinations = async () => {
       try {
@@ -153,7 +153,21 @@ const Explore = () => {
         setLoadingMap(false);
       }
     };
+
     fetchAllDestinations();
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const coords = [position.coords.latitude, position.coords.longitude];
+          setUserLocation(coords);
+        },
+        (err) => {
+          console.warn("GPS Location access denied, using Balige default origin.");
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    }
   }, []);
 
   useEffect(() => {
@@ -345,8 +359,8 @@ const Explore = () => {
                   <Marker position={userLocation} icon={userGpsIcon}>
                     <Popup>
                       <div style={{ minWidth: '140px', textAlign: 'center' }}>
-                        <h4 style={{ margin: '0 0 0.2rem 0', color: '#6b21a8' }}>📍 Posisimu Saat Ini</h4>
-                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Titik Awal Navigasi Rute (GPS)</p>
+                        <h4 style={{ margin: '0 0 0.2rem 0', color: '#6b21a8' }}>Lokasi Anda (GPS)</h4>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Titik Keberangkatan Awal</p>
                       </div>
                     </Popup>
                   </Marker>
@@ -405,45 +419,13 @@ const Explore = () => {
                 })}
               </MapContainer>
 
-              {/* GPS Overlay Control Button */}
-              <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 1000 }}>
-                <button
-                  type="button"
-                  onClick={handleEnableGPS}
-                  disabled={gpsLoading}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    padding: '0.5rem 0.9rem',
-                    background: userLocation ? '#dcfce7' : 'rgba(255, 255, 255, 0.95)',
-                    color: userLocation ? '#166534' : '#0369a1',
-                    border: userLocation ? '1px solid #86efac' : '1px solid #cbd5e1',
-                    borderRadius: '8px',
-                    fontWeight: 600,
-                    fontSize: '0.8rem',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                    cursor: gpsLoading ? 'wait' : 'pointer',
-                    backdropFilter: 'blur(8px)'
-                  }}
-                >
-                  {gpsLoading ? (
-                    <>Mengambil GPS...</>
-                  ) : userLocation ? (
-                    <>📍 GPS Aktif (Lokasi Anda)</>
-                  ) : (
-                    <>🎯 Gunakan Lokasi Saya (GPS)</>
-                  )}
-                </button>
-              </div>
-
               {/* Active Route Info Overlay Badge */}
               {activeTarget && (
                 <div className="active-route-badge glass-panel fade-in">
                   <div className="badge-icon"><RouteIcon size={20} color="#0284c7" /></div>
                   <div className="badge-info">
                     <span className="badge-title">
-                      {userLocation ? '📍 Lokasi Anda (GPS)' : '📍 Balige'} ➔ {activeTarget.nama}
+                      {userLocation ? 'Lokasi Anda (GPS)' : 'Awal: Balige'} ➔ {activeTarget.nama}
                     </span>
                     <span className="badge-sub">{activeTarget.kecamatan} • {activeTarget.kategori.toUpperCase()}</span>
                   </div>
