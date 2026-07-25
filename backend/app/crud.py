@@ -117,13 +117,13 @@ def get_fair_route_with_rag(db: Session, query: str, kecamatan: str = None, limi
     # 1. Cari ID destinasi yang paling cocok secara makna lewat Pinecone
     matched_ids = cari_destinasi_semantik(query)
     
-    # 2. Ambil destinasi wisata utama dari PostgreSQL
-    query_wisata = db.query(models.Destinasi).filter(models.Destinasi.kategori == 'wisata')
+    # 2. Ambil destinasi utama dari PostgreSQL (mendukung wisata, kuliner, maupun UMKM yang cocok secara semantik)
+    query_base = db.query(models.Destinasi)
     if kecamatan:
-        query_wisata = query_wisata.filter(models.Destinasi.kecamatan.ilike(kecamatan))
+        query_base = query_base.filter(models.Destinasi.kecamatan.ilike(kecamatan))
         
+    destinasi_utama = []
     if matched_ids:
-        # Konversi ke int id karena id di Postgres bertipe Integer
         int_ids = []
         for mid in matched_ids:
             try:
@@ -132,16 +132,14 @@ def get_fair_route_with_rag(db: Session, query: str, kecamatan: str = None, limi
                 pass
         
         if int_ids:
-            # Ambil destinasi yang ada di matched_ids
-            destinasi_utama = query_wisata.filter(models.Destinasi.id.in_(int_ids)).all()
-            # Urutkan berdasarkan kemiripan dari Pinecone
-            id_to_dest = {d.id: d for d in destinasi_utama}
+            fetched = query_base.filter(models.Destinasi.id.in_(int_ids)).all()
+            id_to_dest = {d.id: d for d in fetched}
+            # Pertahankan urutan skor kemiripan dari Pinecone
             destinasi_utama = [id_to_dest[id_] for id_ in int_ids if id_ in id_to_dest][:limit_utama]
-        else:
-            destinasi_utama = query_wisata.order_by(models.Destinasi.rating.desc()).limit(limit_utama).all()
-    else:
+    
+    if not destinasi_utama:
         # Fallback pencarian terpopuler biasa
-        destinasi_utama = query_wisata.order_by(models.Destinasi.rating.desc()).limit(limit_utama).all()
+        destinasi_utama = query_base.order_by(models.Destinasi.rating.desc()).limit(limit_utama).all()
 
     # 3. Ambil pendukung UMKM/Kuliner lokal terdekat (Keadilan Data / Fairness)
     target_kecamatans = list(set([d.kecamatan for d in destinasi_utama]))
