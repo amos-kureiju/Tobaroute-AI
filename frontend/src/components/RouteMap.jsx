@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { Navigation, Star, Crosshair, MapPin, Flag, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -32,6 +32,8 @@ const userGpsIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+const DEFAULT_START_ORIGIN = [2.3333, 99.0667]; // Pusat Balige sebagai titik awal default jika GPS belum aktif
+
 // Component to dynamically adjust map view when waypoints change
 const MapViewController = ({ center, waypoints }) => {
   const map = useMap();
@@ -51,7 +53,7 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState('');
 
-  // Hanya ambil destinasi yang memiliki latitude dan longitude
+  // Hanya ambil destinasi & UMKM yang memiliki latitude dan longitude
   const validDestinasi = destinasiUtama.filter(d => d.latitude && d.longitude);
   const validUmkm = umkmSekitar.filter(u => u.latitude && u.longitude);
 
@@ -73,6 +75,7 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
       (position) => {
         const coords = [position.coords.latitude, position.coords.longitude];
         setUserLocation(coords);
+        setGpsError(''); // Pastikan pesan error terhapus jika sukses
         setGpsLoading(false);
       },
       (err) => {
@@ -84,17 +87,27 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
     );
   };
 
-  // Determine starting route coordinates
-  const destWaypoints = validDestinasi.map(d => [d.latitude, d.longitude]);
-  
-  // Combined waypoints: User GPS (if active) -> Destinasi 1 -> Destinasi 2 ...
-  const routeCoordinates = userLocation 
-    ? [userLocation, ...destWaypoints]
-    : destWaypoints;
+  // Kumpulkan SELURUH titik tujuan (Destinasi Utama + UMKM)
+  const allTargets = [
+    ...validDestinasi.map(d => [d.latitude, d.longitude]),
+    ...validUmkm.map(u => [u.latitude, u.longitude])
+  ];
+
+  // Hitung koordinat rute:
+  // Jika GPS aktif -> [userLocation, ...allTargets]
+  // Jika GPS belum aktif -> [DEFAULT_START_ORIGIN (Balige), ...allTargets] jika cuma 1 titik, atau allTargets jika > 1 titik
+  let routeCoordinates = [];
+  if (userLocation) {
+    routeCoordinates = [userLocation, ...allTargets];
+  } else if (allTargets.length === 1) {
+    routeCoordinates = [DEFAULT_START_ORIGIN, ...allTargets];
+  } else {
+    routeCoordinates = allTargets;
+  }
 
   const center = userLocation 
     ? userLocation 
-    : (validDestinasi.length > 0 ? [validDestinasi[0].latitude, validDestinasi[0].longitude] : [2.6105, 98.8106]);
+    : (allTargets.length > 0 ? allTargets[0] : [2.6105, 98.8106]);
 
   return (
     <div className="route-map-container" style={{ marginTop: '2rem' }}>
@@ -139,7 +152,7 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
           </button>
         </div>
 
-        {gpsError && (
+        {gpsError && !userLocation && (
           <div style={{ marginTop: '0.5rem', color: '#ef4444', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
             <AlertCircle size={14} /> {gpsError}
           </div>
@@ -149,7 +162,7 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
         <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', background: 'rgba(255,255,255,0.8)', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
           {/* Start Point */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: userLocation ? '#f3e8ff' : '#e0f2fe', color: userLocation ? '#6b21a8' : '#0369a1', padding: '0.35rem 0.65rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600 }}>
-            <MapPin size={14} /> {userLocation ? 'Awal: Lokasi Anda (GPS)' : 'Awal: Titik Pertama'}
+            <MapPin size={14} /> {userLocation ? 'Awal: Lokasi Anda (GPS)' : 'Awal: Pusat Balige'}
           </div>
 
           {validDestinasi.map((dest, idx) => (
@@ -161,14 +174,14 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
             </React.Fragment>
           ))}
 
-          {validUmkm.length > 0 && (
-            <>
+          {validUmkm.map((umkm, idx) => (
+            <React.Fragment key={`seq-umkm-${umkm.id}`}>
               <ArrowRight size={14} color="#94a3b8" />
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: '#dcfce7', color: '#15803d', padding: '0.35rem 0.65rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600 }}>
-                🏬 {validUmkm[0].nama} (UMKM)
+                🏬 {umkm.nama} (UMKM)
               </div>
-            </>
-          )}
+            </React.Fragment>
+          ))}
         </div>
       </div>
 
@@ -197,8 +210,19 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
               </Popup>
             </Marker>
           )}
-          
-          {/* Routing Machine */}
+
+          {/* Fallback Polyline agar garis rute selalu terlihat meskipun Leaflet Routing Machine sedang memuat */}
+          {routeCoordinates.length >= 2 && (
+            <Polyline 
+              positions={routeCoordinates} 
+              color="#0ea5e9" 
+              weight={4} 
+              dashArray="8, 8" 
+              opacity={0.7} 
+            />
+          )}
+
+          {/* Real Road Routing Machine */}
           {routeCoordinates.length >= 2 && (
             <RoutingMachine waypoints={routeCoordinates} />
           )}
