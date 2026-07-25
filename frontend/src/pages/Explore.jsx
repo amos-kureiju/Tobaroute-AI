@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -80,6 +81,7 @@ const QUICK_LOCATIONS = [
 ];
 
 const Explore = () => {
+  const location = useLocation();
   const [destinations, setDestinations] = useState([]);
   const [loadingMap, setLoadingMap] = useState(true);
   const [error, setError] = useState('');
@@ -169,6 +171,22 @@ const Explore = () => {
       );
     }
   }, []);
+
+  // Listen for targetLocation passed via router state (from DestinationCard)
+  useEffect(() => {
+    if (location.state?.targetLocation) {
+      const target = location.state.targetLocation;
+      highlightLocationOnMap(target);
+      setChatMessages(prev => [
+        ...prev,
+        {
+          role: 'model',
+          text: `Navigasi rute aktif menuju **${target.nama}** (${target.kecamatan}). Peta telah difokuskan ke lokasi destinasi!`,
+          targetDest: target
+        }
+      ]);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
