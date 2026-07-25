@@ -35,6 +35,15 @@ const activeTargetIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+const userGpsIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [32, 50],
+  iconAnchor: [16, 50],
+  popupAnchor: [1, -40],
+  shadowSize: [41, 41]
+});
+
 // Helper component to trigger map flyTo dynamically
 const MapFlyController = ({ centerCoords, zoom = 13 }) => {
   const map = useMap();
@@ -81,6 +90,43 @@ const Explore = () => {
   const [activeTarget, setActiveTarget] = useState(null);
   const [routeWaypoints, setRouteWaypoints] = useState([]);
 
+  // Live GPS Geolocation State
+  const [userLocation, setUserLocation] = useState(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsError, setGpsError] = useState('');
+
+  // Handle Geolocation API
+  const handleEnableGPS = () => {
+    if (!navigator.geolocation) {
+      setGpsError('Browser Anda tidak mendukung fitur Geolocation GPS.');
+      return;
+    }
+
+    setGpsLoading(true);
+    setGpsError('');
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const coords = [position.coords.latitude, position.coords.longitude];
+        setUserLocation(coords);
+        setMapCenter(coords);
+        setMapZoom(13);
+        setGpsLoading(false);
+
+        // If there is an active target, recalculate route starting from user GPS!
+        if (activeTarget && activeTarget.latitude && activeTarget.longitude) {
+          setRouteWaypoints([coords, [activeTarget.latitude, activeTarget.longitude]]);
+        }
+      },
+      (err) => {
+        console.error(err);
+        setGpsError('Gagal mengakses lokasi GPS. Tolong izinkan akses lokasi di browser Anda.');
+        setGpsLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   // Chatbot State
   const [chatMessages, setChatMessages] = useState([
     {
@@ -119,16 +165,18 @@ const Explore = () => {
     if (!targetObj || !targetObj.latitude || !targetObj.longitude) return;
 
     const targetCoords = [targetObj.latitude, targetObj.longitude];
+    const startOrigin = userLocation || DEFAULT_START_ORIGIN;
+
     setActiveTarget(targetObj);
     setMapCenter(targetCoords);
     setMapZoom(13);
 
-    // If target is same as origin (e.g. Balige itself), zoom in without polyline to itself
-    if (Math.abs(DEFAULT_START_ORIGIN[0] - targetCoords[0]) < 0.005 && Math.abs(DEFAULT_START_ORIGIN[1] - targetCoords[1]) < 0.005) {
+    // If target is same as origin, zoom in without polyline to itself
+    if (Math.abs(startOrigin[0] - targetCoords[0]) < 0.005 && Math.abs(startOrigin[1] - targetCoords[1]) < 0.005) {
       setRouteWaypoints([]);
     } else {
-      // Draw route from default origin (Balige) to target
-      setRouteWaypoints([DEFAULT_START_ORIGIN, targetCoords]);
+      // Draw route from User GPS (or Balige origin) to target
+      setRouteWaypoints([startOrigin, targetCoords]);
     }
   };
 
@@ -292,6 +340,18 @@ const Explore = () => {
                 {/* Controller to flyTo target coordinates smoothly */}
                 <MapFlyController centerCoords={mapCenter} zoom={mapZoom} />
                 
+                {/* User Live GPS Marker */}
+                {userLocation && (
+                  <Marker position={userLocation} icon={userGpsIcon}>
+                    <Popup>
+                      <div style={{ minWidth: '140px', textAlign: 'center' }}>
+                        <h4 style={{ margin: '0 0 0.2rem 0', color: '#6b21a8' }}>📍 Posisimu Saat Ini</h4>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Titik Awal Navigasi Rute (GPS)</p>
+                      </div>
+                    </Popup>
+                  </Marker>
+                )}
+
                 {/* Real Road Routing Machine */}
                 {routeWaypoints.length >= 2 && (
                   <RoutingMachine waypoints={routeWaypoints} />
@@ -345,12 +405,46 @@ const Explore = () => {
                 })}
               </MapContainer>
 
+              {/* GPS Overlay Control Button */}
+              <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 1000 }}>
+                <button
+                  type="button"
+                  onClick={handleEnableGPS}
+                  disabled={gpsLoading}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    padding: '0.5rem 0.9rem',
+                    background: userLocation ? '#dcfce7' : 'rgba(255, 255, 255, 0.95)',
+                    color: userLocation ? '#166534' : '#0369a1',
+                    border: userLocation ? '1px solid #86efac' : '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    cursor: gpsLoading ? 'wait' : 'pointer',
+                    backdropFilter: 'blur(8px)'
+                  }}
+                >
+                  {gpsLoading ? (
+                    <>Mengambil GPS...</>
+                  ) : userLocation ? (
+                    <>📍 GPS Aktif (Lokasi Anda)</>
+                  ) : (
+                    <>🎯 Gunakan Lokasi Saya (GPS)</>
+                  )}
+                </button>
+              </div>
+
               {/* Active Route Info Overlay Badge */}
               {activeTarget && (
                 <div className="active-route-badge glass-panel fade-in">
                   <div className="badge-icon"><RouteIcon size={20} color="#0284c7" /></div>
                   <div className="badge-info">
-                    <span className="badge-title">Rute Aktif ke: {activeTarget.nama}</span>
+                    <span className="badge-title">
+                      {userLocation ? '📍 Lokasi Anda (GPS)' : '📍 Balige'} ➔ {activeTarget.nama}
+                    </span>
                     <span className="badge-sub">{activeTarget.kecamatan} • {activeTarget.kategori.toUpperCase()}</span>
                   </div>
                   <button className="badge-close" onClick={() => { setActiveTarget(null); setRouteWaypoints([]); }}>✕</button>
