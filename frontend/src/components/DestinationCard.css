@@ -1,7 +1,8 @@
 .destination-card {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: auto;
+  align-self: start;
   border-radius: var(--radius-lg, 16px);
   overflow: hidden;
   transition: all 0.25s ease;
