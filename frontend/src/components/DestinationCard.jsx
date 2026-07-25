@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Star, Navigation, Info, Route, X, Sparkles, Store } from 'lucide-react';
+import { MapPin, Star, Navigation, Info, Route, X, Store, CheckCircle, Quote, Compass } from 'lucide-react';
 import './DestinationCard.css';
 
 const DEFAULT_CATEGORY_IMAGES = {
@@ -15,19 +15,56 @@ const DestinationCard = ({ dest, isUmkm }) => {
   const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
   const categoryKey = (dest.kategori || '').toLowerCase();
-  
-  // Replace missing or old car placeholder images with category-specific high quality photos
+
   let displayImage = dest.gambar_url;
   if (!displayImage || displayImage.includes('photo-1549317661-bd32c8ce0db2') || displayImage.includes('photo-1572252009286')) {
     displayImage = DEFAULT_CATEGORY_IMAGES[categoryKey] || DEFAULT_CATEGORY_IMAGES.default;
   }
 
-  // Navigate to Explore page and highlight route for this destination
   const handleNavigateToExplore = (e) => {
     if (e) e.stopPropagation();
     setShowModal(false);
     navigate('/explore', { state: { targetLocation: dest } });
   };
+
+  // Helper to clean raw Plus Codes (e.g. 934X+C47, )
+  const cleanAddressText = (rawAddress, kecamatan) => {
+    if (!rawAddress) return `Kecamatan ${kecamatan}, Kawasan Danau Toba`;
+    let cleaned = rawAddress.replace(/^[A-Z0-9]{4}\+[A-Z0-9]{2,4},\s*/i, '').trim();
+    if (!cleaned) cleaned = `Kecamatan ${kecamatan}`;
+    return cleaned;
+  };
+
+  // Helper to structure raw description text
+  const parseDetails = (fullText, shortText) => {
+    const raw = fullText || shortText || '';
+    if (!raw.includes('Fasilitas:')) {
+      return { 
+        desc: raw || 'Destinasi unggulan di kawasan Danau Toba.', 
+        facilities: [], 
+        review: null 
+      };
+    }
+
+    const desc = shortText || 'Destinasi unggulan di kawasan Danau Toba.';
+    let facilities = [];
+    let review = null;
+
+    const facMatch = raw.match(/Fasilitas:\s*([^.]+)/i);
+    if (facMatch && facMatch[1]) {
+      facilities = facMatch[1].split(',').map(f => f.trim()).filter(f => f && f !== '-');
+    }
+
+    const revMatch = raw.match(/Ulasan Awal:\s*"([^"]+)"/i) || raw.match(/Ulasan Awal:\s*([^.]+)/i);
+    if (revMatch && revMatch[1] && revMatch[1].trim() !== '-') {
+      review = revMatch[1].trim();
+    }
+
+    return { desc, facilities, review };
+  };
+
+  const parsed = parseDetails(dest.deskripsi_lengkap, dest.deskripsi_singkat);
+  const formattedAddress = cleanAddressText(dest.nama_jalan, dest.kecamatan);
 
   return (
     <>
@@ -61,7 +98,7 @@ const DestinationCard = ({ dest, isUmkm }) => {
           </div>
 
           <p className="card-description">{dest.deskripsi_singkat}</p>
-          <p className="card-address">{dest.nama_jalan}</p>
+          <p className="card-address">{formattedAddress}</p>
 
           {/* Action Buttons */}
           <div className="card-actions">
@@ -89,7 +126,7 @@ const DestinationCard = ({ dest, isUmkm }) => {
         <div className="modal-backdrop fade-in" onClick={() => setShowModal(false)}>
           <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()}>
             <button className="modal-close-btn" onClick={() => setShowModal(false)}>
-              <X size={20} />
+              <X size={18} />
             </button>
 
             <div className="modal-header-image">
@@ -97,32 +134,66 @@ const DestinationCard = ({ dest, isUmkm }) => {
               <div className="modal-image-overlay"></div>
               <div className="modal-title-box">
                 <h2>{dest.nama}</h2>
-                <span className="modal-kecamatan"><Navigation size={14} /> {dest.kecamatan} • {dest.kategori.toUpperCase()}</span>
+                <div className="modal-sub-info">
+                  <span className="modal-tag"><Navigation size={13} /> {dest.kecamatan}</span>
+                  <span className="modal-tag category"><Compass size={13} /> {dest.kategori.toUpperCase()}</span>
+                </div>
               </div>
             </div>
 
             <div className="modal-body">
+              {/* Metric Row */}
               <div className="modal-meta-row">
                 <div className="modal-meta-pill rating">
-                  <Star size={16} fill="#fbbf24" color="#fbbf24" /> {dest.rating} dari {dest.jumlah_ulasan} ulasan
+                  <Star size={15} fill="#fbbf24" color="#fbbf24" /> {dest.rating} dari {dest.jumlah_ulasan} Ulasan Pengunjung
                 </div>
                 {isUmkm && (
                   <div className="modal-meta-pill umkm">
-                    <Store size={14} /> Mitra Rekomendasi UMKM Lokal
+                    <Store size={14} /> Mitra UMKM Lokal Toba
                   </div>
                 )}
               </div>
 
+              {/* Description */}
               <div className="modal-section">
-                <h4>Informasi Lengkap:</h4>
-                <p>{dest.deskripsi_lengkap || dest.deskripsi_singkat}</p>
+                <h4>Deskripsi & Daya Tarik:</h4>
+                <p>{parsed.desc}</p>
               </div>
 
+              {/* Facilities Chips if available */}
+              {parsed.facilities.length > 0 && (
+                <div className="modal-section">
+                  <h4>Fasilitas Tersedia:</h4>
+                  <div className="facilities-grid">
+                    {parsed.facilities.map((fac, i) => (
+                      <span key={i} className="facility-chip">
+                        <CheckCircle size={13} color="#10b981" /> {fac}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Review Quote Box if available */}
+              {parsed.review && (
+                <div className="modal-section">
+                  <h4>Ulasan Pengunjung:</h4>
+                  <div className="review-quote-box">
+                    <Quote size={18} color="#0284c7" className="quote-icon" />
+                    <p>"{parsed.review}"</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Clean Location Address */}
               <div className="modal-section">
                 <h4>Alamat Lokasi:</h4>
-                <p className="address-text"><MapPin size={15} color="#ef4444" /> {dest.nama_jalan}, Kecamatan {dest.kecamatan}, Kawasan Danau Toba</p>
+                <p className="address-text">
+                  <MapPin size={15} color="#ef4444" /> {formattedAddress}
+                </p>
               </div>
 
+              {/* Footer CTA */}
               <div className="modal-actions-footer">
                 <button 
                   type="button" 
