@@ -141,25 +141,32 @@ def get_fair_route_with_rag(db: Session, query: str, kecamatan: str = None, limi
         # Fallback pencarian terpopuler biasa
         destinasi_utama = query_base.order_by(models.Destinasi.rating.desc()).limit(limit_utama).all()
 
-    # 3. Ambil pendukung UMKM/Kuliner lokal terdekat (Keadilan Data / Fairness)
+    # 3. Deteksi Intensi Pencarian (Kuliner / Makanan vs Kerajinan / Wisata)
+    query_lower = query.lower()
+    food_keywords = ['makanan', 'kuliner', 'makan', 'enak', 'laper', 'lapar', 'resto', 'rumah makan', 'warung', 'menu', 'lapo', 'naniarsik', 'arsik', 'mie gomak', 'naniura', 'saksang', 'bpk', 'andaliman', 'kopi', 'kue', 'ombus', 'sihobuk', 'minum']
+    is_food_query = any(k in query_lower for k in food_keywords)
+
     target_kecamatans = list(set([d.kecamatan for d in destinasi_utama]))
     if not target_kecamatans and kecamatan:
         target_kecamatans = [kecamatan]
         
-    umkm_query = db.query(models.Destinasi).filter(models.Destinasi.kategori.in_(['umkm', 'kuliner']))
+    # Jika wisatawan menanyakan makanan/kuliner, filter rekomendasi pendukung ke 'kuliner' saja!
+    allowed_categories = ['kuliner'] if is_food_query else ['umkm', 'kuliner']
+    
+    umkm_query = db.query(models.Destinasi).filter(models.Destinasi.kategori.in_(allowed_categories))
     if target_kecamatans:
         umkm_query = umkm_query.filter(models.Destinasi.kecamatan.in_(target_kecamatans))
         
-    umkm_sekitar = umkm_query.filter(models.Destinasi.rating >= 4.0).\
-        order_by(models.Destinasi.rating.desc()).\
-        limit(4).all()
+    utama_ids = set([d.id for d in destinasi_utama])
+    fetched_umkm = umkm_query.filter(models.Destinasi.rating >= 4.0).order_by(models.Destinasi.rating.desc()).all()
+    umkm_sekitar = [u for u in fetched_umkm if u.id not in utama_ids][:4]
 
-    # Fallback jika di kecamatan spesifik belum ada UMKM: ambil UMKM/Kuliner terbaik dari seluruh Toba
-    if not umkm_sekitar or len(umkm_sekitar) < 2:
-        extra_umkm = db.query(models.Destinasi).filter(models.Destinasi.kategori.in_(['umkm', 'kuliner'])).\
-            order_by(models.Destinasi.rating.desc()).limit(6).all()
+    # Fallback jika di kecamatan spesifik belum cukup: ambil tempat kuliner/UMKM terbaik dari seluruh Toba
+    if len(umkm_sekitar) < 4:
+        extra_umkm = db.query(models.Destinasi).filter(models.Destinasi.kategori.in_(allowed_categories)).\
+            order_by(models.Destinasi.rating.desc()).all()
         
-        seen_ids = set([u.id for u in umkm_sekitar])
+        seen_ids = set([u.id for u in umkm_sekitar] + list(utama_ids))
         for extra in extra_umkm:
             if extra.id not in seen_ids:
                 umkm_sekitar.append(extra)
