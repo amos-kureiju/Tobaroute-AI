@@ -17,6 +17,15 @@ def create_destinasi(db: Session, destinasi: schemas.DestinasiCreate):
     db.refresh(db_destinasi)
     return db_destinasi
 
+# Fungsi untuk Admin menghapus destinasi dari database
+def delete_destinasi(db: Session, destinasi_id: int):
+    db_destinasi = db.query(models.Destinasi).filter(models.Destinasi.id == destinasi_id).first()
+    if db_destinasi:
+        db.delete(db_destinasi)
+        db.commit()
+        return True
+    return False
+
 # Fungsi bantuan untuk menghitung jarak koordinat (Haversine Formula) jika diperlukan di lokal
 def hitung_jarak(lat1, lon1, lat2, lon2):
     rad = math.pi / 180
@@ -143,10 +152,22 @@ def get_fair_route_with_rag(db: Session, query: str, kecamatan: str = None, limi
     if target_kecamatans:
         umkm_query = umkm_query.filter(models.Destinasi.kecamatan.in_(target_kecamatans))
         
-    umkm_sekitar = umkm_query.filter(models.Destinasi.jumlah_ulasan < 15).\
-        filter(models.Destinasi.rating >= 4.0).\
+    umkm_sekitar = umkm_query.filter(models.Destinasi.rating >= 4.0).\
         order_by(models.Destinasi.rating.desc()).\
         limit(4).all()
+
+    # Fallback jika di kecamatan spesifik belum ada UMKM: ambil UMKM/Kuliner terbaik dari seluruh Toba
+    if not umkm_sekitar or len(umkm_sekitar) < 2:
+        extra_umkm = db.query(models.Destinasi).filter(models.Destinasi.kategori.in_(['umkm', 'kuliner'])).\
+            order_by(models.Destinasi.rating.desc()).limit(6).all()
+        
+        seen_ids = set([u.id for u in umkm_sekitar])
+        for extra in extra_umkm:
+            if extra.id not in seen_ids:
+                umkm_sekitar.append(extra)
+                seen_ids.add(extra.id)
+            if len(umkm_sekitar) >= 4:
+                break
         
     return {
         "destinasi_utama": destinasi_utama,
