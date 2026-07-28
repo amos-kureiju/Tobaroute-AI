@@ -1,0 +1,6 @@
+{
+  "total_benchmark_queries": 4,
+  "retrieval_accuracy_pct": 100.0,
+  "avg_umkm_fairness_exposure_pct": 41.59,
+  "evaluation_timestamp": "2026-07-23 10:15:59"
+}

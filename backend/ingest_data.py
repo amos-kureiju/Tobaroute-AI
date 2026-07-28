@@ -7,6 +7,16 @@ import time
 import random
 from geopy.geocoders import Nominatim
 
+# Impor modul database lokal untuk fallback offline
+from pathlib import Path
+BASE_DIR = Path(__file__).resolve().parent
+sys.path.append(str(BASE_DIR))
+from app.database import SessionLocal, Base, engine
+from app import models
+
+# Buat tabel jika belum ada
+Base.metadata.create_all(bind=engine)
+
 # Hindari error encoding Unicode pada konsol Windows
 sys.stdout.reconfigure(encoding='utf-8')
 
@@ -32,8 +42,8 @@ def ekstrak_kecamatan(alamat_teks):
             return kec
     return "Toba"
 
-# Geolocator Nominatim (OpenStreetMap)
-geolocator = Nominatim(user_agent="tobaroute_data_agent_amos")
+# Geolocator Nominatim (OpenStreetMap) dengan timeout 5 detik
+geolocator = Nominatim(user_agent="tobaroute_data_agent_amos", timeout=5)
 
 def ambil_koordinat_default(kecamatan):
     # Titik acuan utama per kecamatan sebagai cadangan keamanan data (Kelompok C / Fallback)
@@ -59,31 +69,42 @@ def ambil_koordinat_default(kecamatan):
 def dapatkan_koordinat(alamat, kecamatan_default):
     alamat_str = str(alamat).strip()
     
-    # Deteksi Kelompok C: Alamat kosong, terlalu pendek, atau data rusak/missing (Humbang Hasundutan)
-    if pd.isna(alamat) or len(alamat_str) < 5 or "Humbang Hasundutan".lower() in alamat_str.lower():
-        print(f"   [GEOCODE - KELOMPOK C] Alamat kosong/rusak. Gunakan default: {alamat_str[:30]}...")
+    # Deteksi alamat kosong, Plus Code Google (misal: 828R+Q2), atau area luar Toba
+    if pd.isna(alamat) or len(alamat_str) < 5 or "+" in alamat_str or "Humbang Hasundutan".lower() in alamat_str.lower():
         return ambil_koordinat_default(kecamatan_default)
     
     try:
-        # Batasi query 1 request per detik agar tidak diblokir OSM
-        time.sleep(1)
-        # Proses pencarian untuk Kelompok A & B
+        # Batasi query agar ramah OSM rate limit
+        time.sleep(0.5)
         lokasi = geolocator.geocode(f"{alamat_str}, Toba, Sumatera Utara")
         if lokasi:
-            print(f"   [GEOCODE - KELOMPOK A/B] Ditemukan: {alamat_str[:30]}... -> Lat: {lokasi.latitude:.5f}, Lon: {lokasi.longitude:.5f}")
             return lokasi.latitude, lokasi.longitude
-        else:
-            # Jika pencarian spesifik gagal, cari berdasarkan nama kecamatannya saja
-            time.sleep(1)
-            lokasi_alt = geolocator.geocode(f"{kecamatan_default}, Toba, Sumatera Utara")
-            if lokasi_alt:
-                print(f"   [GEOCODE - FALLBACK B] Kecamatan: {kecamatan_default} -> Lat: {lokasi_alt.latitude:.5f}, Lon: {lokasi_alt.longitude:.5f}")
-                return lokasi_alt.latitude, lokasi_alt.longitude
-    except Exception as e:
-        print(f"   [GEOCODE - ERROR] Gagal mencari {alamat_str[:30]}...: {e}")
-        return ambil_koordinat_default(kecamatan_default)
+    except Exception:
+        pass
         
     return ambil_koordinat_default(kecamatan_default)
+
+def kirim_atau_simpan(payload, tag):
+    try:
+        response = requests.post(API_URL, json=payload, timeout=1)
+        if response.status_code == 200:
+            print(f" [{tag}] Successfully Ingested (via API): {payload['nama']}")
+            return
+    except Exception:
+        pass
+    
+    # Fallback simpan langsung ke Database jika API server offline
+    db = SessionLocal()
+    try:
+        destinasi = models.Destinasi(**payload)
+        db.add(destinasi)
+        db.commit()
+        print(f" [{tag}] Successfully Ingested (via Direct DB): {payload['nama']}")
+    except Exception as e:
+        db.rollback()
+        print(f"❌ [{tag}] Failed to save {payload['nama']}: {e}")
+    finally:
+        db.close()
 
 # ==============================================================================
 # FUNGSI 1: INGEST TEMPAT WISATA
@@ -125,14 +146,7 @@ def ingest_wisata():
             "jumlah_ulasan": 15 + index # Angka ulasan bervariasi
         }
 
-        try:
-            response = requests.post(API_URL, json=payload)
-            if response.status_code == 200:
-                print(f" [WISATA] Successfully Ingested: {payload['nama']}")
-            else:
-                print(f"❌ [WISATA] Failed for {payload['nama']}: {response.text}")
-        except Exception as e:
-            print(f"Error connecting to backend for {payload['nama']}: {e}")
+        kirim_atau_simpan(payload, "WISATA")
 
 # ==============================================================================
 # FUNGSI 2: INGEST KULINER
@@ -165,14 +179,7 @@ def ingest_kuliner():
                 "rating": rating,
                 "jumlah_ulasan": jumlah_ulasan
             }
-            try:
-                response = requests.post(API_URL, json=payload)
-                if response.status_code == 200:
-                    print(f" [KULINER] Successfully Ingested: {payload['nama']}")
-                else:
-                    print(f"❌ [KULINER] Failed for {payload['nama']}: {response.text}")
-            except Exception as e:
-                print(f"Error: {e}")
+            kirim_atau_simpan(payload, "KULINER")
 
     # Tambahan: Ingest data dari hotel-resto-v1 yang berkategori Restoran/Warung
     if "hotel-resto-v1" in xl.sheet_names:
@@ -208,14 +215,7 @@ def ingest_kuliner():
                     "rating": rating_clean,
                     "jumlah_ulasan": jumlah_ulasan
                 }
-                try:
-                    response = requests.post(API_URL, json=payload)
-                    if response.status_code == 200:
-                        print(f" [RESTO] Successfully Ingested: {payload['nama']}")
-                    else:
-                        print(f"❌ [RESTO] Failed for {payload['nama']}: {response.text}")
-                except Exception as e:
-                    print(f"Error: {e}")
+                kirim_atau_simpan(payload, "RESTO")
 
 # ==============================================================================
 # FUNGSI 3: INGEST TRANSPORTASI (UMKM / Akomodasi Pendukung)
@@ -252,14 +252,8 @@ def ingest_transportasi():
             "jumlah_ulasan": 7 # Ulasan sedikit, potensial masuk Fairness Recommendation!
         }
         
-        try:
-            response = requests.post(API_URL, json=payload)
-            if response.status_code == 200:
-                print(f" [TRANSPORTASI] Successfully Ingested: {payload['nama']}")
-            else:
-                print(f"❌ [TRANSPORTASI] Failed for {payload['nama']}: {response.text}")
-        except Exception as e:
-            print(f"Error: {e}")
+        kirim_atau_simpan(payload, "TRANSPORTASI")
+
 
 if __name__ == "__main__":
     ingest_wisata()

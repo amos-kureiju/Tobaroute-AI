@@ -60,3 +60,26 @@ def read_destinasi(kecamatan: str = None, limit: int = 10, db: Session = Depends
 @app.post("/api/admin/destinasi", response_model=schemas.DestinasiResponse)
 def add_new_destinasi(destinasi: schemas.DestinasiCreate, db: Session = Depends(get_db)):
     return crud.create_destinasi(db=db, destinasi=destinasi)
+
+# Endpoint untuk Admin: Mengedit destinasi yang sudah ada di database & Pinecone
+@app.put("/api/admin/destinasi/{destinasi_id}", response_model=schemas.DestinasiResponse)
+def update_existing_destinasi(destinasi_id: int, destinasi: schemas.DestinasiUpdate, db: Session = Depends(get_db)):
+    updated = crud.update_destinasi(db=db, destinasi_id=destinasi_id, update_data=destinasi)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Destinasi tidak ditemukan")
+    return updated
+
+# Endpoint untuk Admin: Menghapus destinasi dari database
+@app.delete("/api/admin/destinasi/{destinasi_id}")
+def remove_destinasi(destinasi_id: int, db: Session = Depends(get_db)):
+    success = crud.delete_destinasi(db=db, destinasi_id=destinasi_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Destinasi tidak ditemukan")
+    return {"message": f"Destinasi ID {destinasi_id} berhasil dihapus"}
+
+# Endpoint untuk Admin: Memicu sinkronisasi manual seluruh data ke database vektor Pinecone
+@app.post("/api/admin/sync-pinecone")
+def sync_vector_database(db: Session = Depends(get_db)):
+    result = crud.sync_all_vectors(db=db)
+    return result
+

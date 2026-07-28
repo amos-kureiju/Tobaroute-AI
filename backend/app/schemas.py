@@ -19,6 +19,19 @@ class DestinasiBase(BaseModel):
 class DestinasiCreate(DestinasiBase):
     pass
 
+class DestinasiUpdate(BaseModel):
+    nama: Optional[str] = None
+    kategori: Optional[str] = None
+    kecamatan: Optional[str] = None
+    gambar_url: Optional[str] = None
+    deskripsi_singkat: Optional[str] = None
+    deskripsi_lengkap: Optional[str] = None
+    nama_jalan: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    rating: Optional[float] = None
+    jumlah_ulasan: Optional[int] = None
+
 # Digunakan saat API merespons permintaan User/Admin (Data keluar)
 class DestinasiResponse(DestinasiBase):
     id: int

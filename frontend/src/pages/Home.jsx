@@ -19,10 +19,23 @@ const Home = () => {
   const [error, setError] = useState('');
   const [results, setResults] = useState(null);
   const [recentSearches, setRecentSearches] = useState([]);
+  const [homeConfig, setHomeConfig] = useState({
+    heroBadge: 'Platform Navigasi & Keadilan Pariwisata Danau Toba',
+    heroTitle: 'Temukan Keindahan Danau Toba',
+    heroSubtitle: 'Sistem rekomendasi berbasis kecerdasan data yang merancang rute perjalanan presisi, destinasi populer, serta memajukan ekonomi pelaku UMKM lokal.',
+    alertActive: false,
+    alertText: '',
+    alertBg: 'info'
+  });
 
   // Restore saved search results from sessionStorage on mount
   useEffect(() => {
     try {
+      const savedConfig = localStorage.getItem('tobaguide_home_content_config');
+      if (savedConfig) {
+        setHomeConfig(JSON.parse(savedConfig));
+      }
+
       const savedQuery = sessionStorage.getItem('tobaroute_last_query');
       const savedKec = sessionStorage.getItem('tobaroute_last_kecamatan');
       const savedResults = sessionStorage.getItem('tobaroute_last_results');
@@ -78,6 +91,21 @@ const Home = () => {
 
   return (
     <>
+      {/* Alert Announcement Banner if active */}
+      {homeConfig.alertActive && homeConfig.alertText && (
+        <div style={{
+          background: homeConfig.alertBg === 'warning' ? '#fef3c7' : homeConfig.alertBg === 'emerald' ? '#dcfce7' : '#e0f2fe',
+          color: homeConfig.alertBg === 'warning' ? '#92400e' : homeConfig.alertBg === 'emerald' ? '#15803d' : '#0369a1',
+          padding: '0.6rem 1rem',
+          textAlign: 'center',
+          fontSize: '0.85rem',
+          fontWeight: 600,
+          borderBottom: '1px solid rgba(0,0,0,0.05)'
+        }}>
+          📢 {homeConfig.alertText}
+        </div>
+      )}
+
       {/* Hero Section */}
       <header className="hero hero-enhanced">
         <div className="hero-background-overlay"></div>
@@ -85,15 +113,15 @@ const Home = () => {
         <div className="container hero-content fade-in">
           <div className="hero-badge">
             <Compass size={14} color="#38bdf8" />
-            <span>Platform Navigasi & Keadilan Pariwisata Danau Toba</span>
+            <span>{homeConfig.heroBadge}</span>
           </div>
 
           <h1 className="hero-title">
-            Temukan Keindahan <span className="gradient-text">Danau Toba</span>
+            {homeConfig.heroTitle}
           </h1>
 
           <p className="hero-subtitle">
-            Sistem rekomendasi berbasis kecerdasan data yang merancang rute perjalanan presisi, destinasi populer, serta memajukan ekonomi pelaku UMKM lokal.
+            {homeConfig.heroSubtitle}
           </p>
           
           {/* Main Search Bar */}

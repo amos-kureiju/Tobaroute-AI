@@ -46,3 +46,44 @@ export const sendChatMessage = async (message, history = []) => {
     throw error;
   }
 };
+
+export const addDestinasi = async (destinasiData) => {
+  try {
+    const response = await apiClient.post('/admin/destinasi', destinasiData);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding destination:', error);
+    throw error;
+  }
+};
+
+export const deleteDestinasi = async (id) => {
+  try {
+    const response = await apiClient.delete(`/admin/destinasi/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting destination:', error);
+    throw error;
+  }
+};
+
+export const updateDestinasi = async (id, destinasiData) => {
+  try {
+    const response = await apiClient.put(`/admin/destinasi/${id}`, destinasiData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating destination:', error);
+    throw error;
+  }
+};
+
+export const syncPineconeVectors = async () => {
+  try {
+    const response = await apiClient.post('/admin/sync-pinecone');
+    return response.data;
+  } catch (error) {
+    console.error('Error syncing Pinecone vectors:', error);
+    throw error;
+  }
+};
+

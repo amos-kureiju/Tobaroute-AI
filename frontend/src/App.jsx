@@ -4,7 +4,6 @@ import { Compass, WifiOff } from 'lucide-react';
 import Home from './pages/Home';
 import Explore from './pages/Explore';
 import About from './pages/About';
-import Chatbot from './components/Chatbot';
 
 // Admin Imports dari Folder Khusus (src/admin)
 import { 
@@ -13,7 +12,8 @@ import {
   AdminDashboard, 
   AdminDestinations, 
   AdminContent, 
-  AdminAIMonitoring 
+  AdminAIMonitoring,
+  AdminSettings 
 } from './admin';
 
 import './App.css';
@@ -94,9 +94,6 @@ const MainLayout = ({ children }) => {
       <footer className="footer">
         <p>&copy; 2026 TobaRoute AI. Dibangun untuk mendukung Keadilan Pariwisata Danau Toba.</p>
       </footer>
-
-      {/* Global Chatbot */}
-      <Chatbot />
     </div>
   );
 };
@@ -120,6 +117,7 @@ function App() {
           <Route path="destinations" element={<AdminDestinations />} />
           <Route path="content" element={<AdminContent />} />
           <Route path="ai-monitoring" element={<AdminAIMonitoring />} />
+          <Route path="settings" element={<AdminSettings />} />
         </Route>
       </Routes>
     </Router>

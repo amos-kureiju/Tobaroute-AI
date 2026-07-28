@@ -144,7 +144,11 @@ def main():
                             "kategori": item.kategori,
                             "kecamatan": item.kecamatan,
                             "deskripsi_singkat": item.deskripsi_singkat,
-                            "nama_jalan": item.nama_jalan
+                            "nama_jalan": item.nama_jalan,
+                            "rating": item.rating,
+                            "jumlah_ulasan": item.jumlah_ulasan,
+                            "latitude": item.latitude,
+                            "longitude": item.longitude
                         }
                     })
                 

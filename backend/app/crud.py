@@ -15,6 +15,33 @@ def create_destinasi(db: Session, destinasi: schemas.DestinasiCreate):
     db.add(db_destinasi)
     db.commit()
     db.refresh(db_destinasi)
+    
+    try:
+        sync_single_destinasi_vector(db_destinasi)
+    except Exception as e:
+        print(f"[Vector Sync] Error vector upsert for new item {db_destinasi.id}: {e}")
+        
+    return db_destinasi
+
+# Fungsi untuk Admin mengedit data destinasi yang sudah ada
+def update_destinasi(db: Session, destinasi_id: int, update_data: schemas.DestinasiUpdate):
+    db_destinasi = db.query(models.Destinasi).filter(models.Destinasi.id == destinasi_id).first()
+    if not db_destinasi:
+        return None
+        
+    data_dict = update_data.model_dump(exclude_unset=True)
+    for key, value in data_dict.items():
+        if value is not None:
+            setattr(db_destinasi, key, value)
+            
+    db.commit()
+    db.refresh(db_destinasi)
+    
+    try:
+        sync_single_destinasi_vector(db_destinasi)
+    except Exception as e:
+        print(f"[Vector Sync Error] Gagal update vektor Pinecone untuk ID {destinasi_id}: {e}")
+        
     return db_destinasi
 
 # Fungsi untuk Admin menghapus destinasi dari database
@@ -23,6 +50,12 @@ def delete_destinasi(db: Session, destinasi_id: int):
     if db_destinasi:
         db.delete(db_destinasi)
         db.commit()
+        try:
+            idx = get_pinecone_index()
+            if idx:
+                idx.delete(ids=[str(destinasi_id)])
+        except Exception as e:
+            print(f"[Vector Delete Error]: {e}")
         return True
     return False
 
@@ -84,6 +117,47 @@ def get_cohere_embedding(query_user: str):
     except Exception as e:
         print(f"[RAG] Cohere Embedding failed: {e}")
         return [0.1] * 1024 # Dummy fallback
+
+def sync_single_destinasi_vector(d):
+    index = get_pinecone_index()
+    if not index:
+        return
+    semantik_text = (
+        f"Nama: {d.nama} | Kategori: {d.kategori} | Kecamatan: {d.kecamatan} | "
+        f"Deskripsi: {d.deskripsi_singkat} {d.deskripsi_lengkap or ''} | Jalan: {d.nama_jalan or ''}"
+    )
+    vec = get_cohere_embedding(semantik_text)
+    index.upsert(vectors=[{
+        "id": str(d.id),
+        "values": vec,
+        "metadata": {
+            "nama": d.nama,
+            "kategori": d.kategori,
+            "kecamatan": d.kecamatan,
+            "deskripsi_singkat": d.deskripsi_singkat,
+            "nama_jalan": d.nama_jalan or "",
+            "rating": float(d.rating or 4.8),
+            "jumlah_ulasan": int(d.jumlah_ulasan or 10),
+            "latitude": float(d.latitude or 2.33),
+            "longitude": float(d.longitude or 99.06)
+        }
+    }])
+
+def sync_all_vectors(db: Session):
+    index = get_pinecone_index()
+    if not index:
+        return {"status": "error", "message": "Pinecone API Key tidak terkonfigurasi."}
+    
+    all_dest = db.query(models.Destinasi).all()
+    count = 0
+    for d in all_dest:
+        try:
+            sync_single_destinasi_vector(d)
+            count += 1
+        except Exception as e:
+            print(f"[Sync Error] ID {d.id}: {e}")
+            
+    return {"status": "success", "synced_count": count, "total": len(all_dest)}
 
 def cari_destinasi_semantik(query_user: str, top_k: int = 20):
     query_vector = None
