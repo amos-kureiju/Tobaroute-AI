@@ -24,7 +24,7 @@ if not os.path.exists(EXCEL_FILE):
 
 xl = pd.ExcelFile(EXCEL_FILE)
 print("=========================================================")
-print("  COMPREHENSIVE MULTI-REGENCY DATASET INGESTION ENGINE")
+print("  COMPREHENSIVE MULTI-SHEET DATASET INGESTION ENGINE")
 print("=========================================================")
 print(f"Sheet terdeteksi ({len(xl.sheet_names)}): {xl.sheet_names}\n")
 
@@ -137,10 +137,131 @@ def main():
     total_added = 0
     total_updated = 0
 
-    # 1. PROCESS WAKTU OPERASIONAL DESTINASI (40 destinasies across 8 Regencies)
+    # 1. PROCESS KULINER SHEET (Dali ni Horbo, Saksang, Naniarsik, BPK, Manuk Napinadar, Naniura, Na Tinombur, Mie Gomak, Tanggo-tanggo, Mie Sop, Sira Pege, Sambal Tuktuk)
+    if "kuliner" in xl.sheet_names:
+        df_kul = pd.read_excel(EXCEL_FILE, sheet_name="kuliner")
+        print(f"[1/10] Memproses 'kuliner' ({len(df_kul)} masakan Batak Toba)...")
+        for idx, row in df_kul.iterrows():
+            nama = str(row.get('kuliner-name', '')).strip()
+            desc = str(row.get('description', 'Makanan khas Batak Toba')).strip()
+            if len(nama) > 2:
+                kecamatan = ekstrak_kecamatan(desc)
+                lat, lon = ambil_koordinat_default(kecamatan)
+
+                payload = {
+                    "nama": f"Kuliner Khas: {nama}",
+                    "kategori": "kuliner",
+                    "kecamatan": kecamatan,
+                    "nama_jalan": f"Sentra Masakan Batak Toba, {kecamatan}",
+                    "latitude": lat,
+                    "longitude": lon,
+                    "rating": 4.9,
+                    "jumlah_ulasan": 14,
+                    "deskripsi_singkat": desc[:180],
+                    "deskripsi_lengkap": f"Resep Autentik Batak Toba: {nama}. Detail: {desc}",
+                    "gambar_url": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80"
+                }
+                if simpan_ke_db(db, payload):
+                    total_added += 1
+                else:
+                    total_updated += 1
+
+    # 2. PROCESS TRANSPORTASI SHEET (All Ferries & Bus Lines)
+    if "transportasi" in xl.sheet_names:
+        df_tr = pd.read_excel(EXCEL_FILE, sheet_name="transportasi")
+        print(f"[2/10] Memproses 'transportasi' ({len(df_tr)} rute feri & angkutan)...")
+        for idx, row in df_tr.iterrows():
+            nama = str(row.get('transport-name', '')).strip()
+            direction = str(row.get('direction', 'Danau Toba')).strip()
+            price = str(row.get('price', '-')).strip()
+            jenis = str(row.get('jenis-mobil', 'Umum')).strip()
+            desc = str(row.get('description', '')).strip()
+            if len(nama) > 2:
+                kecamatan = ekstrak_kecamatan(direction)
+                lat, lon = ambil_koordinat_default(kecamatan)
+
+                nama_full = f"{nama} ({direction})"
+                payload = {
+                    "nama": nama_full,
+                    "kategori": "umkm",
+                    "kecamatan": kecamatan,
+                    "nama_jalan": f"Dermaga / Pool Rute {direction}",
+                    "latitude": lat,
+                    "longitude": lon,
+                    "rating": 4.8,
+                    "jumlah_ulasan": 12,
+                    "deskripsi_singkat": f"Layanan armada {nama} rute {direction} ({jenis}). Tarif: Rp {price}.",
+                    "deskripsi_lengkap": f"Armada: {nama}. Rute Penyeberangan/Jalan: {direction}. Tipe Kendaraan: {jenis}. Tarif: Rp {price}. Keterangan: {desc}",
+                    "gambar_url": "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=600&q=80"
+                }
+                if simpan_ke_db(db, payload):
+                    total_added += 1
+                else:
+                    total_updated += 1
+
+    # 3. PROCESS ATTRACTIONS INFO SHEET (Activities & Cultural Background)
+    if "Attractions Info" in xl.sheet_names:
+        df_att = pd.read_excel(EXCEL_FILE, sheet_name="Attractions Info")
+        print(f"[3/10] Memproses 'Attractions Info' ({len(df_att)} atraksi)...")
+        for idx, row in df_att.iterrows():
+            nama_att = str(row.iloc[2]).strip() if pd.notna(row.iloc[2]) else ''
+            kab_att = str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else 'Toba'
+            detail_att = str(row.iloc[3]).strip() if pd.notna(row.iloc[3]) else ''
+            if len(nama_att) > 3 and nama_att.lower() != 'nama atraksi':
+                kecamatan = ekstrak_kecamatan(f"{nama_att} {kab_att}")
+                lat, lon = ambil_koordinat_default(kecamatan)
+                payload = {
+                    "nama": nama_att,
+                    "kategori": "wisata",
+                    "kecamatan": kecamatan,
+                    "nama_jalan": f"Kawasan Atraksi {kab_att}",
+                    "latitude": lat,
+                    "longitude": lon,
+                    "rating": 4.9,
+                    "jumlah_ulasan": 30,
+                    "deskripsi_singkat": f"Atraksi wisata {nama_att} di Kabupaten {kab_att}.",
+                    "deskripsi_lengkap": f"Atraksi: {nama_att}. Kabupaten: {kab_att}. Detail Pengalaman & Latar Belakang: {detail_att}",
+                    "gambar_url": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80"
+                }
+                if simpan_ke_db(db, payload):
+                    total_added += 1
+                else:
+                    total_updated += 1
+
+    # 4. PROCESS ARTIKEL DANAU TOBA SHEET (Historical & Geological Articles)
+    if "Artikel Danau Toba" in xl.sheet_names:
+        df_art = pd.read_excel(EXCEL_FILE, sheet_name="Artikel Danau Toba")
+        print(f"[4/10] Memproses 'Artikel Danau Toba' ({len(df_art)} artikel)...")
+        for idx, row in df_art.iterrows():
+            judul = str(row.get('Judul Artikel', '')).strip()
+            kab = str(row.get('Kabupaten', 'Toba')).strip()
+            rangkuman = str(row.get('Rangkuman (Paragraf Awal)', '')).strip()
+            link = str(row.get('Link Artikel', '')).strip()
+            if len(judul) > 3:
+                kecamatan = ekstrak_kecamatan(f"{judul} {kab}")
+                lat, lon = ambil_koordinat_default(kecamatan)
+                payload = {
+                    "nama": f"Artikel Sejarah: {judul}",
+                    "kategori": "wisata",
+                    "kecamatan": kecamatan,
+                    "nama_jalan": f"Cagar Sejarah & Artikel {kab}",
+                    "latitude": lat,
+                    "longitude": lon,
+                    "rating": 5.0,
+                    "jumlah_ulasan": 50,
+                    "deskripsi_singkat": rangkuman[:180],
+                    "deskripsi_lengkap": f"Judul Artikel: {judul}. Kabupaten: {kab}. Rangkuman Sejarah/Geologi: {rangkuman}. Tautan Referensi Resmi: {link}",
+                    "gambar_url": "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=600&q=80"
+                }
+                if simpan_ke_db(db, payload):
+                    total_added += 1
+                else:
+                    total_updated += 1
+
+    # 5. PROCESS WAKTU OPERASIONAL DESTINASI (40 destinations across 8 Regencies)
     if "waktu operasional destinasi" in xl.sheet_names:
         df = pd.read_excel(EXCEL_FILE, sheet_name="waktu operasional destinasi")
-        print(f"[1/8] Memproses 'waktu operasional destinasi' ({len(df)} entitas)...")
+        print(f"[5/10] Memproses 'waktu operasional destinasi' ({len(df)} entitas)...")
         current_kab = "Toba"
         for idx, row in df.iterrows():
             kab_val = row.get('KABUPATEN')
@@ -176,10 +297,10 @@ def main():
             else:
                 total_updated += 1
 
-    # 2. PROCESS INFO SEPUTAR DANAU TOBA (TOP 3) - Multi-regency Matrix
+    # 6. PROCESS INFO SEPUTAR DANAU TOBA (TOP 3) - Multi-regency Matrix & Subcolumns
     if "Info Seputar Danau Toba (TOP 3)" in xl.sheet_names:
         df = pd.read_excel(EXCEL_FILE, sheet_name="Info Seputar Danau Toba (TOP 3)")
-        print(f"[2/8] Memproses 'Info Seputar Danau Toba (TOP 3)' ({len(df)} baris matriks 8 Kabupaten)...")
+        print(f"[6/10] Memproses 'Info Seputar Danau Toba (TOP 3)' ({len(df)} baris matriks 8 Kabupaten)...")
         current_kab = "Toba"
         for idx in range(3, len(df)):
             row = df.iloc[idx]
@@ -187,7 +308,6 @@ def main():
             if pd.notna(kab_val) and str(kab_val).strip():
                 current_kab = str(kab_val).strip().title()
 
-            # Parse Hotel / Homestay / Resto / Cafe / Souvenir / Transport columns
             entries = [
                 (row.iloc[2], "penginapan", "Hotel"),
                 (row.iloc[5], "penginapan", "Homestay"),
@@ -229,10 +349,45 @@ def main():
                             else:
                                 total_updated += 1
 
-    # 3. PROCESS WISATA-METADATA (139 rows)
+            # Extra subcolumns: Museum (col 47), Cagar Budaya (col 50), Desa Wisata (col 52), Atraksi (col 54)
+            extra_cols = [
+                (47, "wisata", "Museum"),
+                (50, "wisata", "Cagar Budaya"),
+                (52, "wisata", "Desa Wisata"),
+                (54, "wisata", "Atraksi Khusus (Paralayang/Solu/Rafting)")
+            ]
+            for col_idx, kat, sub_tipe in extra_cols:
+                if col_idx < len(row) and pd.notna(row.iloc[col_idx]):
+                    val_str = str(row.iloc[col_idx]).strip()
+                    if len(val_str) > 3 and not val_str.lower().startswith(('rating', 'harga', 'ulasan', 'alamat')):
+                        lines = val_str.split('\n')
+                        for line in lines:
+                            l_clean = line.strip()
+                            if len(l_clean) > 3 and not l_clean.lower().startswith(('rating', 'harga', 'ulasan')):
+                                kecamatan = ekstrak_kecamatan(f"{l_clean} {current_kab}")
+                                lat, lon = ambil_koordinat_default(kecamatan)
+                                payload = {
+                                    "nama": l_clean,
+                                    "kategori": kat,
+                                    "kecamatan": kecamatan,
+                                    "nama_jalan": f"Kawasan {sub_tipe} Kabupaten {current_kab}",
+                                    "latitude": lat,
+                                    "longitude": lon,
+                                    "rating": 4.8,
+                                    "jumlah_ulasan": 20,
+                                    "deskripsi_singkat": f"{sub_tipe} {l_clean} di Kabupaten {current_kab} ({kecamatan}).",
+                                    "deskripsi_lengkap": f"{sub_tipe}: {l_clean}. Lokasi: Kabupaten {current_kab}, Kecamatan {kecamatan}.",
+                                    "gambar_url": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80"
+                                }
+                                if simpan_ke_db(db, payload):
+                                    total_added += 1
+                                else:
+                                    total_updated += 1
+
+    # 7. PROCESS WISATA-METADATA (139 rows)
     if "wisata-metadata" in xl.sheet_names:
         df = pd.read_excel(EXCEL_FILE, sheet_name="wisata-metadata")
-        print(f"[3/8] Memproses 'wisata-metadata' ({len(df)} entitas)...")
+        print(f"[7/10] Memproses 'wisata-metadata' ({len(df)} entitas)...")
         for idx, row in df.iterrows():
             nama = str(row.get('place-name', ''))
             alamat = str(row.get('address', 'Kawasan Danau Toba'))
@@ -267,10 +422,10 @@ def main():
             else:
                 total_updated += 1
 
-    # 4. PROCESS RESTO-METADATA (148 rows)
+    # 8. PROCESS RESTO-METADATA (148 rows)
     if "resto-metadata" in xl.sheet_names:
         df = pd.read_excel(EXCEL_FILE, sheet_name="resto-metadata")
-        print(f"[4/8] Memproses 'resto-metadata' ({len(df)} entitas)...")
+        print(f"[8/10] Memproses 'resto-metadata' ({len(df)} entitas)...")
         for idx, row in df.iterrows():
             nama = str(row.get('place-name', ''))
             alamat = str(row.get('address', 'Kawasan Danau Toba'))
@@ -305,10 +460,10 @@ def main():
             else:
                 total_updated += 1
 
-    # 5. PROCESS HOTEL-METADATA (36 rows)
+    # 9. PROCESS HOTEL-METADATA (36 rows)
     if "hotel-metadata" in xl.sheet_names:
         df = pd.read_excel(EXCEL_FILE, sheet_name="hotel-metadata")
-        print(f"[5/8] Memproses 'hotel-metadata' ({len(df)} entitas)...")
+        print(f"[9/10] Memproses 'hotel-metadata' ({len(df)} entitas)...")
         for idx, row in df.iterrows():
             nama = str(row.get('place-name', ''))
             alamat = str(row.get('address', 'Kawasan Danau Toba'))
@@ -340,69 +495,8 @@ def main():
             else:
                 total_updated += 1
 
-    # 6. PROCESS TEMPAT-WISATA-V1 (96 rows)
-    if "tempat-wisata-v1" in xl.sheet_names:
-        df = pd.read_excel(EXCEL_FILE, sheet_name="tempat-wisata-v1")
-        print(f"[6/8] Memproses 'tempat-wisata-v1' ({len(df)} entitas)...")
-        for idx, row in df.iterrows():
-            nama = str(row.get('place', ''))
-            alamat = str(row.get('add', 'Kawasan Danau Toba'))
-            kecamatan = ekstrak_kecamatan(alamat)
-            lat, lon = ambil_koordinat_default(kecamatan)
-            
-            try:
-                rating = float(str(row.get('rating', '4.6')).replace(',', '.'))
-            except Exception:
-                rating = 4.6
-
-            payload = {
-                "nama": nama,
-                "kategori": "wisata",
-                "kecamatan": kecamatan,
-                "nama_jalan": alamat,
-                "latitude": lat,
-                "longitude": lon,
-                "rating": rating,
-                "jumlah_ulasan": 12 + (idx % 30),
-                "deskripsi_singkat": f"Wisata {row.get('type', 'Alam')} dengan tarif {row.get('entry-fee', 'Gratis')}.",
-                "deskripsi_lengkap": f"Fasilitas: {row.get('addons', '-')}. Ulasan: {row.get('review', '-')}.",
-                "gambar_url": "https://images.unsplash.com/photo-1572252009286-268acec5ca0a?auto=format&fit=crop&w=600&q=80"
-            }
-            if simpan_ke_db(db, payload):
-                total_added += 1
-            else:
-                total_updated += 1
-
-    # 7. PROCESS TRANSPORTASI & KULINER SHEETS
-    if "transportasi" in xl.sheet_names:
-        df = pd.read_excel(EXCEL_FILE, sheet_name="transportasi")
-        print(f"[7/8] Memproses 'transportasi' ({len(df)} entitas)...")
-        for idx, row in df.iterrows():
-            nama = str(row.get('transport-name', ''))
-            arah = str(row.get('direction', 'Toba'))
-            kecamatan = ekstrak_kecamatan(arah)
-            lat, lon = ambil_koordinat_default(kecamatan)
-
-            payload = {
-                "nama": nama,
-                "kategori": "umkm",
-                "kecamatan": kecamatan,
-                "nama_jalan": f"Terminal Rute {arah}",
-                "latitude": lat,
-                "longitude": lon,
-                "rating": 4.6,
-                "jumlah_ulasan": 8,
-                "deskripsi_singkat": f"Layanan transportasi rute {arah} ({row.get('jenis-mobil', 'Umum')}).",
-                "deskripsi_lengkap": f"Tarif: {row.get('price', '-')}. Jam Operasional: {row.get('operational-hour', '-')}. Detail: {row.get('description', '-')}.",
-                "gambar_url": "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=600&q=80"
-            }
-            if simpan_ke_db(db, payload):
-                total_added += 1
-            else:
-                total_updated += 1
-
-    # 8. RUN VERIFIED SAMOSIR & TOBA ENRICHMENT
-    print(f"[8/8] Menyuntikkan dataset terverifikasi Samosir & Toba...")
+    # 10. RUN VERIFIED SAMOSIR & TOBA ENRICHMENT
+    print(f"[10/10] Menyuntikkan dataset terverifikasi Samosir & Toba...")
     try:
         from add_verified_culinary_data import add_verified_data
         add_verified_data()
@@ -411,7 +505,7 @@ def main():
 
     db.close()
     print("=========================================================")
-    print(f"🎉 SUKSES INGESTION DATASET COMPREHENSIVE MULTI-REGENCY!")
+    print(f"🎉 SUKSES INGESTION DATASET COMPREHENSIVE ALL SHEETS!")
     print(f"   Entitas Baru Ditambahkan : {total_added}")
     print(f"   Entitas Diperbarui/Refined: {total_updated}")
     print("=========================================================\n")
