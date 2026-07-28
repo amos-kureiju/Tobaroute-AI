@@ -227,13 +227,17 @@ const AdminDestinations = () => {
           style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
         >
           <option value="">Semua Kecamatan</option>
-          <option value="Balige">Balige</option>
-          <option value="Porsea">Porsea</option>
-          <option value="Laguboti">Laguboti</option>
-          <option value="Muara">Muara</option>
-          <option value="Silaen">Silaen</option>
+          <option value="Balige">Balige (Toba)</option>
+          <option value="Porsea">Porsea (Toba)</option>
+          <option value="Laguboti">Laguboti (Toba)</option>
+          <option value="Muara">Muara (Taput)</option>
+          <option value="Silaen">Silaen (Toba)</option>
           <option value="Simanindo">Simanindo (Samosir)</option>
-          <option value="Pangururan">Pangururan</option>
+          <option value="Pangururan">Pangururan (Samosir)</option>
+          <option value="Sianjur Mulamula">Sianjur Mulamula (Samosir)</option>
+          <option value="Onan Runggu">Onan Runggu (Samosir)</option>
+          <option value="Ronggur Nihuta">Ronggur Nihuta (Samosir)</option>
+          <option value="Harian">Harian (Samosir)</option>
         </select>
 
         <select 
