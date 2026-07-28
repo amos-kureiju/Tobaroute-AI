@@ -140,15 +140,15 @@ def main():
                         "id": str(item.id),
                         "values": vector_values,
                         "metadata": {
-                            "nama": item.nama,
-                            "kategori": item.kategori,
-                            "kecamatan": item.kecamatan,
-                            "deskripsi_singkat": item.deskripsi_singkat,
-                            "nama_jalan": item.nama_jalan,
-                            "rating": item.rating,
-                            "jumlah_ulasan": item.jumlah_ulasan,
-                            "latitude": item.latitude,
-                            "longitude": item.longitude
+                            "nama": str(item.nama or ""),
+                            "kategori": str(item.kategori or "wisata"),
+                            "kecamatan": str(item.kecamatan or "Balige"),
+                            "deskripsi_singkat": str(item.deskripsi_singkat or "")[:500],
+                            "nama_jalan": str(item.nama_jalan or ""),
+                            "rating": float(item.rating if item.rating is not None else 4.5),
+                            "jumlah_ulasan": int(item.jumlah_ulasan if item.jumlah_ulasan is not None else 10),
+                            "latitude": float(item.latitude if item.latitude is not None else 2.3333),
+                            "longitude": float(item.longitude if item.longitude is not None else 99.0667)
                         }
                     })
                 
