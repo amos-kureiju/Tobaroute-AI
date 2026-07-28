@@ -1,24 +1,25 @@
 import os
 from pathlib import Path
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
 
-# Menemukan path absolut ke file .env di folder root (satu tingkat di atas folder 'app')
+# Menemukan path absolut ke file .env di folder root backend
 BASE_DIR = Path(__file__).resolve().parent.parent
 dotenv_path = BASE_DIR / ".env"
 
 # Memuat file .env menggunakan path absolut dan memaksa override sistem
-load_dotenv(dotenv_path=dotenv_path, override=True)
+if dotenv_path.exists():
+    load_dotenv(dotenv_path=dotenv_path, override=True)
+else:
+    load_dotenv(override=True)
 
 # Mengambil DATABASE_URL dari .env, default jika tidak ditemukan
 SQLALCHEMY_DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql://postgres:postgres@localhost:5432/tobaguide_db"
+    "postgresql://postgres:amos123@localhost:5432/tobaguide_db"
 )
 
-print(f"[DIAGNOSTIC] DATABASE URL: {SQLALCHEMY_DATABASE_URL}")
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
