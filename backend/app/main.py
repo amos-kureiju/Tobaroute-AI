@@ -52,7 +52,7 @@ def interactive_chat(request: schemas.ChatbotRequest):
 
 # Endpoint untuk User & Admin: Mengambil daftar destinasi pariwisata
 @app.get("/api/destinasi", response_model=List[schemas.DestinasiResponse])
-def read_destinasi(kecamatan: str = None, limit: int = 10, db: Session = Depends(get_db)):
+def read_destinasi(kecamatan: str = None, limit: int = 1000, db: Session = Depends(get_db)):
     destinasi = crud.get_destinasi(db, kecamatan=kecamatan, limit=limit)
     return destinasi
 

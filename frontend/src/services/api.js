@@ -23,7 +23,7 @@ export const getFairRecommendation = async (query, kecamatan = '') => {
   }
 };
 
-export const getDestinations = async (kecamatan = '', limit = 10) => {
+export const getDestinations = async (kecamatan = '', limit = 1000) => {
   try {
     const params = { limit };
     if (kecamatan) {

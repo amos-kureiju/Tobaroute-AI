@@ -3,11 +3,11 @@ from . import models, schemas
 import math
 
 # Menampilkan semua destinasi (Bisa difilter berdasarkan kecamatan untuk kebutuhan User/Admin)
-def get_destinasi(db: Session, kecamatan: str = None, limit: int = 10):
+def get_destinasi(db: Session, kecamatan: str = None, limit: int = 1000):
     query = db.query(models.Destinasi)
     if kecamatan:
         query = query.filter(models.Destinasi.kecamatan.ilike(kecamatan))
-    return query.order_by(models.Destinasi.rating.desc()).limit(limit).all()
+    return query.order_by(models.Destinasi.id.desc()).limit(limit).all()
 
 # Fungsi untuk Admin menambah destinasi baru
 def create_destinasi(db: Session, destinasi: schemas.DestinasiCreate):

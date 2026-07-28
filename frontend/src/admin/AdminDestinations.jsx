@@ -41,7 +41,7 @@ const AdminDestinations = () => {
   const fetchDest = async () => {
     try {
       setLoading(true);
-      const data = await getDestinations('', 300);
+      const data = await getDestinations('', 1000);
       setDestinations(data);
     } catch (e) {
       console.error(e);
