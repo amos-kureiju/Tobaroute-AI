@@ -40,6 +40,30 @@ def get_embedding_model_info():
         print("[ERROR] Tidak ditemukan API Key OpenAI atau Cohere yang valid di file .env")
         sys.exit(1)
 
+import math
+
+def clean_float(val, default=4.5):
+    if val is None:
+        return default
+    try:
+        f = float(val)
+        if math.isnan(f) or math.isinf(f):
+            return default
+        return f
+    except Exception:
+        return default
+
+def clean_int(val, default=10):
+    if val is None:
+        return default
+    try:
+        f = float(val)
+        if math.isnan(f) or math.isinf(f):
+            return default
+        return int(f)
+    except Exception:
+        return default
+
 def generate_embeddings_batch(provider, model_name, texts, openai_client, cohere_client):
     """Menghasilkan vektor embedding untuk satu batch teks masukan"""
     if provider == "openai":
@@ -145,10 +169,10 @@ def main():
                             "kecamatan": str(item.kecamatan or "Balige"),
                             "deskripsi_singkat": str(item.deskripsi_singkat or "")[:500],
                             "nama_jalan": str(item.nama_jalan or ""),
-                            "rating": float(item.rating if item.rating is not None else 4.5),
-                            "jumlah_ulasan": int(item.jumlah_ulasan if item.jumlah_ulasan is not None else 10),
-                            "latitude": float(item.latitude if item.latitude is not None else 2.3333),
-                            "longitude": float(item.longitude if item.longitude is not None else 99.0667)
+                            "rating": clean_float(item.rating, 4.5),
+                            "jumlah_ulasan": clean_int(item.jumlah_ulasan, 10),
+                            "latitude": clean_float(item.latitude, 2.3333),
+                            "longitude": clean_float(item.longitude, 99.0667)
                         }
                     })
                 
