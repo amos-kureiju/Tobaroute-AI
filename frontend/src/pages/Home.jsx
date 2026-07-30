@@ -140,12 +140,30 @@ const Home = () => {
               <Map className="input-icon" size={18} />
               <select value={kecamatan} onChange={(e) => setKecamatan(e.target.value)}>
                 <option value="">Semua Kecamatan</option>
+                <option value="Ajibata">Ajibata</option>
+                <option value="Baktiraja">Baktiraja</option>
                 <option value="Balige">Balige</option>
-                <option value="Porsea">Porsea</option>
+                <option value="Berastagi">Berastagi</option>
+                <option value="Doloksanggul">Doloksanggul</option>
+                <option value="Girsang Sipangan Bolon">Girsang Sipangan Bolon</option>
+                <option value="Harian">Harian</option>
                 <option value="Laguboti">Laguboti</option>
+                <option value="Lumban Julu">Lumban Julu</option>
                 <option value="Muara">Muara</option>
-                <option value="Silaen">Silaen</option>
+                <option value="Onan Runggu">Onan Runggu</option>
                 <option value="Pangururan">Pangururan</option>
+                <option value="Parapat">Parapat</option>
+                <option value="Porsea">Porsea</option>
+                <option value="Ronggur Nihuta">Ronggur Nihuta</option>
+                <option value="Salak">Salak</option>
+                <option value="Sianjur Mulamula">Sianjur Mulamula</option>
+                <option value="Sidikalang">Sidikalang</option>
+                <option value="Silaen">Silaen</option>
+                <option value="Silahisabungan">Silahisabungan</option>
+                <option value="Simanindo">Simanindo</option>
+                <option value="Tampahan">Tampahan</option>
+                <option value="Tarutung">Tarutung</option>
+                <option value="Toba">Toba</option>
               </select>
             </div>
 
@@ -307,13 +325,13 @@ const Home = () => {
             {/* Stats Banner */}
             <div className="stats-banner glass-panel">
               <div className="stat-item">
-                <span className="stat-number">180+</span>
+                <span className="stat-number">713+</span>
                 <span className="stat-label">Entitas Wisata & UMKM</span>
               </div>
               <div className="stat-divider"></div>
               <div className="stat-item">
-                <span className="stat-number">6</span>
-                <span className="stat-label">Kecamatan Strategis Toba</span>
+                <span className="stat-number">24</span>
+                <span className="stat-label">Kecamatan Strategis</span>
               </div>
               <div className="stat-divider"></div>
               <div className="stat-item">

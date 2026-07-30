@@ -187,14 +187,46 @@ def cari_destinasi_semantik(query_user: str, top_k: int = 20):
             print(f"[RAG] Pinecone Query failed: {e}")
     return []
 
+import math
+
+def haversine_km(lat1, lon1, lat2, lon2):
+    if lat1 is None or lon1 is None or lat2 is None or lon2 is None:
+        return 999999.0
+    try:
+        lat1, lon1, lat2, lon2 = float(lat1), float(lon1), float(lat2), float(lon2)
+        R = 6371.0  # radius Bumi dalam kilometer
+        dlat = math.radians(lat2 - lat1)
+        dlon = math.radians(lon2 - lon1)
+        a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        return R * c
+    except Exception:
+        return 999999.0
+
+KNOWN_KECAMATANS = [
+    "ajibata", "baktiraja", "balige", "berastagi", "doloksanggul", 
+    "girsang sipangan bolon", "harian", "laguboti", "lumban julu", 
+    "muara", "onan runggu", "pangururan", "parapat", "porsea", 
+    "ronggur nihuta", "salak", "sianjur mulamula", "sidikalang", 
+    "silaen", "silahisabungan", "simanindo", "tampahan", "tarutung", "toba"
+]
+
 def get_fair_route_with_rag(db: Session, query: str, kecamatan: str = None, limit_utama: int = 3):
+    # 0. Deteksi otomatis nama kecamatan dari query jika tidak dikirim via parameter
+    query_lower = query.lower() if query else ""
+    if not kecamatan or not str(kecamatan).strip():
+        for k_name in KNOWN_KECAMATANS:
+            if k_name in query_lower:
+                kecamatan = k_name.title()
+                break
+
     # 1. Cari ID destinasi yang paling cocok secara makna lewat Pinecone
     matched_ids = cari_destinasi_semantik(query)
     
-    # 2. Ambil destinasi utama dari PostgreSQL (mendukung wisata, kuliner, maupun UMKM yang cocok secara semantik)
+    # 2. Filter destinasi utama berdasar kecamatan jika ada
     query_base = db.query(models.Destinasi)
     if kecamatan:
-        query_base = query_base.filter(models.Destinasi.kecamatan.ilike(kecamatan))
+        query_base = query_base.filter(models.Destinasi.kecamatan.ilike(f"%{kecamatan}%"))
         
     destinasi_utama = []
     if matched_ids:
@@ -211,22 +243,30 @@ def get_fair_route_with_rag(db: Session, query: str, kecamatan: str = None, limi
             # Pertahankan urutan skor kemiripan dari Pinecone
             destinasi_utama = [id_to_dest[id_] for id_ in int_ids if id_ in id_to_dest][:limit_utama]
     
+    # Fallback 1: Jika dengan filter kecamatan hasil Pinecone kosong, coba tanpa ID tapi berdasar rating di kecamatan tsb
     if not destinasi_utama:
-        # Fallback pencarian terpopuler biasa
         destinasi_utama = query_base.order_by(models.Destinasi.rating.desc()).limit(limit_utama).all()
 
-    # 3. Deteksi Intensi Pencarian (Kuliner / Makanan vs Kerajinan / Wisata)
-    query_lower = query.lower()
+    # Fallback 2: Jika di kecamatan tersebut belum ada data destinasi utama, lepas filter kecamatan
+    if not destinasi_utama and kecamatan:
+        destinasi_utama = db.query(models.Destinasi).order_by(models.Destinasi.rating.desc()).limit(limit_utama).all()
+
+    # 3. Deteksi Intensi Pencarian (Kuliner / Makanan vs Wisata / UMKM)
     food_keywords = ['makanan', 'kuliner', 'makan', 'enak', 'laper', 'lapar', 'resto', 'rumah makan', 'warung', 'menu', 'lapo', 'naniarsik', 'arsik', 'mie gomak', 'naniura', 'saksang', 'bpk', 'andaliman', 'kopi', 'kue', 'ombus', 'sihobuk', 'minum']
     is_food_query = any(k in query_lower for k in food_keywords)
+    allowed_categories = ['kuliner'] if is_food_query else ['umkm', 'kuliner']
 
-    target_kecamatans = list(set([d.kecamatan for d in destinasi_utama]))
+    # 4. Hitung titik acuan koordinat (Lat, Long) dari destinasi utama yang didapat
+    center_lat, center_lon = None, None
+    valid_coords = [(d.latitude, d.longitude) for d in destinasi_utama if d.latitude and d.longitude]
+    if valid_coords:
+        center_lat = sum(c[0] for c in valid_coords) / len(valid_coords)
+        center_lon = sum(c[1] for c in valid_coords) / len(valid_coords)
+
+    target_kecamatans = list(set([d.kecamatan for d in destinasi_utama if d.kecamatan]))
     if not target_kecamatans and kecamatan:
         target_kecamatans = [kecamatan]
         
-    # Jika wisatawan menanyakan makanan/kuliner, filter rekomendasi pendukung ke 'kuliner' saja!
-    allowed_categories = ['kuliner'] if is_food_query else ['umkm', 'kuliner']
-    
     umkm_query = db.query(models.Destinasi).filter(models.Destinasi.kategori.in_(allowed_categories))
     if target_kecamatans:
         umkm_query = umkm_query.filter(models.Destinasi.kecamatan.in_(target_kecamatans))
@@ -235,19 +275,31 @@ def get_fair_route_with_rag(db: Session, query: str, kecamatan: str = None, limi
     fetched_umkm = umkm_query.filter(models.Destinasi.rating >= 4.0).order_by(models.Destinasi.rating.desc()).all()
     umkm_sekitar = [u for u in fetched_umkm if u.id not in utama_ids][:4]
 
-    # Fallback jika di kecamatan spesifik belum cukup: ambil tempat kuliner/UMKM terbaik dari seluruh Toba
+    # Fallback berdasar Jarak Geografis Terdekat (Presisi Haversine, bukan asal ambil dari seluruh Toba)
     if len(umkm_sekitar) < 4:
-        extra_umkm = db.query(models.Destinasi).filter(models.Destinasi.kategori.in_(allowed_categories)).\
-            order_by(models.Destinasi.rating.desc()).all()
+        all_candidates = db.query(models.Destinasi).filter(
+            models.Destinasi.kategori.in_(allowed_categories)
+        ).all()
         
         seen_ids = set([u.id for u in umkm_sekitar] + list(utama_ids))
-        for extra in extra_umkm:
-            if extra.id not in seen_ids:
-                umkm_sekitar.append(extra)
-                seen_ids.add(extra.id)
+        candidates_with_dist = []
+        for cand in all_candidates:
+            if cand.id not in seen_ids:
+                if center_lat and center_lon and cand.latitude and cand.longitude:
+                    dist = haversine_km(center_lat, center_lon, cand.latitude, cand.longitude)
+                else:
+                    dist = 999999.0
+                candidates_with_dist.append((dist, cand))
+                
+        # Urutkan berdasarkan jarak geografis terdekat dari pusat lokasi acuan
+        candidates_with_dist.sort(key=lambda x: x[0])
+        
+        for dist, cand in candidates_with_dist:
+            umkm_sekitar.append(cand)
+            seen_ids.add(cand.id)
             if len(umkm_sekitar) >= 4:
                 break
-        
+
     return {
         "destinasi_utama": destinasi_utama,
         "rekomendasi_umkm_sekitar": umkm_sekitar
