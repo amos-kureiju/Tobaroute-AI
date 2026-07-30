@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { Navigation, Star, MapPin, Flag, ArrowRight, Store } from 'lucide-react';
@@ -48,10 +48,45 @@ const MapViewController = ({ center, waypoints }) => {
   return null;
 };
 
+// Helper for Euclidean distance squared for 2D coords
+const distSq = (p1, p2) => {
+  const dLat = p1[0] - p2[0];
+  const dLng = p1[1] - p2[1];
+  return dLat * dLat + dLng * dLng;
+};
+
+// Sort targets sequentially using Nearest-Neighbor route optimization
+const optimizeRouteSequence = (startPoint, targets) => {
+  if (!targets || targets.length <= 1) return targets;
+  
+  let current = startPoint;
+  let unvisited = [...targets];
+  const sorted = [];
+
+  while (unvisited.length > 0) {
+    let nearestIdx = 0;
+    let minD = distSq(current, unvisited[0].coords);
+
+    for (let i = 1; i < unvisited.length; i++) {
+      const d = distSq(current, unvisited[i].coords);
+      if (d < minD) {
+        minD = d;
+        nearestIdx = i;
+      }
+    }
+
+    const nextTarget = unvisited.splice(nearestIdx, 1)[0];
+    sorted.push(nextTarget);
+    current = nextTarget.coords;
+  }
+
+  return sorted;
+};
+
 const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
   const [userLocation, setUserLocation] = useState(null);
 
-  // Automatic GPS Geolocation trigger without manual button
+  // Automatic GPS Geolocation trigger
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -59,14 +94,14 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
           setUserLocation([position.coords.latitude, position.coords.longitude]);
         },
         (error) => {
-          console.warn("Akses GPS tidak diaktifkan, menggunakan titik awal default Balige.");
+          console.warn("Akses GPS tidak diaktifkan, menggunakan titik awal default.");
         },
         { enableHighAccuracy: true, timeout: 8000 }
       );
     }
   }, []);
 
-  // Deduplicate destinations & UMKM by unique name to avoid duplicate items in route chain
+  // Deduplicate destinations & UMKM by unique name
   const uniqueDestinasi = Array.from(
     new Map(destinasiUtama.filter(d => d.latitude && d.longitude).map(d => [d.nama.trim(), d])).values()
   );
@@ -79,27 +114,24 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
     return null;
   }
 
-  // Combine unique targets (Main Destinations + max 2 UMKM)
-  const allTargets = [
-    ...uniqueDestinasi.map(d => [d.latitude, d.longitude]),
-    ...uniqueUmkm.slice(0, 2).map(u => [u.latitude, u.longitude])
+  // Wrap targets with metadata and coordinates
+  const rawTargets = [
+    ...uniqueDestinasi.map(d => ({ type: 'destinasi', data: d, coords: [d.latitude, d.longitude] })),
+    ...uniqueUmkm.slice(0, 2).map(u => ({ type: 'umkm', data: u, coords: [u.latitude, u.longitude] }))
   ];
 
-  // Route coordinates logic:
-  // If GPS is active -> [userLocation, ...allTargets]
-  // Else -> [DEFAULT_START_ORIGIN (Balige), ...allTargets]
-  let routeCoordinates = [];
-  if (userLocation) {
-    routeCoordinates = [userLocation, ...allTargets];
-  } else if (allTargets.length === 1) {
-    routeCoordinates = [DEFAULT_START_ORIGIN, ...allTargets];
-  } else {
-    routeCoordinates = allTargets;
-  }
+  // Determine starting point
+  const startPoint = userLocation || (rawTargets.length > 0 ? rawTargets[0].coords : DEFAULT_START_ORIGIN);
+
+  // Apply Nearest-Neighbor route optimization so points are visited in smooth geographic sequence
+  const orderedTargets = optimizeRouteSequence(startPoint, rawTargets);
+
+  // Build clean route coordinates chain
+  const routeCoordinates = [startPoint, ...orderedTargets.map(t => t.coords)];
 
   const center = userLocation 
     ? userLocation 
-    : (allTargets.length > 0 ? allTargets[0] : [2.6105, 98.8106]);
+    : (orderedTargets.length > 0 ? orderedTargets[0].coords : [2.6105, 98.8106]);
 
   return (
     <div className="route-map-container" style={{ marginTop: '1.75rem' }}>
@@ -108,10 +140,10 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div>
             <h4 style={{ margin: 0, color: 'var(--color-primary-dark)', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1.05rem', fontWeight: 600 }}>
-              <Navigation size={18} color="#0284c7" /> Alur Rute Navigasi Perjalanan
+              <Navigation size={18} color="#0284c7" /> Alur Rute Navigasi Perjalanan Presisi
             </h4>
             <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.82rem', color: '#64748b' }}>
-              {userLocation ? 'Rute dihitung secara otomatis dari posisi GPS Anda saat ini.' : 'Rute dihitung otomatis dari pusat Balige menuju destinasi target.'}
+              {userLocation ? 'Rute dioptimalkan secara geografis dari titik GPS Anda saat ini.' : 'Rute dioptimalkan secara geografis ke destinasi terdekat.'}
             </p>
           </div>
         </div>
@@ -120,23 +152,29 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
         <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', background: 'rgba(255,255,255,0.9)', padding: '0.6rem 0.85rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
           {/* Start Point */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: userLocation ? '#f3e8ff' : '#e0f2fe', color: userLocation ? '#6b21a8' : '#0369a1', padding: '0.25rem 0.55rem', borderRadius: '5px', fontSize: '0.8rem', fontWeight: 600 }}>
-            <MapPin size={13} /> {userLocation ? 'Lokasi Anda (GPS)' : 'Awal: Balige'}
+            <MapPin size={13} /> {userLocation ? 'Lokasi Anda (GPS)' : 'Keberangkatan Awal'}
           </div>
 
-          {uniqueDestinasi.map((dest, idx) => (
-            <React.Fragment key={dest.id || idx}>
+          {orderedTargets.map((item, idx) => (
+            <React.Fragment key={item.data.id || idx}>
               <ArrowRight size={13} color="#94a3b8" />
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: '#f1f5f9', color: '#1e293b', padding: '0.25rem 0.55rem', borderRadius: '5px', fontSize: '0.8rem', fontWeight: 500 }}>
-                <Flag size={12} color="#0284c7" /> {idx + 1}. {dest.nama}
-              </div>
-            </React.Fragment>
-          ))}
-
-          {uniqueUmkm.slice(0, 2).map((umkm, idx) => (
-            <React.Fragment key={umkm.id || idx}>
-              <ArrowRight size={13} color="#94a3b8" />
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: '#dcfce7', color: '#15803d', padding: '0.25rem 0.55rem', borderRadius: '5px', fontSize: '0.8rem', fontWeight: 600 }}>
-                <Store size={12} color="#15803d" /> {umkm.nama} (UMKM)
+              <div style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '0.35rem', 
+                background: item.type === 'destinasi' ? '#f1f5f9' : '#dcfce7', 
+                color: item.type === 'destinasi' ? '#1e293b' : '#15803d', 
+                padding: '0.25rem 0.55rem', 
+                borderRadius: '5px', 
+                fontSize: '0.8rem', 
+                fontWeight: item.type === 'destinasi' ? 500 : 600 
+              }}>
+                {item.type === 'destinasi' ? (
+                  <Flag size={12} color="#0284c7" />
+                ) : (
+                  <Store size={12} color="#15803d" />
+                )}
+                {idx + 1}. {item.data.nama} {item.type === 'umkm' ? '(UMKM)' : ''}
               </div>
             </React.Fragment>
           ))}
@@ -169,18 +207,7 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
             </Marker>
           )}
 
-          {/* Fallback Polyline for instant visual route display */}
-          {routeCoordinates.length >= 2 && (
-            <Polyline 
-              positions={routeCoordinates} 
-              color="#0ea5e9" 
-              weight={4} 
-              dashArray="8, 8" 
-              opacity={0.7} 
-            />
-          )}
-
-          {/* Real Road Routing Machine */}
+          {/* Real Road Routing Machine (Single clean solid line following actual highways) */}
           {routeCoordinates.length >= 2 && (
             <RoutingMachine waypoints={routeCoordinates} />
           )}
@@ -195,7 +222,7 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
               <Popup>
                 <div style={{ minWidth: '160px' }}>
                   <h4 style={{ margin: '0 0 0.4rem 0', color: 'var(--color-primary-dark)' }}>
-                    {idx + 1}. {dest.nama}
+                    {dest.nama}
                   </h4>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.35rem', fontSize: '0.82rem', color: '#64748b' }}>
                     <Navigation size={12} /> {dest.kecamatan}
