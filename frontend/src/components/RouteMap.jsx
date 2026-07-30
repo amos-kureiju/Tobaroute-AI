@@ -83,8 +83,24 @@ const optimizeRouteSequence = (startPoint, targets) => {
   return sorted;
 };
 
+const MAP_STYLES = {
+  osm: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; OpenStreetMap'
+  },
+  google_streets: {
+    url: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+    attribution: '&copy; Google Maps'
+  },
+  google_satellite: {
+    url: 'https://mt1.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',
+    attribution: '&copy; Google Maps Satellite'
+  }
+};
+
 const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
   const [userLocation, setUserLocation] = useState(null);
+  const [mapStyle, setMapStyle] = useState('osm');
 
   // Automatic GPS Geolocation trigger
   useEffect(() => {
@@ -189,9 +205,31 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
           style={{ height: '100%', width: '100%', borderRadius: 'calc(var(--radius-lg) - 0.4rem)' }}
         >
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution={MAP_STYLES[mapStyle].attribution}
+            url={MAP_STYLES[mapStyle].url}
           />
+
+          {/* Map Style Controls */}
+          <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1000, display: 'flex', gap: '5px', background: 'white', padding: '5px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>
+            <button 
+              onClick={() => setMapStyle('osm')}
+              style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', borderRadius: '4px', border: 'none', background: mapStyle === 'osm' ? '#0284c7' : 'transparent', color: mapStyle === 'osm' ? 'white' : '#475569', cursor: 'pointer', fontWeight: mapStyle === 'osm' ? 'bold' : 'normal' }}
+            >
+              OSM Default
+            </button>
+            <button 
+              onClick={() => setMapStyle('google_streets')}
+              style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', borderRadius: '4px', border: 'none', background: mapStyle === 'google_streets' ? '#0284c7' : 'transparent', color: mapStyle === 'google_streets' ? 'white' : '#475569', cursor: 'pointer', fontWeight: mapStyle === 'google_streets' ? 'bold' : 'normal' }}
+            >
+              Google Maps
+            </button>
+            <button 
+              onClick={() => setMapStyle('google_satellite')}
+              style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', borderRadius: '4px', border: 'none', background: mapStyle === 'google_satellite' ? '#0284c7' : 'transparent', color: mapStyle === 'google_satellite' ? 'white' : '#475569', cursor: 'pointer', fontWeight: mapStyle === 'google_satellite' ? 'bold' : 'normal' }}
+            >
+              Satelit
+            </button>
+          </div>
 
           <MapViewController center={center} waypoints={routeCoordinates} />
 
