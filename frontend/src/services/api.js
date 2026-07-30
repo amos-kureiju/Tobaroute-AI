@@ -9,11 +9,15 @@ const apiClient = axios.create({
   },
 });
 
-export const getFairRecommendation = async (query, kecamatan = '') => {
+export const getFairRecommendation = async (query, kecamatan = '', offset = 0, userLat = null, userLon = null) => {
   try {
-    const params = { query };
+    const params = { query, offset };
     if (kecamatan) {
       params.kecamatan = kecamatan;
+    }
+    if (userLat !== null && userLon !== null) {
+      params.user_lat = userLat;
+      params.user_lon = userLon;
     }
     const response = await apiClient.get('/route/fair-recommendation', { params });
     return response.data;

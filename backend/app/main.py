@@ -22,20 +22,34 @@ app.add_middleware(
 
 # Endpoint Baru: Mengambil rekomendasi rute yang adil bagi UMKM berbasis RAG Semantik
 @app.get("/api/route/fair-recommendation", response_model=schemas.TobaRouteResponse)
-def get_fair_travel_route(query: str, kecamatan: Optional[str] = None, db: Session = Depends(get_db)):
-    print(f"\n[DIAGNOSTIC] Endpoint /api/route/fair-recommendation dipanggil dengan query: {query}, kecamatan: {kecamatan}")
+def get_fair_travel_route(
+    query: str, 
+    kecamatan: Optional[str] = None, 
+    offset: int = 0,
+    user_lat: Optional[float] = None,
+    user_lon: Optional[float] = None,
+    db: Session = Depends(get_db)
+):
+    print(f"\n[DIAGNOSTIC] Endpoint /api/route/fair-recommendation dipanggil dengan query: {query}, kecamatan: {kecamatan}, offset: {offset}, user_lat: {user_lat}, user_lon: {user_lon}")
     if not query:
         raise HTTPException(status_code=400, detail="Parameter query (keinginan wisata) harus diisi")
     
-    # 1. Ambil data rute terstruktur (destinasi utama & UMKM sekitar)
-    route_data = crud.get_fair_route_with_rag(db, query=query, kecamatan=kecamatan)
+    # 1. Ambil data rute terstruktur (destinasi utama & UMKM sekitar) dengan rotasi offset & lokasi user GPS
+    route_data = crud.get_fair_route_with_rag(
+        db, 
+        query=query, 
+        kecamatan=kecamatan, 
+        offset=offset,
+        user_lat=user_lat,
+        user_lon=user_lon
+    )
     
-    # 2. Hasilkan panduan wisata AI berbasis RAG menggunakan Gemini API secara aman
+    # 2. Hasil pencarian AI berbasis RAG
     try:
         ai_response = generate_tourist_response(user_query=query, fair_route_data=route_data)
     except Exception as e:
         print(f"[AI Error] Gagal menghubungi Gemini API: {e}")
-        ai_response = "[INFO] Asisten AI TobaRoute sedang sibuk atau batas kuota terlampaui. Menampilkan rekomendasi destinasi terdekat langsung dari database."
+        ai_response = "[INFO] Asisten AI TobaRoute sedang sibuk. Menampilkan rekomendasi destinasi terdekat langsung dari database."
     
     return {
         "destinasi_utama": route_data["destinasi_utama"],

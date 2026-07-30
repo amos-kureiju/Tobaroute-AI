@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Map, Sparkles, AlertCircle, Compass, ShieldCheck, Route, Store, History, Clock, ArrowRight } from 'lucide-react';
+import { Search, Map, Sparkles, AlertCircle, Compass, ShieldCheck, Route, Store, History, Clock, ArrowRight, RotateCw } from 'lucide-react';
 import { getFairRecommendation } from '../services/api';
 import DestinationCard from '../components/DestinationCard';
 import RouteMap from '../components/RouteMap';
@@ -19,6 +19,8 @@ const Home = () => {
   const [error, setError] = useState('');
   const [results, setResults] = useState(null);
   const [recentSearches, setRecentSearches] = useState([]);
+  const [searchOffset, setSearchOffset] = useState(0);
+  const [userCoords, setUserCoords] = useState(null);
   const [homeConfig, setHomeConfig] = useState({
     heroBadge: 'Platform Navigasi & Keadilan Pariwisata Danau Toba',
     heroTitle: 'Temukan Keindahan Danau Toba',
@@ -27,6 +29,18 @@ const Home = () => {
     alertText: '',
     alertBg: 'info'
   });
+
+  // Track User GPS Coordinates for nearest-first recommendations
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+        },
+        (err) => console.warn("Akses GPS belum diaktifkan")
+      );
+    }
+  }, []);
 
   // Restore saved search results from sessionStorage on mount
   useEffect(() => {
@@ -39,22 +53,18 @@ const Home = () => {
       const savedQuery = sessionStorage.getItem('tobaroute_last_query');
       const savedKec = sessionStorage.getItem('tobaroute_last_kecamatan');
       const savedResults = sessionStorage.getItem('tobaroute_last_results');
+      const savedRecent = localStorage.getItem('tobaroute_recent_searches');
 
-      if (savedResults) setResults(JSON.parse(savedResults));
       if (savedQuery) setQuery(savedQuery);
       if (savedKec) setKecamatan(savedKec);
-
-      const history = localStorage.getItem('tobaroute_chat_history');
-      if (history) {
-        const parsed = JSON.parse(history);
-        setRecentSearches(parsed.slice(0, 4));
-      }
+      if (savedResults) setResults(JSON.parse(savedResults));
+      if (savedRecent) setRecentSearches(JSON.parse(savedRecent));
     } catch (e) {
       console.error("Error restoring session search state:", e);
     }
   }, []);
 
-  const handleSearch = async (e, customQuery = null) => {
+  const handleSearch = async (e, customQuery = null, forceNextOffset = false) => {
     if (e) e.preventDefault();
     const searchQuery = customQuery || query;
 
@@ -62,13 +72,30 @@ const Home = () => {
       setError('Mohon masukkan keinginan wisata Anda (misal: "tempat yang tenang dan sejuk untuk keluarga")');
       return;
     }
+
+    let newOffset = 0;
+    const lastQuery = sessionStorage.getItem('tobaroute_last_query');
+    const lastKec = sessionStorage.getItem('tobaroute_last_kecamatan');
+
+    if (forceNextOffset || (searchQuery === lastQuery && kecamatan === lastKec)) {
+      newOffset = searchOffset + 1;
+    } else {
+      newOffset = 0;
+    }
     
+    setSearchOffset(newOffset);
     setQuery(searchQuery);
     setLoading(true);
     setError('');
     
     try {
-      const data = await getFairRecommendation(searchQuery, kecamatan);
+      const data = await getFairRecommendation(
+        searchQuery, 
+        kecamatan, 
+        newOffset, 
+        userCoords?.lat, 
+        userCoords?.lon
+      );
       setResults(data);
 
       // Save to sessionStorage so switching pages never loses results
@@ -232,9 +259,32 @@ const Home = () => {
           <div className="results-container fade-in">
             {/* AI Response & Route Map */}
             <section className="ai-response glass-panel">
-              <div className="ai-header">
-                <Sparkles size={24} color="var(--color-primary)" />
-                <h3>Saran Perjalanan dari AI TobaRoute</h3>
+              <div className="ai-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Sparkles size={24} color="var(--color-primary)" />
+                  <h3 style={{ margin: 0 }}>Saran Perjalanan dari AI TobaRoute</h3>
+                </div>
+                <button 
+                  className="btn-secondary" 
+                  onClick={(e) => handleSearch(e, null, true)}
+                  disabled={loading}
+                  style={{ 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: '0.4rem', 
+                    padding: '0.45rem 0.85rem', 
+                    borderRadius: '8px', 
+                    fontSize: '0.82rem', 
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    background: '#f0f9ff',
+                    color: '#0284c7',
+                    border: '1px solid #bae6fd'
+                  }}
+                >
+                  <RotateCw size={14} className={loading ? 'animate-spin' : ''} /> 
+                  Cari Opsi Kuliner & Lokasi Lainnya (Opsi #{searchOffset + 1})
+                </button>
               </div>
               <div className="ai-body">
                 <ReactMarkdown>{results.ai_response}</ReactMarkdown>
