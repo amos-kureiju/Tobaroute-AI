@@ -389,26 +389,57 @@ const Explore = () => {
                   <RoutingMachine waypoints={routeWaypoints} />
                 )}
 
-                {/* All destinations markers */}
+                {/* Guaranteed Active Target Destination Red Pin Marker */}
+                {activeTarget && activeTarget.latitude && activeTarget.longitude && (
+                  <Marker 
+                    key={`active-target-${activeTarget.id || activeTarget.nama}`} 
+                    position={[activeTarget.latitude, activeTarget.longitude]} 
+                    icon={activeTargetIcon}
+                    zIndexOffset={1000}
+                  >
+                    <Popup autoOpen={true}>
+                      <div style={{ minWidth: '220px' }}>
+                        <div style={{ background: '#ef4444', color: 'white', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '0.4rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <MapPin size={12} /> Target Pencarian Navigasi
+                        </div>
+                        <h4 style={{ margin: '0 0 0.4rem 0', color: 'var(--color-primary-dark)' }}>
+                          {activeTarget.nama}
+                        </h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.4rem', fontSize: '0.85rem', color: '#64748b' }}>
+                          <Navigation size={12} /> {activeTarget.kecamatan}
+                        </div>
+                        {activeTarget.rating && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.5rem', fontSize: '0.85rem', color: '#64748b' }}>
+                            <Star size={12} fill="#fbbf24" color="#fbbf24" /> {activeTarget.rating}
+                          </div>
+                        )}
+                        {activeTarget.deskripsi_singkat && (
+                          <p style={{ margin: '0', fontSize: '0.85rem', lineHeight: '1.4' }}>
+                            {activeTarget.deskripsi_singkat}
+                          </p>
+                        )}
+                      </div>
+                    </Popup>
+                  </Marker>
+                )}
+
+                {/* All destinations background markers */}
                 {destinations.map(dest => {
                   if (!dest.latitude || !dest.longitude) return null;
+                  // Avoid rendering duplicate marker if it is the active target already rendered above
+                  if (activeTarget && (activeTarget.id === dest.id || activeTarget.nama.trim().toLowerCase() === dest.nama.trim().toLowerCase())) {
+                    return null;
+                  }
                   const isUmkm = dest.kategori.toLowerCase() === 'umkm';
-                  const isActive = activeTarget && activeTarget.id === dest.id;
 
                   return (
                     <Marker 
                       key={dest.id} 
                       position={[dest.latitude, dest.longitude]} 
-                      icon={isActive ? activeTargetIcon : (isUmkm ? umkmIcon : wisataIcon)}
+                      icon={isUmkm ? umkmIcon : wisataIcon}
                     >
-                      <Popup autoOpen={isActive}>
+                      <Popup>
                         <div style={{ minWidth: '220px' }}>
-                          {isActive && (
-                            <div style={{ background: '#ef4444', color: 'white', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '0.4rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                              <MapPin size={12} /> Target Pencarian Chatbot
-                            </div>
-                          )}
-
                           <h4 style={{ margin: '0 0 0.4rem 0', color: isUmkm ? 'var(--color-accent-dark, #16a34a)' : 'var(--color-primary-dark)' }}>
                             {dest.nama}
                           </h4>
