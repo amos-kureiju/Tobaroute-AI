@@ -1,12 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { getDestinations, getFairRecommendation, sendChatMessage } from '../services/api';
 import { Map, AlertCircle, Navigation, Star, Send, Bot, User, Compass, Route as RouteIcon, MapPin, Search, ChevronLeft, Menu, LocateFixed, X, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import RoutingMachine from '../components/RoutingMachine';
+
+const formatDescription = (desc) => {
+  if (!desc || String(desc).toLowerCase().trim() === 'nan' || String(desc).toLowerCase().trim() === 'none') {
+    return 'Destinasi unggulan di kawasan Danau Toba dengan keindahan alam dan nilai budaya yang khas.';
+  }
+  return desc;
+};
 
 // Custom icons using external URLs for Leaflet
 const wisataIcon = new L.Icon({
@@ -451,6 +458,26 @@ const Explore = () => {
             </Marker>
           )}
 
+          {/* Default Start Origin Marker if GPS is not enabled */}
+          {!userLocation && routeWaypoints.length >= 2 && (
+            <Marker position={routeWaypoints[0]} icon={userGpsIcon}>
+              <Popup>
+                <div style={{ minWidth: '150px', textAlign: 'center' }}>
+                  <h4 style={{ margin: '0 0 0.2rem 0', color: '#6b21a8' }}>Titik Keberangkatan Awal</h4>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Pusat Balige (Default)</p>
+                </div>
+              </Popup>
+            </Marker>
+          )}
+
+          {/* Guaranteed Blue Dashed Polyline Route Line */}
+          {routeWaypoints.length >= 2 && (
+            <Polyline 
+              positions={routeWaypoints} 
+              pathOptions={{ color: '#0284c7', weight: 5, opacity: 0.9, dashArray: '8, 12' }} 
+            />
+          )}
+
           {/* Real Road Routing Machine */}
           {routeWaypoints.length >= 2 && (
             <RoutingMachine waypoints={routeWaypoints} />
@@ -480,11 +507,9 @@ const Explore = () => {
                       <Star size={12} fill="#fbbf24" color="#fbbf24" /> {activeTarget.rating}
                     </div>
                   )}
-                  {activeTarget.deskripsi_singkat && (
-                    <p style={{ margin: '0', fontSize: '0.85rem', lineHeight: '1.4' }}>
-                      {activeTarget.deskripsi_singkat}
-                    </p>
-                  )}
+                  <p style={{ margin: '0', fontSize: '0.85rem', lineHeight: '1.4' }}>
+                    {formatDescription(activeTarget.deskripsi_singkat)}
+                  </p>
                 </div>
               </Popup>
             </Marker>
@@ -521,7 +546,7 @@ const Explore = () => {
                     )}
 
                     <p style={{ margin: '0', fontSize: '0.85rem', lineHeight: '1.4' }}>
-                      {dest.deskripsi_singkat}
+                      {formatDescription(dest.deskripsi_singkat)}
                     </p>
                     
                     {isUmkm && (
