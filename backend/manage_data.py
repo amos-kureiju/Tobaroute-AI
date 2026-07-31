@@ -119,13 +119,16 @@ def ingest_dataset():
 
     def ambil_koordinat_default(kecamatan):
         koordinat_pusat = {
-            "Balige": (2.3333, 99.0667),
-            "Pangururan": (2.6000, 98.7000),
-            "Simanindo": (2.6780, 98.8520),
-            "Laguboti": (2.3833, 99.1333),
-            "Muara": (2.3167, 98.9333),
-            "Porsea": (2.4500, 99.1333),
-            "Silaen": (2.3167, 99.1833),
+            "Balige": (2.3387, 99.0625),
+            "Laguboti": (2.3544, 99.1264),
+            "Porsea": (2.4475, 99.1538),
+            "Lumban Julu": (2.6010, 99.0480),
+            "Tampahan": (2.3160, 99.0125),
+            "Pangururan": (2.6033, 98.7050),
+            "Simanindo": (2.7252, 98.7869),
+            "Harian": (2.5830, 98.6330),
+            "Muara": (2.3378, 98.9048),
+            "Silaen": (2.3870, 99.2051),
             "Sianjur Mulamula": (2.5890, 98.6420),
             "Onan Runggu": (2.5020, 98.9210),
             "Parapat": (2.6620, 98.9350),

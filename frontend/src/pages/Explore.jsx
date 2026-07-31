@@ -57,19 +57,19 @@ const MapFlyController = ({ centerCoords, zoom = 13 }) => {
 };
 
 const DEFAULT_TOBA_CENTER = [2.6105, 98.8106];
-const DEFAULT_START_ORIGIN = [2.3333, 99.0667]; // Pusat Balige sebagai titik awal default rute
+const DEFAULT_START_ORIGIN = [2.3387, 99.0625]; // Pusat Balige sebagai titik awal default rute
 
 const KECAMATAN_CENTERS = {
-  'balige': { name: 'Kecamatan Balige', coords: [2.3333, 99.0667] },
-  'laguboti': { name: 'Kecamatan Laguboti', coords: [2.3500, 99.1333] },
-  'porsea': { name: 'Kecamatan Porsea', coords: [2.4500, 99.1500] },
-  'lumban julu': { name: 'Kecamatan Lumban Julu', coords: [2.5833, 99.0833] },
-  'tampahan': { name: 'Kecamatan Tampahan', coords: [2.3333, 99.0167] },
-  'pangururan': { name: 'Kecamatan Pangururan', coords: [2.6000, 98.7000] },
-  'simanindo': { name: 'Kecamatan Simanindo', coords: [2.6833, 98.7500] },
-  'harian': { name: 'Kecamatan Harian', coords: [2.5833, 98.6333] },
-  'muara': { name: 'Kecamatan Muara', coords: [2.3333, 98.9167] },
-  'silaen': { name: 'Kecamatan Silaen', coords: [2.3833, 99.2000] },
+  'balige': { name: 'Kecamatan Balige', coords: [2.3387, 99.0625] },
+  'laguboti': { name: 'Kecamatan Laguboti', coords: [2.3544, 99.1264] },
+  'porsea': { name: 'Kecamatan Porsea', coords: [2.4475, 99.1538] },
+  'lumban julu': { name: 'Kecamatan Lumban Julu', coords: [2.6010, 99.0480] },
+  'tampahan': { name: 'Kecamatan Tampahan', coords: [2.3160, 99.0125] },
+  'pangururan': { name: 'Kecamatan Pangururan', coords: [2.6033, 98.7050] },
+  'simanindo': { name: 'Kecamatan Simanindo', coords: [2.7252, 98.7869] },
+  'harian': { name: 'Kecamatan Harian', coords: [2.5830, 98.6330] },
+  'muara': { name: 'Kecamatan Muara', coords: [2.3378, 98.9048] },
+  'silaen': { name: 'Kecamatan Silaen', coords: [2.3870, 99.2051] },
 };
 
 const QUICK_LOCATIONS = [
