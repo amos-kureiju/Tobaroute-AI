@@ -811,3 +811,227 @@
   }
 }
 
+/* Google Maps Full-Screen Layout System */
+.gmaps-layout-wrapper {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 65px);
+  overflow: hidden;
+  background: #e5e3df;
+}
+
+/* Floating Top-Left Controls (Search & Map Styles) */
+.gmaps-top-left-controls {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 440px;
+}
+
+.gmaps-search-bar-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  border-radius: 28px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  transition: all 0.2s ease;
+}
+
+.gmaps-search-bar-card:focus-within {
+  box-shadow: 0 6px 22px rgba(2, 132, 199, 0.22);
+  border-color: #38bdf8;
+}
+
+.gmaps-search-bar-card input {
+  border: none;
+  background: transparent;
+  width: 100%;
+  font-size: 0.88rem;
+  outline: none;
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.gmaps-search-bar-card input::placeholder {
+  color: #94a3b8;
+}
+
+.gmaps-top-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gmaps-style-switcher {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  padding: 4px;
+  border-radius: 20px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+  display: flex;
+  gap: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.gmaps-style-btn {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  border-radius: 16px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  background: transparent;
+  color: #475569;
+}
+
+.gmaps-style-btn.active {
+  background: #0284c7;
+  color: white;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
+}
+
+.gmaps-gps-btn-badge {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  color: #0284c7;
+  padding: 5px 12px;
+  border-radius: 20px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+  font-size: 0.76rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.gmaps-gps-btn-badge:hover {
+  background: #0284c7;
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* Floating Right Side Professional AI Chatbot Panel */
+.gmaps-right-panel {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 1000;
+  width: 410px;
+  max-height: calc(100vh - 95px);
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(16px);
+  border-radius: 16px;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.18);
+  transition: all 0.35 cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  overflow: hidden;
+}
+
+.gmaps-right-panel.collapsed {
+  width: auto;
+  max-height: 48px;
+  border-radius: 24px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.18);
+}
+
+.gmaps-panel-header-pro {
+  padding: 0.85rem 1rem;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-title-flex {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.bot-avatar-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #f0f9ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0284c7;
+  border: 1px solid #e0f2fe;
+}
+
+.gmaps-panel-close-btn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.gmaps-panel-close-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.gmaps-collapsed-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  border-radius: 24px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  transition: all 0.2s;
+}
+
+.gmaps-collapsed-btn:hover {
+  background: #f8fafc;
+  border-color: #0284c7;
+  color: #0284c7;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .gmaps-top-left-controls {
+    max-width: calc(100vw - 28px);
+  }
+  .gmaps-right-panel {
+    width: calc(100vw - 28px);
+    right: 14px;
+    left: 14px;
+    top: auto;
+    bottom: 14px;
+    max-height: 60vh;
+  }
+}
+
+
+

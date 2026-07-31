@@ -57,7 +57,12 @@ cd tobaguide
    copy .env.example .env
    ```
 
-6. Jalankan Server Backend:
+6. Inisialisasi Database & Vector Indexing (Opsional untuk setup awal):
+   ```bash
+   python manage_data.py --all
+   ```
+
+7. Jalankan Server Backend:
    ```bash
    uvicorn app.main:app --port 8080 --reload
    ```

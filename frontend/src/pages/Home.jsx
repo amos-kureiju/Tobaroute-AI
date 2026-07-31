@@ -262,7 +262,7 @@ const Home = () => {
               <div className="ai-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Sparkles size={24} color="var(--color-primary)" />
-                  <h3 style={{ margin: 0 }}>Saran Perjalanan dari AI TobaRoute</h3>
+                  <h3 style={{ margin: 0 }}>Saran Perjalanan TobaRoute</h3>
                 </div>
                 <button 
                   className="btn-secondary" 

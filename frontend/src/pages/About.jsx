@@ -38,7 +38,7 @@ const About = () => {
             <Users size={24} /> Tim Pengembang
           </h2>
           <p style={{ lineHeight: '1.8', fontSize: '1.1rem', marginTop: '1rem' }}>
-            Aplikasi ini dikembangkan untuk mengedepankan etika AI dan keadilan data, memastikan bahwa sistem rekomendasi yang dibuat bermanfaat bagi semua pihak dalam ekosistem pariwisata Danau Toba. Horas!
+            Aplikasi ini dikembangkan untuk mengedepankan etika AI dan keadilan data, memastikan bahwa sistem rekomendasi yang dibuat bermanfaat bagi semua pihak dalam ekosistem pariwisata Danau Toba.
           </p>
         </section>
       </div>
