@@ -129,7 +129,7 @@ const Home = () => {
           fontWeight: 600,
           borderBottom: '1px solid rgba(0,0,0,0.05)'
         }}>
-          📢 {homeConfig.alertText}
+          {homeConfig.alertText}
         </div>
       )}
 

@@ -2,13 +2,13 @@
 
 Repositori ini menggabungkan sistem backend (FastAPI) dan frontend (React + Vite) untuk aplikasi panduan pariwisata Danau Toba yang adil bagi UMKM berbasis RAG Semantik.
 
-## 📂 Struktur Proyek
+## Struktur Proyek
 - `/backend`: Berisi logika backend FastAPI, model database, skrip ingestion, dan virtual environment.
 - `/frontend`: Berisi antarmuka pengguna berbasis React, Vite, dan Vanilla CSS.
 
 ---
 
-## 🛠️ Cara Memasang & Menjalankan di Laptop Anda
+## Cara Memasang & Menjalankan di Laptop Anda
 
 ### Langkah 1: Kloning Repositori
 Jika Anda baru pertama kali mengambil proyek ini, kloning repositori ini ke komputer Anda:
@@ -90,7 +90,7 @@ cd tobaguide
 
 ---
 
-### 🌐 Akses Aplikasi:
+### Akses Aplikasi:
 Buka browser Anda dan buka alamat:
 - **Web App:** [http://localhost:5173](http://localhost:5173)
 - **API Docs (Swagger UI):** [http://localhost:8080/docs](http://localhost:8080/docs)

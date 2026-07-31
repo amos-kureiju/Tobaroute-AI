@@ -191,7 +191,7 @@ const AdminContent = () => {
                   marginBottom: '1rem',
                   display: 'inline-block'
                 }}>
-                  📢 {alertText}
+                  {alertText}
                 </div>
               )}
 
@@ -213,8 +213,8 @@ const AdminContent = () => {
             </div>
           </div>
 
-          <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '1.5rem', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
-            🔄 Pratinjau diperbarui secara real-time saat Anda mengetik. Klik <strong>Simpan</strong> untuk menerapkan ke pengunjung web.
+          <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', fontSize: '13px', color: '#999' }}>
+            Pratinjau diperbarui secara real-time saat Anda mengetik. Klik <strong>Simpan</strong> untuk menerapkan ke pengunjung web.
           </div>
         </div>
       </div>
