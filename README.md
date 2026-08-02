@@ -75,22 +75,23 @@ Sebelum menjalankan sistem, pastikan perangkat Anda telah terpasang:
 ---
 
 ## 7. Environment Variables
-File `.env` sudah disertakan di folder `backend/.env` untuk pengujian langsung oleh juri. Template `.env.example` tersusun sebagai berikut:
+File `.env` sudah disertakan di folder `backend/.env` untuk pengujian langsung oleh juri. Berikut adalah isi lengkap konfigurasi `.env` yang digunakan:
 
 ```env
 PROJECT_NAME="TobaGuide Backend API"
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/tobaguide_db"
+DATABASE_URL="postgresql://postgres:amos123@localhost:5432/tobaguide_db"
 SECRET_KEY="development_secret_key_please_change_in_production_12345"
 ALGORITHM="HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES=10080
 
 # RAG & Vector Database Settings
-PINECONE_API_KEY="isi_dengan_pinecone_api_key"
+PINECONE_API_KEY="pcsk_38mDkG_AUrnQ5yf4rG5How1Jn3zw5X4p646dii4mq7pxJnvS1M2EPSMLAVkxtpmQhrEhNn"
 PINECONE_INDEX_NAME="tobaguide-index"
-COHERE_API_KEY="isi_dengan_cohere_api_key"
+OPENAI_API_KEY="sk-proj-placeholder"
+COHERE_API_KEY="gFVspCBouVSx08IEQ66yWvoKGuw2a8aU4a6rcBGa"
 
 # Gemini API Key
-GEMINI_API_KEY="isi_dengan_gemini_api_key"
+GEMINI_API_KEY="AQ.Ab8RN6KUv2Ow_M3S84uVD5t_cXNcuAZHxZq29bZp2SyalEYtQw"
 ```
 
 ---
