@@ -37,11 +37,9 @@ Sistem ini memanfaatkan **Dataset Hackathon Tourism** secara optimal:
 ---
 
 ## 4. Tautan & Aset Pendukung
-- **Link Video Demonstrasi (Wajib):** [Tautan Video YouTube / Google Drive]
-- **Link Pitch Deck / Proposal (Wajib):** [Tautan Dokumen PDF Pitch Deck]
-- **Link Deployment / Live App (Opsional):** `http://localhost:5173` *(Menjalankan secara lokal)*
+- **Link Video Demonstrasi (Wajib):** https://youtu.be/COQa-CXPjVI?feature=shared
+- **Link Pitch Deck / Proposal (Wajib):** (https://drive.google.com/file/d/1XkV_dEu5hFgcVrH72MfpGlDd-lIR64MX/view?usp=drive_link)
 
----
 
 ## 5. Struktur Repository
 ```text
