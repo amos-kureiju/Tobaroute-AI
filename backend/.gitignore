@@ -33,7 +33,8 @@ env/
 ENV/
 
 # Local configuration files
-.env
+#.env
+!.env
 .env.local
 .env.*.local
 
