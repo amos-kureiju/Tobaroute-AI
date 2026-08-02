@@ -1,107 +1,169 @@
-# TobaRoute AI Monorepo
+# TobaRoute AI — Submission AI Hackathon 2026
 
-Repositori ini menggabungkan sistem backend (FastAPI) dan frontend (React + Vite) untuk aplikasi panduan pariwisata Danau Toba yang adil bagi UMKM berbasis RAG Semantik.
-
----
-
-## Tim Pengembang (Kelompok Lamport)
-
-Proyek ini dikembangkan oleh **Kelompok Lamport**:
-- Amos Baringbing
-- Jonatan Pasaribu
-- Jessica Ruth Abigael
+> **PENTING - ATURAN BLIND REVIEW:** 
+> Peserta **DILARANG KERAS** mencantumkan nama institusi/universitas/sekolah asal di dalam file ini maupun di seluruh _source code_. Pelanggaran terhadap aturan ini dapat berakibat pada pengurangan nilai atau diskualifikasi.
 
 ---
 
-## Struktur Proyek
-- `/backend`: Berisi logika backend FastAPI, model database, skrip ingestion, dan virtual environment.
-- `/frontend`: Berisi antarmuka pengguna berbasis React, Vite, dan Vanilla CSS.
+## 1. Deskripsi Singkat
+TobaRoute AI adalah platform navigasi dan sistem rekomendasi pariwisata Danau Toba yang dirancang untuk mengatasi masalah ketimpangan promosi digital. Saat ini, informasi pariwisata Danau Toba terfragmentasi dan didominasi oleh destinasi populer saja, sehingga destinasi lokal (*hidden gems*) dan UMKM lokal kurang mendapatkan perhatian.
+
+TobaRoute AI menyajikan solusi terpadu yang memadukan pencarian rute navigasi jalan presisi, rekomendasi tempat kontekstual, serta asisten AI interaktif.
+
+Pendekatan teknologi yang digunakan berbasis **Semantic Retrieval-Augmented Generation (RAG)** memanfaatkan PostgreSQL, Pinecone Vector Database, Cohere Rerank, dan Large Language Model (Gemini), yang diperkuat dengan **Algoritma Fairness Boosting ($\gamma$)** untuk memberikan pembobotan proporsional secara otomatis kepada UMKM lokal dan tempat wisata sekitar.
 
 ---
 
-## Cara Memasang & Menjalankan di Laptop Anda
+## 2. Anggota Tim
 
-### Langkah 1: Kloning Repositori
-Jika Anda baru pertama kali mengambil proyek ini, kloning repositori ini ke komputer Anda:
+| Nama Lengkap | Peran dalam Tim | Kontak (Email / GitHub) |
+| :--- | :--- | :--- |
+| **Amos Baringbing** | Team Lead & Full-Stack Engineer | `amosbaringbing@gmail.com` / [GitHub](https://github.com/amos-kureiju) |
+| **Jonatan Pasaribu** | Data & Backend Engineer | `jonathanpasaribu12r@gmail.com` / [GitHub](https://github.com/jonathanpasaribu12r-crypt) |
+| **Jessica Ruth Abigael** | Frontend & UI/UX Designer | `jessicaruthylie@gmail.com` / [GitHub](https://github.com/jessicaruthylie-boop) |
+
+---
+
+## 3. Pemanfaatan Data Pariwisata Toba
+Sistem ini memanfaatkan **Dataset Hackathon Tourism** secara optimal:
+- **Data Utama:** Memanfaatkan 700+ entitas data pariwisata yang mencakup kategori Destinasi Wisata Alam/Budaya, Kuliner Khas, Penginapan, Transportasi Lokal, dan UMKM Kerajinan (seperti Sentra Ulos).
+- **Pengolahan:**
+  1. *Data Cleaning & Standardisasi:* Pembersihan data kosong (`NaN`), pembetulan ejaan, serta ekstraksi nama kecamatan berbasis aturan teks.
+  2. *Entity Resolution:* Penggabungan variasi entitas ganda (deduplikasi nama usaha/tempat yang sama).
+  3. *GPS Coordinate Calibration:* Pemetaan ulang dan perbaikan koordinat garis pantai/daratan presisi agar tidak ada titik lokasi yang jatuh di perairan Danau Toba.
+  4. *Chunking & Embedding Vector:* Penyiapan teks konteks yang diubah menjadi representasi vektor dan disinkronkan ke **Pinecone Vector Database**.
+- **Data Tambahan:** Google Maps & OpenStreetMap Tile Services (untuk tile peta interaktif Leaflet dan rute navigasi jalan).
+
+---
+
+## 4. Tautan & Aset Pendukung
+- **Link Video Demonstrasi (Wajib):** [Tautan Video YouTube / Google Drive]
+- **Link Pitch Deck / Proposal (Wajib):** [Tautan Dokumen PDF Pitch Deck]
+- **Link Deployment / Live App (Opsional):** `http://localhost:5173` *(Menjalankan secara lokal)*
+
+---
+
+## 5. Struktur Repository
+```text
+.
+├── backend/                # Kode server FastAPI, database ORM, RAG engine & skrip manajemen data
+│   ├── app/                # Package utama (main.py, models.py, schemas.py, crud.py, ai_bot.py, config.py)
+│   ├── dataset/            # File Dataset HackathonTourism Excel
+│   ├── manage_data.py      # Skrip CLI terpadu (init DB, ingestion dataset, & sync Pinecone vector)
+│   ├── requirements.txt    # Daftar dependensi Python backend
+│   └── .env.example        # Template variabel environment backend
+├── frontend/               # Kode antarmuka pengguna berbasis React + Vite
+│   ├── src/                # Halaman (Home, Explore, About, Admin), komponen Leaflet, & layanan API
+│   ├── package.json        # Daftar dependensi Node.js frontend
+│   └── README.md
+├── docs/                   # Dokumen analisis dan laporan submission
+└── README.md               # Dokumen submission utama ini
+```
+
+---
+
+## 6. Prasyarat (Requirements)
+Sebelum menjalankan sistem, pastikan perangkat Anda telah terpasang:
+- **Environment:** Python versi 3.10+ & Node.js versi v18+
+- **Package manager:** `pip` (Python) & `npm` (Node.js)
+- **Software tambahan:** PostgreSQL (Server database lokal / cloud)
+- **API Key Eksternal yang dibutuhkan:**
+  - `PINECONE_API_KEY` (Vector Database Indexing)
+  - `COHERE_API_KEY` (Semantic Reranking)
+  - `GEMINI_API_KEY` (Large Language Model & Asisten AI)
+
+---
+
+## 7. Environment Variables
+File `.env` sudah disertakan di folder `backend/.env` untuk pengujian langsung oleh juri. Template `.env.example` tersusun sebagai berikut:
+
+```env
+PROJECT_NAME="TobaGuide Backend API"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/tobaguide_db"
+SECRET_KEY="development_secret_key_please_change_in_production_12345"
+ALGORITHM="HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES=10080
+
+# RAG & Vector Database Settings
+PINECONE_API_KEY="isi_dengan_pinecone_api_key"
+PINECONE_INDEX_NAME="tobaguide-index"
+COHERE_API_KEY="isi_dengan_cohere_api_key"
+
+# Gemini API Key
+GEMINI_API_KEY="isi_dengan_gemini_api_key"
+```
+
+---
+
+## 8. Langkah Instalasi & Menjalankan Project Secara Lokal
+
+### 1. Clone Repository
 ```bash
 git clone https://github.com/amos-kureiju/Tobaroute-AI.git tobaguide
 cd tobaguide
 ```
 
----
+### 2. Setup & Jalankan Backend (FastAPI)
+```bash
+# Masuk ke direktori backend
+cd backend
 
-### Langkah 2: Setup Backend (FastAPI)
+# Buat & aktifkan virtual environment (Opsional)
+python -m venv venv
+# Windows (PowerShell):
+.\venv\Scripts\Activate.ps1
+# Mac/Linux:
+# source venv/bin/activate
 
-1. Pindah ke direktori backend:
-   ```bash
-   cd backend
-   ```
+# Install dependensi Python
+pip install -r requirements.txt
 
-2. Buat Virtual Environment baru:
-   ```bash
-   python -m venv venv
-   ```
+# Inisialisasi Database & Vector Indexing otomatis (Pastikan PostgreSQL aktif)
+python manage_data.py --all
 
-3. Aktifkan Virtual Environment:
-   - **Windows (PowerShell):**
-     ```powershell
-     .\venv\Scripts\Activate.ps1
-     ```
-   - **Windows (Command Prompt):**
-     ```cmd
-     .\venv\Scripts\activate.bat
-     ```
-   - **macOS / Linux:**
-     ```bash
-     source venv/bin/activate
-     ```
+# Jalankan server backend FastAPI
+uvicorn app.main:app --port 8080 --reload
+```
+*Backend akan berjalan di `http://localhost:8080`*
 
-4. Pasang Dependensi Python:
-   ```bash
-   pip install -r requirements.txt
-   pip install pinecone-client cohere openai pandas openpyxl
-   ```
+### 3. Setup & Jalankan Frontend (React + Vite)
+Buka terminal baru di folder proyek `tobaguide`:
+```bash
+# Masuk ke direktori frontend
+cd frontend
 
-5. Konfigurasi file `.env`:
-   Salin file `.env.example` menjadi `.env` lalu lengkapi isinya (seperti Database URL, API Keys Gemini, Cohere, Pinecone, dll.):
-   ```bash
-   copy .env.example .env
-   ```
+# Install dependensi Node.js
+npm install
 
-6. Inisialisasi Database & Vector Indexing (Opsional untuk setup awal):
-   ```bash
-   python manage_data.py --all
-   ```
-
-7. Jalankan Server Backend:
-   ```bash
-   uvicorn app.main:app --port 8080 --reload
-   ```
-   *Backend akan berjalan di: `http://localhost:8080`*
+# Jalankan server frontend
+npm run dev
+```
+*Frontend akan berjalan di `http://localhost:5173`*
 
 ---
 
-### Langkah 3: Setup Frontend (React + Vite)
-
-1. Buka terminal baru dan masuk ke direktori frontend:
-   ```bash
-   cd frontend
-   ```
-
-2. Pasang Dependensi Node.js:
-   ```bash
-   npm install
-   ```
-
-3. Jalankan Server Frontend:
-   ```bash
-   npm run dev
-   ```
-   *Frontend akan berjalan di: `http://localhost:5173`*
+## 9. Cara Menggunakan / Testing (Evaluasi Model)
+Setelah aplikasi berjalan:
+1. Buka browser dan akses alamat Web App: `http://localhost:5173`
+2. Buka dokumentasi API interaktif (Swagger UI): `http://localhost:8080/docs`
+3. **Pengujian Fitur AI Utama & Navigasi Rute:**
+   - Masuk ke menu **Jelajah** (`http://localhost:5173/explore`).
+   - Ketik pertanyaan di chatbot Asisten Lokasi AI, contohnya:
+     - *"Lokasi Laguboti"* $\rightarrow$ Peta akan berfokus pada titik presisi Kecamatan Laguboti dengan tingkat zoom optimum (level 13) dan menampilkan destinasi sekitarnya.
+     - *"Wisata pantai di Balige"* $\rightarrow$ Peta akan menampilkan garis rute navigasi dari lokasi awal ke Pantai Lumban Bulbul Balige dan merekomendasikan UMKM kuliner sekitar.
+     - *"Rekomendasi Ulos di Pangururan"* $\rightarrow$ Menampilkan rute ke Sentra Ulos Hutaraja beserta penanda UMKM lokal.
 
 ---
 
-### Akses Aplikasi:
-Buka browser Anda dan buka alamat:
-- **Web App:** [http://localhost:5173](http://localhost:5173)
-- **API Docs (Swagger UI):** [http://localhost:8080/docs](http://localhost:8080/docs)
+## 10. Known Issues / Batasan
+- **Layanan Routing Publik:** Pengubahan rute jalan jalan raya bergantung pada ketersediaan API OSRM publik; jika jaringan publik mengalami keterlambatan, sistem secara otomatis mengaktifkan *fallback* garis rute visual (*Polyline*) presisi di atas peta.
+- **Kecepatan Respon LLM:** Latensi jawaban chatbot AI sangat bergantung pada kecepatan koneksi jaringan ke server API Gemini dan Cohere.
+
+---
+
+## 📋 Aturan Submission (Wajib Dibaca & Dipatuhi)
+1. **Hak Akses:** Repository bersifat **Private**. Email `aicenter.itdel@gmail.com` telah diundang sebagai *Collaborator/Viewer* agar dewan juri dapat mengakses kode.
+2. **Kesesuaian Instruksi:** Sistem dapat dieksekusi secara lokal murni berdasarkan petunjuk di *Langkah Instalasi* pada README ini.
+3. **Keamanan:** Kunci API dan variabel konfigurasi diatur secara aman dan disiapkan untuk kemudahan evaluasi juri.
+4. **Kelengkapan Kode:** Seluruh *source code* backend, frontend, skrip ingestion, dan dataset pengujian disertakan secara lengkap.
+5. **Batas Waktu:** Seluruh submisi dan komit final telah diselesaikan sesuai tenggat waktu *Preliminary Round*.
