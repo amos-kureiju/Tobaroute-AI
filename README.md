@@ -16,11 +16,11 @@ Pendekatan teknologi yang digunakan berbasis **Semantic Retrieval-Augmented Gene
 
 ## 2. Anggota Tim
 
-| Nama Lengkap | Peran dalam Tim | Kontak (Email / GitHub) |
+| Nama Lengkap | Kontak (Email / GitHub) |
 | :--- | :--- | :--- |
-| **Amos Baringbing** | Team Lead & Full-Stack Engineer | `amosbaringbing@gmail.com` / [GitHub](https://github.com/amos-kureiju) |
-| **Jonatan Pasaribu** | Data & Backend Engineer | `jonathanpasaribu12r@gmail.com` / [GitHub](https://github.com/jonathanpasaribu12r-crypt) |
-| **Jessica Ruth Abigael** | Frontend & UI/UX Designer | `jessicaruthylie@gmail.com` / [GitHub](https://github.com/jessicaruthylie-boop) |
+| **Amos Baringbing** | `amosbaringbing@gmail.com` / [GitHub](https://github.com/amos-kureiju) |
+| **Jonatan Pasaribu** | `jonathanpasaribu12r@gmail.com` / [GitHub](https://github.com/jonathanpasaribu12r-crypt) |
+| **Jessica Ruth Abigael** | `jessicaruthylie@gmail.com` / [GitHub](https://github.com/jessicaruthylie-boop) |
 
 ---
 
@@ -162,7 +162,7 @@ Setelah aplikasi berjalan:
 
 ---
 
-## 📋 Aturan Submission (Wajib Dibaca & Dipatuhi)
+## Aturan Submission (Wajib Dibaca & Dipatuhi)
 1. **Hak Akses:** Repository bersifat **Private**. Email `aicenter.itdel@gmail.com` telah diundang sebagai *Collaborator/Viewer* agar dewan juri dapat mengakses kode.
 2. **Kesesuaian Instruksi:** Sistem dapat dieksekusi secara lokal murni berdasarkan petunjuk di *Langkah Instalasi* pada README ini.
 3. **Keamanan:** Kunci API dan variabel konfigurasi diatur secara aman dan disiapkan untuk kemudahan evaluasi juri.
