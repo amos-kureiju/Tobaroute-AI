@@ -2,6 +2,20 @@
 
 Repositori ini menggabungkan sistem backend (FastAPI) dan frontend (React + Vite) untuk aplikasi panduan pariwisata Danau Toba yang adil bagi UMKM berbasis RAG Semantik.
 
+---
+
+## Tim Pengembang (Kelompok Lamport)
+
+Proyek ini dikembangkan oleh **Tim Lamport**:
+
+| Nama Anggota | Peran / Kontribusi |
+| :--- | :--- |
+| **Amos Baringbing** | Team Lead & Full-Stack Engineer |
+| **Jonatan Pasaribu** | Data & Backend Engineer |
+| **Jessica Ruth Abigael** | Frontend & UI/UX Designer |
+
+---
+
 ## Struktur Proyek
 - `/backend`: Berisi logika backend FastAPI, model database, skrip ingestion, dan virtual environment.
 - `/frontend`: Berisi antarmuka pengguna berbasis React, Vite, dan Vanilla CSS.
@@ -13,7 +27,7 @@ Repositori ini menggabungkan sistem backend (FastAPI) dan frontend (React + Vite
 ### Langkah 1: Kloning Repositori
 Jika Anda baru pertama kali mengambil proyek ini, kloning repositori ini ke komputer Anda:
 ```bash
-git clone https://github.com/amos-kureiju/Tobaguide-backend.git tobaguide
+git clone https://github.com/amos-kureiju/Tobaroute-AI.git tobaguide
 cd tobaguide
 ```
 
