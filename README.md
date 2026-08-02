@@ -6,13 +6,10 @@ Repositori ini menggabungkan sistem backend (FastAPI) dan frontend (React + Vite
 
 ## Tim Pengembang (Kelompok Lamport)
 
-Proyek ini dikembangkan oleh **Tim Lamport**:
-
-| Nama Anggota | Peran / Kontribusi |
-| :--- | :--- |
-| **Amos Baringbing** | Team Lead & Full-Stack Engineer |
-| **Jonatan Pasaribu** | Data & Backend Engineer |
-| **Jessica Ruth Abigael** | Frontend & UI/UX Designer |
+Proyek ini dikembangkan oleh **Kelompok Lamport**:
+- Amos Baringbing
+- Jonatan Pasaribu
+- Jessica Ruth Abigael
 
 ---
 
