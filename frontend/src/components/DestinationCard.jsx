@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MapPin, Star, Navigation, Info, Route, ChevronDown, ChevronUp, Store, CheckCircle, Quote, Compass, Sparkles, Lightbulb, Check, RefreshCw } from 'lucide-react';
+import { MapPin, Star, Navigation, Info, Route, ChevronUp, CheckCircle, Quote, Compass, BookOpen, Clock, Tag, Utensils, RefreshCw } from 'lucide-react';
 import { getDestinationAIInsight } from '../services/api';
 import './DestinationCard.css';
 
@@ -21,8 +21,8 @@ const getLocalHeuristicInsight = (nama, kecamatan, kategori, deskripsi_singkat) 
   if (n.includes('ulos') || k.includes('ulos') || d.includes('ulos') || n.includes('tenun') || d.includes('tenun')) {
     return {
       storytelling: `Sentra kerajinan tangan di ${kecamatan} ini melestarikan teknik tenun tradisional Batak secara turun-temurun, di mana setiap helai kain Ulos ditenun dengan teliti dan sarat makna berkat serta doa leluhur.`,
-      must_try: `Melihat langsung proses pembuatan motif Ulos sakral (seperti Sadum atau Ragi Hotang) serta membeli kain tenun asli langsung dari pengrajin warga setempat.`,
-      travel_tips: `Disarankan berkunjung pada pagi atau siang hari saat pengrajin aktif menenun. Anda juga dapat bertanya tentang makna filosofis setiap motif ulos.`,
+      must_try: `Melihat langsung proses pembuatan motif Ulos tradisional (seperti Sadum atau Ragi Hotang) serta membeli kain tenun asli langsung dari pengrajin warga setempat.`,
+      travel_tips: `Disarankan berkunjung pada pagi atau siang hari saat pengrajin aktif menenun. Anda juga dapat berkonsultasi mengenai makna filosofis setiap motif ulos.`,
       highlight_tags: ['Tenun Tangan Asli', 'Pemberdayaan UMKM', 'Warisan Budaya Batak']
     };
   } else if (n.includes('gula') || n.includes('aren') || d.includes('aren') || d.includes('gula') || n.includes('palm sugar')) {
@@ -30,28 +30,28 @@ const getLocalHeuristicInsight = (nama, kecamatan, kategori, deskripsi_singkat) 
       storytelling: `Diproduksi secara murni dari sadapan pohon enau alami perbukitan ${kecamatan} tanpa bahan kimia pengawet, menghasilkan cita rasa manis karamel legit yang harum khas tanah vulkanik Danau Toba.`,
       must_try: `Membeli gula aren cetak murni dan sirup aren alami yang sangat cocok sebagai pemanis kopi Arabika Toba atau bahan baku kue tradisional.`,
       travel_tips: `Simpan di tempat sejuk dan kedap udara agar keaslian rasa dan aroma legitnya tetap terjaga prima.`,
-      highlight_tags: ['100% Nira Aren Murni', 'Tanpa Pengawet', 'Produksi Rumahan Warga']
+      highlight_tags: ['Nira Aren Murni', 'Tanpa Pengawet', 'Produksi Rumahan Warga']
     };
   } else if (k.includes('kuliner') || n.includes('makan') || n.includes('resto') || n.includes('kopi') || n.includes('warung') || n.includes('cafe')) {
     return {
       storytelling: `Destinasi kuliner autentik di kawasan ${kecamatan} yang menghidangkan kekayaan bumbu rempah tradisional khas Batak Toba (seperti andaliman, asam cikala, dan lokio) yang dimasak segar setiap hari.`,
       must_try: `Mencicipi sajian andalan hangat yang diracik dengan bumbu rempah andaliman segar untuk pengalaman gastronomi Danau Toba yang berkesan.`,
       travel_tips: `Waktu terbaik berkunjung adalah menjelang jam makan siang (11.30 - 13.30 WIB) untuk menikmati sajian yang baru matang.`,
-      highlight_tags: ['Rempah Andaliman Segar', 'Kuliner Khas Autentik', 'Bahan Segar Lokal']
+      highlight_tags: ['Rempah Andaliman', 'Kuliner Tradisional', 'Bahan Segar Lokal']
     };
   } else if (k.includes('penginapan') || n.includes('hotel') || n.includes('homestay') || n.includes('resort')) {
     return {
       storytelling: `Akomodasi berkonsep ramah keluarga di ${kecamatan} yang menawarkan suasana menginap tenang dengan udara sejuk dan panorama asri bentang kaldera Danau Toba.`,
       must_try: `Menikmati secangkir kopi hangat di pagi hari sambil menyaksikan kabut dan matahari terbit di atas perairan Danau Toba.`,
       travel_tips: `Lakukan konfirmasi pemesanan terlebih dahulu terutama saat akhir pekan atau musim liburan.`,
-      highlight_tags: ['Udara Sejuk Pegunungan', 'Suasana Tenang', 'Akses Strategis']
+      highlight_tags: ['Udara Sejuk', 'Suasana Tenang', 'Akses Strategis']
     };
   } else {
     return {
       storytelling: `Destinasi unggulan di wilayah ${kecamatan} yang menyuguhkan keindahan panorama alam kaldera Danau Toba (UNESCO Global Geopark) dengan suasana damai yang sangat asri.`,
       must_try: `Menikmati pemandangan bentang alam danau dari sudut pandang terbaik, berfoto di spot panorama alami, dan menikmati ketenangan alam.`,
       travel_tips: `Gunakan pakaian santai yang nyaman dan bawa jaket ringan karena embusan angin danau yang sejuk di pagi/sore hari.`,
-      highlight_tags: ['UNESCO Geopark', 'Spot Foto Eksotis', 'Panorama Alam Asri']
+      highlight_tags: ['UNESCO Geopark', 'Spot Panorama', 'Alam Asri']
     };
   }
 };
@@ -69,14 +69,12 @@ const DestinationCard = ({ dest, isUmkm }) => {
     displayImage = DEFAULT_CATEGORY_IMAGES[categoryKey] || DEFAULT_CATEGORY_IMAGES.default;
   }
 
-  // Load AI Insight on expand
+  // Load Insight on expand
   useEffect(() => {
     if (isExpanded && !aiInsight) {
-      // Set initial instant rich heuristic
       const initialInsight = getLocalHeuristicInsight(dest.nama, dest.kecamatan, dest.kategori, dest.deskripsi_singkat);
       setAiInsight(initialInsight);
 
-      // Fetch dynamic deep Gemini insight if dest.id exists
       if (dest.id && dest.id !== 9999) {
         setLoadingAI(true);
         getDestinationAIInsight(dest.id)
@@ -85,9 +83,8 @@ const DestinationCard = ({ dest, isUmkm }) => {
               setAiInsight(res);
             }
           })
-          .catch((err) => {
+          .catch(() => {
             // Keep heuristic fallback
-            console.log("Using cached AI heuristic insight");
           })
           .finally(() => {
             setLoadingAI(false);
@@ -176,7 +173,6 @@ const DestinationCard = ({ dest, isUmkm }) => {
       checkInOut = `Check-in: ${checkMatch[1].trim()} | Check-out: ${checkMatch[2].trim()}`;
     }
 
-    // Determine if there is distinct rich textual explanation
     let distinctDesc = null;
     if (raw && !raw.startsWith('Menu Rekomendasi:') && !raw.startsWith('Fasilitas:') && !raw.startsWith('Tiket Masuk:') && !raw.startsWith('Rute:')) {
       if (raw !== short && raw.length > 20) {
@@ -223,14 +219,14 @@ const DestinationCard = ({ dest, isUmkm }) => {
         <p className="card-description">{dest.deskripsi_singkat}</p>
         <p className="card-address">{formattedAddress}</p>
 
-        {/* INLINE EXPANDED DETAIL PANEL (RICH AI STORYTELLING & TRAVEL INSIGHTS) */}
+        {/* INLINE EXPANDED DETAIL PANEL (CLEAN & EDITORIAL CONCISE FORMAT) */}
         {isExpanded && (
           <div className="inline-detail-panel fade-in">
-            {/* AI TRAVEL CONCIERGE INSIGHT BOX */}
+            {/* DESTINATION INSIGHTS BOX */}
             <div className="inline-ai-insight-box">
               <div className="ai-insight-header">
                 <span className="ai-insight-badge">
-                  <Sparkles size={13} color="#0284c7" /> Wawasan Cerdas AI Gemini
+                  <BookOpen size={13} color="#0369a1" /> Ringkasan & Wawasan Destinasi
                 </span>
                 {loadingAI && <RefreshCw size={12} className="spin" color="#0284c7" />}
               </div>
@@ -243,14 +239,14 @@ const DestinationCard = ({ dest, isUmkm }) => {
 
                   {aiInsight.must_try && (
                     <div className="ai-highlight-row">
-                      <span className="ai-highlight-label">🎯 Pengalaman Wajib:</span>
+                      <span className="ai-highlight-label">Pengalaman Utama:</span>
                       <span className="ai-highlight-val">{aiInsight.must_try}</span>
                     </div>
                   )}
 
                   {aiInsight.travel_tips && (
                     <div className="ai-highlight-row">
-                      <span className="ai-highlight-label">💡 Tips Wisatawan:</span>
+                      <span className="ai-highlight-label">Tips Pengunjung:</span>
                       <span className="ai-highlight-val">{aiInsight.travel_tips}</span>
                     </div>
                   )}
@@ -259,7 +255,7 @@ const DestinationCard = ({ dest, isUmkm }) => {
                     <div className="ai-tags-row">
                       {aiInsight.highlight_tags.map((tag, idx) => (
                         <span key={idx} className="ai-tag-chip">
-                          #{tag}
+                          {tag.replace(/^#/, '')}
                         </span>
                       ))}
                     </div>
@@ -268,7 +264,7 @@ const DestinationCard = ({ dest, isUmkm }) => {
               )}
             </div>
 
-            {/* ADDITIONAL RICH DETAILS IF AVAILABLE */}
+            {/* ADDITIONAL INFORMATION */}
             {parsed.distinctDesc && (
               <div className="inline-section">
                 <h4 className="inline-section-title">Informasi Lengkap</h4>
@@ -280,7 +276,7 @@ const DestinationCard = ({ dest, isUmkm }) => {
               <div className="inline-section">
                 <h4 className="inline-section-title">Menu Rekomendasi</h4>
                 <div className="inline-menu-badge">
-                  🍽️ <span>{parsed.menu}</span>
+                  <Utensils size={13} /> <span>{parsed.menu}</span>
                 </div>
               </div>
             )}
@@ -291,19 +287,19 @@ const DestinationCard = ({ dest, isUmkm }) => {
                 <div className="inline-info-grid">
                   {parsed.hours && (
                     <div className="inline-info-item">
-                      <span className="info-label">🕒 Operasional:</span>
+                      <span className="info-label">Operasional:</span>
                       <span className="info-value">{parsed.hours}</span>
                     </div>
                   )}
                   {parsed.price && (
                     <div className="inline-info-item">
-                      <span className="info-label">🏷️ Estimasi Biaya:</span>
+                      <span className="info-label">Estimasi Biaya:</span>
                       <span className="info-value">{parsed.price}</span>
                     </div>
                   )}
                   {parsed.checkInOut && (
                     <div className="inline-info-item">
-                      <span className="info-label">🏨 Waktu:</span>
+                      <span className="info-label">Waktu Menginap:</span>
                       <span className="info-value">{parsed.checkInOut}</span>
                     </div>
                   )}

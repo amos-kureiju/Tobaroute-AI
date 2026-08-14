@@ -196,8 +196,8 @@ def generate_destination_ai_insight(nama: str, kecamatan: str, kategori: str, de
     berbasis Gemini AI untuk kartu destinasi/UMKM agar tidak kosong dan kaya konteks.
     """
     prompt = f"""
-Anda adalah TobaRoute AI — Senior Travel Concierge & Kurator Budaya Kawasan Danau Toba (UNESCO Global Geopark).
-Berikan detail wawasan mendalam (AI Insight) dan panduan pengalaman wisatawan yang kaya konteks dan otentik untuk tempat/UMKM berikut:
+Anda adalah Kurator Budaya dan Penulis Panduan Perjalanan Resmi Kawasan Danau Toba.
+Berikan ringkasan wawasan mendalam dan panduan pengalaman wisatawan yang faktual, kaya konteks, dan alami untuk entitas berikut:
 
 Nama Tempat: {nama}
 Kecamatan: {kecamatan}, Kawasan Danau Toba
@@ -208,11 +208,15 @@ Deskripsi Singkat: {deskripsi_singkat}
 REFERENSI PENGETAHUAN KAWASAN:
 {DANAU_TOBA_KNOWLEDGE_BASE}
 
+ATURAN GAYA BAHASA (STRICT):
+1. DILARANG KERAS menggunakan emoji, emoticon, atau simbol dekoratif apa pun.
+2. Gunakan bahasa Indonesia editorial yang elegan, natural, dan informatif layaknya buku panduan pariwisata profesional.
+
 Format output HARUS murni JSON valid (tanpa markdown backtick ```json, murni raw text JSON) dengan struktur berikut:
 {{
   "storytelling": "Penjelasan mendalam 2-3 kalimat mengenai keunikan sejarah/alam/proses pembuatan atau nilai tradisi lokal tempat ini.",
-  "must_try": "1-2 hal atau aktivitas yang paling wajib dicoba/dibeli/dinikmati wisatawan di sini.",
-  "travel_tips": "Tips praktis untuk wisatawan (waktu terbaik berkunjung, tips berbelanja, atau etika setempat).",
+  "must_try": "1-2 hal atau aktivitas yang paling disarankan untuk dicoba/dinikmati wisatawan di sini.",
+  "travel_tips": "Saran praktis untuk pengunjung (waktu terbaik berkunjung, tips berbelanja, atau kenyamanan akses).",
   "highlight_tags": ["Tag 1", "Tag 2", "Tag 3"]
 }}
 """
