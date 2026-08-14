@@ -8,11 +8,11 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 dotenv_path = BASE_DIR / ".env"
 
-# Memuat file .env menggunakan path absolut dan memaksa override sistem
+# Memuat file .env (tanpa menimpa environment variable bawaan Docker/sistem)
 if dotenv_path.exists():
-    load_dotenv(dotenv_path=dotenv_path, override=True)
+    load_dotenv(dotenv_path=dotenv_path, override=False)
 else:
-    load_dotenv(override=True)
+    load_dotenv(override=False)
 
 # Mengambil DATABASE_URL dari .env, default jika tidak ditemukan
 SQLALCHEMY_DATABASE_URL = os.getenv(

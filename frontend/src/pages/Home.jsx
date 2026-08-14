@@ -375,7 +375,7 @@ const Home = () => {
             {/* Stats Banner */}
             <div className="stats-banner glass-panel">
               <div className="stat-item">
-                <span className="stat-number">713+</span>
+                <span className="stat-number">334+</span>
                 <span className="stat-label">Entitas Wisata & UMKM</span>
               </div>
               <div className="stat-divider"></div>

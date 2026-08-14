@@ -1,21 +1,32 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { getDestinations, getFairRecommendation, sendChatMessage } from '../services/api';
-import { Map, AlertCircle, Navigation, Star, Send, Bot, User, Compass, Route as RouteIcon, MapPin, Search, ChevronLeft, Menu, LocateFixed, X, Sparkles } from 'lucide-react';
+import { Map, AlertCircle, Navigation, Star, Send, Bot, User, Compass, Route as RouteIcon, MapPin, Search, ChevronLeft, Menu, LocateFixed, X, Sparkles, Layers, Store, Utensils, Hotel, Car } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import RoutingMachine from '../components/RoutingMachine';
 
 const formatDescription = (desc) => {
-  if (!desc || String(desc).toLowerCase().trim() === 'nan' || String(desc).toLowerCase().trim() === 'none') {
+  if (!desc) return 'Destinasi unggulan di kawasan Danau Toba dengan keindahan alam dan nilai budaya yang khas.';
+  let clean = String(desc)
+    .replace(/Menu Rekomendasi:\s*(nan|none|null|-)/gi, '')
+    .replace(/Fasilitas:\s*(nan|none|null|-)/gi, '')
+    .replace(/Estimasi Biaya:\s*(nan|none|null|-)/gi, '')
+    .replace(/Jam Operasional:\s*(nan|none|null|-)/gi, '')
+    .replace(/Menu:\s*(nan|none|null|-)/gi, '')
+    .replace(/Tiket Masuk:\s*(nan|none|null|-)/gi, '')
+    .replace(/Ulasan:\s*(nan|none|null|-)/gi, '')
+    .replace(/\b(nan|none|null)\b/gi, '')
+    .trim();
+  if (!clean || clean.length < 5) {
     return 'Destinasi unggulan di kawasan Danau Toba dengan keindahan alam dan nilai budaya yang khas.';
   }
-  return desc;
+  return clean;
 };
 
-// Custom icons using external URLs for Leaflet
+// Verified Crisp Marker Icons
 const wisataIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -25,8 +36,35 @@ const wisataIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+const kulinerIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
 const umkmIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const hotelIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const transportIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
@@ -52,39 +90,71 @@ const userGpsIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+const getMarkerIconByCategory = (category = '') => {
+  const cat = String(category).toLowerCase();
+  if (cat.includes('kuliner') || cat.includes('makan') || cat.includes('resto') || cat.includes('cafe')) {
+    return kulinerIcon;
+  }
+  if (cat.includes('umkm') || cat.includes('oleh') || cat.includes('ulos') || cat.includes('toko')) {
+    return umkmIcon;
+  }
+  if (cat.includes('penginapan') || cat.includes('hotel') || cat.includes('homestay')) {
+    return hotelIcon;
+  }
+  if (cat.includes('transportasi') || cat.includes('mobil') || cat.includes('kapal')) {
+    return transportIcon;
+  }
+  return wisataIcon;
+};
+
 // Helper component to trigger map flyTo dynamically
 const MapFlyController = ({ centerCoords, zoom = 13 }) => {
   const map = useMap();
   useEffect(() => {
     if (centerCoords && centerCoords[0] && centerCoords[1]) {
-      map.flyTo(centerCoords, zoom, { duration: 1.5 });
+      map.flyTo(centerCoords, zoom, { duration: 1.2 });
     }
   }, [centerCoords, zoom, map]);
   return null;
 };
 
-const DEFAULT_TOBA_CENTER = [2.6105, 98.8106];
-const DEFAULT_START_ORIGIN = [2.3387, 99.0625]; // Pusat Balige sebagai titik awal default rute
+const DEFAULT_TOBA_CENTER = [2.3544, 99.1264];
+const DEFAULT_START_ORIGIN = [2.3387, 99.0625];
 
 const KECAMATAN_CENTERS = {
-  'balige': { name: 'Kecamatan Balige', coords: [2.3387, 99.0625] },
   'laguboti': { name: 'Kecamatan Laguboti', coords: [2.3544, 99.1264] },
+  'balige': { name: 'Kecamatan Balige', coords: [2.3387, 99.0625] },
+  'sigumpar': { name: 'Kecamatan Sigumpar', coords: [2.3920, 99.1550] },
   'porsea': { name: 'Kecamatan Porsea', coords: [2.4475, 99.1538] },
-  'lumban julu': { name: 'Kecamatan Lumban Julu', coords: [2.6010, 99.0480] },
+  'silaen': { name: 'Kecamatan Silaen', coords: [2.3870, 99.2051] },
   'tampahan': { name: 'Kecamatan Tampahan', coords: [2.3160, 99.0125] },
+  'lumban julu': { name: 'Kecamatan Lumban Julu', coords: [2.6010, 99.0480] },
+  'ajibata': { name: 'Kecamatan Ajibata', coords: [2.6650, 98.9320] },
+  'parapat': { name: 'Kecamatan Parapat', coords: [2.6620, 98.9350] },
+  'girsang sipangan bolon': { name: 'Kecamatan Girsang Sipangan Bolon', coords: [2.6620, 98.9350] },
   'pangururan': { name: 'Kecamatan Pangururan', coords: [2.6033, 98.7050] },
   'simanindo': { name: 'Kecamatan Simanindo', coords: [2.7252, 98.7869] },
   'harian': { name: 'Kecamatan Harian', coords: [2.5830, 98.6330] },
+  'sianjur mulamula': { name: 'Kecamatan Sianjur Mulamula', coords: [2.5890, 98.6420] },
+  'onan runggu': { name: 'Kecamatan Onan Runggu', coords: [2.5020, 98.9210] },
+  'palipi': { name: 'Kecamatan Palipi', coords: [2.4450, 98.7900] },
+  'ronggur nihuta': { name: 'Kecamatan Ronggur Nihuta', coords: [2.5800, 98.7700] },
   'muara': { name: 'Kecamatan Muara', coords: [2.3378, 98.9048] },
-  'silaen': { name: 'Kecamatan Silaen', coords: [2.3870, 99.2051] },
+  'baktiraja': { name: 'Kecamatan Baktiraja', coords: [2.3250, 98.8150] },
+  'doloksanggul': { name: 'Kecamatan Doloksanggul', coords: [2.2570, 98.7510] },
+  'pollung': { name: 'Kecamatan Pollung', coords: [2.3100, 98.6800] },
+  'berastagi': { name: 'Kecamatan Berastagi', coords: [3.1870, 98.5110] },
+  'sidikalang': { name: 'Kecamatan Sidikalang', coords: [2.7480, 98.3120] },
+  'tarutung': { name: 'Kecamatan Tarutung', coords: [2.0250, 98.9730] }
 };
 
 const QUICK_LOCATIONS = [
-  { name: 'Kota Laguboti', query: 'Tunjukkan lokasi Kota Laguboti' },
-  { name: 'Kota Balige', query: 'Tunjukkan lokasi Kota Balige' },
+  { name: 'Kecamatan Laguboti', query: 'Tunjukkan destinasi wisata dan rute di Laguboti' },
+  { name: 'Kecamatan Balige', query: 'Tunjukkan destinasi wisata dan rute di Balige' },
   { name: 'Pantai Lumban Bulbul', query: 'Di mana lokasi Pantai Pasir Putih Lumban Bulbul Balige?' },
+  { name: 'Pantai Pardinggaran', query: 'Di mana lokasi Pantai Pardinggaran Laguboti?' },
+  { name: 'Mual Sirambe', query: 'Di mana lokasi Mual Sirambe Sitangkola Laguboti?' },
   { name: 'Museum TB Silalahi', query: 'Di mana lokasi Museum Batak T.B. Silalahi Center?' },
-  { name: 'Sentra Ulos Hutaraja', query: 'Di mana lokasi Kampung Ulos Hutaraja?' },
 ];
 
 const MAP_STYLES = {
@@ -105,16 +175,19 @@ const MAP_STYLES = {
 const Explore = () => {
   const location = useLocation();
   const [destinations, setDestinations] = useState([]);
-  const [displayedMarkers, setDisplayedMarkers] = useState([]); // Dynamic pins for requested query only
+  const [displayedMarkers, setDisplayedMarkers] = useState([]);
+  const [activeKecamatanName, setActiveKecamatanName] = useState('');
   const [loadingMap, setLoadingMap] = useState(true);
   const [error, setError] = useState('');
   
-  // Interactive Location State
+  // Interactive Location & Filtering State
   const [mapCenter, setMapCenter] = useState(DEFAULT_TOBA_CENTER);
-  const [mapZoom, setMapZoom] = useState(10);
+  const [mapZoom, setMapZoom] = useState(12);
   const [activeTarget, setActiveTarget] = useState(null);
   const [routeWaypoints, setRouteWaypoints] = useState([]);
-  const [mapStyle, setMapStyle] = useState('google_streets'); // Default to Google Maps look
+  const [routeInfo, setRouteInfo] = useState(null);
+  const [mapStyle, setMapStyle] = useState('google_streets');
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState('all');
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
 
   // Live GPS Geolocation State
@@ -122,8 +195,8 @@ const Explore = () => {
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState('');
 
-  // Handle Geolocation API
-  const handleEnableGPS = () => {
+  // Handle Geolocation API with LocalStorage Persistence & High Accuracy
+  const handleEnableGPS = (onSuccess = null) => {
     if (!navigator.geolocation) {
       setGpsError('Browser Anda tidak mendukung fitur Geolocation GPS.');
       return;
@@ -134,22 +207,30 @@ const Explore = () => {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const coords = [position.coords.latitude, position.coords.longitude];
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        const coords = [lat, lon];
+        
         setUserLocation(coords);
-        setMapCenter(coords);
-        setMapZoom(13);
+        localStorage.setItem('tobaroute_user_gps', JSON.stringify(coords));
+        sessionStorage.setItem('tobaroute_user_gps', JSON.stringify(coords));
         setGpsLoading(false);
 
         if (activeTarget && activeTarget.latitude && activeTarget.longitude) {
           setRouteWaypoints([coords, [activeTarget.latitude, activeTarget.longitude]]);
+        } else if (displayedMarkers.length === 0) {
+          setMapCenter(coords);
+          setMapZoom(13);
         }
+
+        if (onSuccess) onSuccess(coords);
       },
       (err) => {
-        console.error(err);
-        setGpsError('Gagal mengakses lokasi GPS. Tolong izinkan akses lokasi di browser Anda.');
+        console.warn('Gagal akses GPS:', err);
+        setGpsError('Izin GPS belum aktif. Menggunakan titik acuan tersimpan.');
         setGpsLoading(false);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
   };
 
@@ -157,15 +238,15 @@ const Explore = () => {
   const [chatMessages, setChatMessages] = useState([
     {
       role: 'model',
-      text: 'Selamat datang di Panduan Navigasi TobaRoute. Anda dapat menanyakan lokasi kecamatan (misalnya "Lokasi Laguboti") atau rekomendasi wisata & kuliner spesifik (misalnya "Wisata pantai di Balige") untuk menampilkan posisi dan rute navigasinya di peta.',
-      targetDest: null
+      text: 'Selamat datang di **TobaRoute AI**. Silakan tanyakan destinasi wisata, kuliner, atau sentra UMKM di kecamatan yang ingin Anda tuju (misalnya *"Wisata dan UMKM di Laguboti"*). Pin lokasi akurat dan rute navigasi dari GPS Anda akan otomatis ditampilkan di peta.',
+      recommendedPlaces: []
     }
   ]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatEndRef = useRef(null);
 
-  // Fetch initial batch of destinations for search lookup
+  // Fetch initial batch of all destinations for search lookup and retrieve saved GPS
   useEffect(() => {
     const fetchAllDestinations = async () => {
       try {
@@ -182,16 +263,34 @@ const Explore = () => {
 
     fetchAllDestinations();
 
+    // Check cached GPS in localStorage first
+    const cachedGps = localStorage.getItem('tobaroute_user_gps') || sessionStorage.getItem('tobaroute_user_gps');
+    if (cachedGps) {
+      try {
+        const parsed = JSON.parse(cachedGps);
+        if (Array.isArray(parsed) && parsed.length === 2 && !isNaN(parsed[0]) && !isNaN(parsed[1])) {
+          setUserLocation(parsed);
+        }
+      } catch (e) {}
+    }
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const coords = [position.coords.latitude, position.coords.longitude];
-          setUserLocation(coords);
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          const isInTobaRegion = (lat >= 1.9 && lat <= 3.2 && lon >= 98.0 && lon <= 99.8);
+          
+          if (isInTobaRegion || !cachedGps) {
+            const coords = [lat, lon];
+            setUserLocation(coords);
+            localStorage.setItem('tobaroute_user_gps', JSON.stringify(coords));
+          }
         },
         (err) => {
-          console.warn("GPS Location access denied, using Balige default origin.");
+          console.warn("GPS Location access pending user action.");
         },
-        { enableHighAccuracy: true, timeout: 8000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
       );
     }
   }, []);
@@ -200,14 +299,17 @@ const Explore = () => {
   useEffect(() => {
     if (location.state?.targetLocation) {
       const target = location.state.targetLocation;
-      highlightLocationOnMap(target);
       setDisplayedMarkers([target]);
+      highlightLocationOnMap(target);
+      if (target.kecamatan) {
+        setActiveKecamatanName(target.kecamatan);
+      }
       setChatMessages(prev => [
         ...prev,
         {
           role: 'model',
-          text: `Navigasi rute aktif menuju **${target.nama}** (${target.kecamatan}). Peta telah difokuskan ke lokasi destinasi!`,
-          targetDest: target
+          text: `Navigasi rute aktif menuju **${target.nama}** (${target.kecamatan}). Peta telah difokuskan ke lokasi destinasi dengan titik awal GPS Anda!`,
+          recommendedPlaces: [target]
         }
       ]);
     }
@@ -217,25 +319,26 @@ const Explore = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
-  // Focus location and draw road route on map
-  const highlightLocationOnMap = (targetObj, relatedPlaces = []) => {
+  // Focus location and draw road route on map strictly anchored from user GPS
+  const highlightLocationOnMap = (targetObj) => {
     if (!targetObj || !targetObj.latitude || !targetObj.longitude) return;
 
     const targetCoords = [targetObj.latitude, targetObj.longitude];
-    const startOrigin = userLocation || DEFAULT_START_ORIGIN;
-
     setActiveTarget(targetObj);
     setMapCenter(targetCoords);
-    setMapZoom(13);
+    setMapZoom(14);
 
-    if (relatedPlaces && relatedPlaces.length > 0) {
-      setDisplayedMarkers(relatedPlaces);
+    if (targetObj.kecamatan) {
+      setActiveKecamatanName(targetObj.kecamatan);
     }
 
-    if (Math.abs(startOrigin[0] - targetCoords[0]) < 0.005 && Math.abs(startOrigin[1] - targetCoords[1]) < 0.005) {
-      setRouteWaypoints([]);
+    if (userLocation) {
+      setRouteWaypoints([userLocation, targetCoords]);
     } else {
-      setRouteWaypoints([startOrigin, targetCoords]);
+      handleEnableGPS((coords) => {
+        setRouteWaypoints([coords, targetCoords]);
+      });
+      setRouteWaypoints([DEFAULT_START_ORIGIN, targetCoords]);
     }
   };
 
@@ -254,15 +357,6 @@ const Explore = () => {
     try {
       const lowerQ = queryText.toLowerCase();
 
-      const attractionKeywords = [
-        'pantai', 'wisata', 'kuliner', 'makan', 'hotel', 'homestay', 'warung', 
-        'restoran', 'kafe', 'cafe', 'ulos', 'taman', 'air terjun', 'pelabuhan', 
-        'gereja', 'masjid', 'toko', 'pasar', 'oleh-oleh', 'rekomen', 'rekomendasi', 
-        'bagus', 'terbaik', 'spot', 'ke mana', 'pergi ke', 'tempat'
-      ];
-
-      const hasAttractionIntent = attractionKeywords.some(k => lowerQ.includes(k));
-
       let matchedKecamatanKey = null;
       Object.keys(KECAMATAN_CENTERS).forEach(key => {
         if (lowerQ.includes(key)) {
@@ -270,64 +364,48 @@ const Explore = () => {
         }
       });
 
-      let matchedTarget = null;
-      let relevantMarkers = [];
-      let aiText = '';
-
-      if (matchedKecamatanKey && !hasAttractionIntent) {
+      if (matchedKecamatanKey) {
         const kecInfo = KECAMATAN_CENTERS[matchedKecamatanKey];
-        const kecDestinations = destinations.filter(d => d.kecamatan.toLowerCase().includes(matchedKecamatanKey));
-        let lat = kecInfo.coords[0];
-        let lng = kecInfo.coords[1];
-        
-        if (kecDestinations.length > 0) {
-          const sumLat = kecDestinations.reduce((acc, d) => acc + d.latitude, 0);
-          const sumLng = kecDestinations.reduce((acc, d) => acc + d.longitude, 0);
-          lat = sumLat / kecDestinations.length;
-          lng = sumLng / kecDestinations.length;
-        }
+        setActiveKecamatanName(kecInfo.name.replace('Kecamatan ', ''));
+        setMapCenter(kecInfo.coords);
+        setMapZoom(14);
+      }
 
-        matchedTarget = {
-          id: `kec-${matchedKecamatanKey}`,
-          nama: kecInfo.name,
-          kecamatan: kecInfo.name.replace('Kecamatan ', ''),
-          kategori: 'Kawasan / Kota',
-          deskripsi_singkat: `Pusat wilayah ${kecInfo.name} di kawasan Danau Toba.`,
-          latitude: lat,
-          longitude: lng,
-          rating: 4.9,
-          jumlah_ulasan: kecDestinations.length
-        };
+      const recData = await getFairRecommendation(
+        queryText, 
+        matchedKecamatanKey ? matchedKecamatanKey : '',
+        0,
+        userLocation ? userLocation[0] : null,
+        userLocation ? userLocation[1] : null
+      );
+      
+      const mainDests = recData.destinasi_utama || [];
+      const umkmDests = recData.rekomendasi_umkm_sekitar || [];
+      const allRecommendations = [...mainDests, ...umkmDests];
 
-        // Show top 8 destinations in that kecamatan on map
-        relevantMarkers = kecDestinations.slice(0, 8);
+      // HANYA tampilkan pin-pin rekomendasi yang relevan untuk query / kecamatan ini
+      setDisplayedMarkers(allRecommendations);
+      setActiveCategoryFilter('all');
 
-        aiText = `Berikut adalah peta dan rute navigasi menuju pusat **${kecInfo.name}**.\n\nApabila Anda mencari **tempat wisata populer, pantai, kuliner khas Batak, atau sentra UMKM** di ${kecInfo.name.replace('Kecamatan ', '')}, silakan tanyakan kepada saya (misal: *"apa tempat wisata rekomendasi di ${kecInfo.name.replace('Kecamatan ', '')}?"*)!`;
-
+      let matchedTarget = null;
+      if (mainDests.length > 0) {
+        matchedTarget = mainDests[0];
+      } else if (umkmDests.length > 0) {
+        matchedTarget = umkmDests[0];
       } else {
-        const recData = await getFairRecommendation(queryText, matchedKecamatanKey ? matchedKecamatanKey : '');
-        
-        const mainDests = recData.destinasi_utama || [];
-        const umkmDests = recData.rekomendasi_umkm_sekitar || [];
-        relevantMarkers = [...mainDests, ...umkmDests];
-
-        if (mainDests.length > 0) {
-          matchedTarget = mainDests[0];
-        } else if (umkmDests.length > 0) {
-          matchedTarget = umkmDests[0];
-        } else {
-          matchedTarget = destinations.find(d => 
-            d.nama.toLowerCase().includes(lowerQ) || 
-            lowerQ.includes(d.nama.toLowerCase())
-          );
-          if (matchedTarget) relevantMarkers = [matchedTarget];
+        matchedTarget = destinations.find(d => 
+          d.nama.toLowerCase().includes(lowerQ) || 
+          lowerQ.includes(d.nama.toLowerCase())
+        );
+        if (matchedTarget) {
+          setDisplayedMarkers([matchedTarget]);
         }
+      }
 
-        aiText = recData.ai_response;
-        if (!aiText) {
-          const chatRes = await sendChatMessage(queryText, chatMessages);
-          aiText = chatRes.reply;
-        }
+      let aiText = recData.ai_response;
+      if (!aiText) {
+        const chatRes = await sendChatMessage(queryText, chatMessages);
+        aiText = chatRes.reply;
       }
 
       setChatMessages([
@@ -335,14 +413,12 @@ const Explore = () => {
         {
           role: 'model',
           text: aiText,
-          targetDest: matchedTarget
+          recommendedPlaces: allRecommendations
         }
       ]);
 
       if (matchedTarget) {
-        highlightLocationOnMap(matchedTarget, relevantMarkers);
-      } else if (relevantMarkers.length > 0) {
-        setDisplayedMarkers(relevantMarkers);
+        highlightLocationOnMap(matchedTarget);
       }
     } catch (err) {
       console.error(err);
@@ -351,7 +427,7 @@ const Explore = () => {
         {
           role: 'model',
           text: 'Mohon maaf, terjadi kendala saat mencari lokasi. Pastikan server backend uvicorn aktif.',
-          targetDest: null
+          recommendedPlaces: []
         }
       ]);
     } finally {
@@ -359,11 +435,44 @@ const Explore = () => {
     }
   };
 
+  // Filter markers based on active contextual category filter
+  const filteredVisibleMarkers = displayedMarkers.filter(dest => {
+    if (!dest.latitude || !dest.longitude) return false;
+    if (activeCategoryFilter === 'all') return true;
+
+    const destCat = (dest.kategori || '').toLowerCase();
+    if (activeCategoryFilter === 'wisata' && destCat.includes('wisata')) return true;
+    if (activeCategoryFilter === 'kuliner' && (destCat.includes('kuliner') || destCat.includes('resto') || destCat.includes('cafe'))) return true;
+    if (activeCategoryFilter === 'umkm' && (destCat.includes('umkm') || destCat.includes('oleh') || destCat.includes('ulos') || destCat.includes('toko'))) return true;
+    if (activeCategoryFilter === 'penginapan' && (destCat.includes('penginapan') || destCat.includes('hotel') || destCat.includes('homestay'))) return true;
+
+    return false;
+  });
+
+  const countWisata = displayedMarkers.filter(d => (d.kategori || '').toLowerCase().includes('wisata')).length;
+  const countUmkm = displayedMarkers.filter(d => {
+    const c = (d.kategori || '').toLowerCase();
+    return c.includes('umkm') || c.includes('oleh') || c.includes('ulos');
+  }).length;
+  const countKuliner = displayedMarkers.filter(d => {
+    const c = (d.kategori || '').toLowerCase();
+    return c.includes('kuliner') || c.includes('resto') || c.includes('cafe');
+  }).length;
+
+  const handleClearMarkers = () => {
+    setDisplayedMarkers([]);
+    setActiveTarget(null);
+    setRouteWaypoints([]);
+    setRouteInfo(null);
+    setActiveKecamatanName('');
+    setActiveCategoryFilter('all');
+  };
+
   return (
     <div className="gmaps-layout-wrapper fade-in">
-      {/* FLOATING TOP-LEFT CONTROLS (Search Bar & Map Style Switcher) */}
+      {/* FLOATING TOP-LEFT CONTROLS (Search Bar, Contextual Filters & Map Switcher) */}
       <div className="gmaps-top-left-controls">
-        {/* Floating Google Maps Search Bar */}
+        {/* Floating Search Bar */}
         <form 
           className="gmaps-search-bar-card"
           onSubmit={(e) => {
@@ -374,7 +483,7 @@ const Explore = () => {
           <Search size={18} color="#0284c7" />
           <input 
             type="text" 
-            placeholder="Telusuri lokasi wisata / kuliner di Danau Toba..."
+            placeholder="Cari wisata, kuliner, UMKM di Laguboti / Balige..."
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             onFocus={() => { if (isPanelCollapsed) setIsPanelCollapsed(false); }}
@@ -390,7 +499,51 @@ const Explore = () => {
           )}
         </form>
 
-        {/* Row below search: Map Style Switcher & GPS Button */}
+        {/* Row 2: Contextual Filter Pills - ONLY shown when recommendation results are active */}
+        {displayedMarkers.length > 0 && (
+          <div className="map-category-filter-bar">
+            <button 
+              className={`category-pill-btn ${activeCategoryFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setActiveCategoryFilter('all')}
+            >
+              ✨ Semua ({displayedMarkers.length}{activeKecamatanName ? ` di ${activeKecamatanName}` : ''})
+            </button>
+            {countWisata > 0 && (
+              <button 
+                className={`category-pill-btn ${activeCategoryFilter === 'wisata' ? 'active' : ''}`}
+                onClick={() => setActiveCategoryFilter('wisata')}
+              >
+                🏞️ Wisata ({countWisata})
+              </button>
+            )}
+            {countUmkm > 0 && (
+              <button 
+                className={`category-pill-btn ${activeCategoryFilter === 'umkm' ? 'active' : ''}`}
+                onClick={() => setActiveCategoryFilter('umkm')}
+              >
+                🛍️ UMKM ({countUmkm})
+              </button>
+            )}
+            {countKuliner > 0 && (
+              <button 
+                className={`category-pill-btn ${activeCategoryFilter === 'kuliner' ? 'active' : ''}`}
+                onClick={() => setActiveCategoryFilter('kuliner')}
+              >
+                🍜 Kuliner ({countKuliner})
+              </button>
+            )}
+            <button 
+              className="category-pill-btn"
+              onClick={handleClearMarkers}
+              title="Bersihkan pin dari peta"
+              style={{ color: '#ef4444', borderColor: '#fecaca', background: '#fff5f5' }}
+            >
+              <X size={12} /> Bersihkan
+            </button>
+          </div>
+        )}
+
+        {/* Row 3: Map Style Switcher & GPS Button */}
         <div className="gmaps-top-controls-row">
           <div className="gmaps-style-switcher">
             <button 
@@ -414,16 +567,118 @@ const Explore = () => {
           </div>
 
           <button 
-            className="gmaps-gps-btn-badge"
-            onClick={handleEnableGPS}
+            className={`gmaps-gps-btn-badge ${userLocation ? 'gps-active' : ''}`}
+            onClick={() => handleEnableGPS()}
             disabled={gpsLoading}
-            title="Pusatkan ke Lokasi GPS Anda Saat Ini"
+            title="Aktifkan & Pusatkan ke Lokasi GPS Anda"
+            style={{
+              background: userLocation ? '#f3e8ff' : '#ffffff',
+              color: userLocation ? '#7c3aed' : '#0369a1',
+              border: userLocation ? '1px solid #c084fc' : '1px solid #e2e8f0',
+              fontWeight: 600
+            }}
           >
-            <LocateFixed size={14} />
-            <span>{gpsLoading ? 'Mencari...' : 'Lokasi Saya'}</span>
+            <LocateFixed size={14} color={userLocation ? '#7c3aed' : '#0284c7'} />
+            <span>{gpsLoading ? 'Mencari GPS...' : userLocation ? 'GPS Aktif' : 'Aktifkan GPS'}</span>
           </button>
         </div>
       </div>
+
+      {/* FLOATING ACTIVE ROAD NAVIGATION CARD (When a route is active) */}
+      {activeTarget && (
+        <div 
+          className="floating-nav-card fade-in"
+          style={{
+            position: 'absolute',
+            bottom: '24px',
+            left: '20px',
+            zIndex: 1000,
+            background: 'rgba(255, 255, 255, 0.96)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '12px',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.15)',
+            border: '1px solid #bae6fd',
+            padding: '0.85rem 1.15rem',
+            maxWidth: '380px',
+            width: 'calc(100% - 40px)'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#0284c7', fontWeight: 'bold', fontSize: '0.88rem' }}>
+              <RouteIcon size={16} />
+              <span>Rute Jalan Raya Resmi</span>
+            </div>
+            <button 
+              onClick={() => { setActiveTarget(null); setRouteWaypoints([]); setRouteInfo(null); }}
+              style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '2px' }}
+              title="Tutup Navigasi"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <div style={{ fontSize: '0.84rem', color: '#334155', marginBottom: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#6b21a8', fontWeight: 600, marginBottom: '2px' }}>
+              <MapPin size={13} color="#7c3aed" /> Awal: {userLocation ? 'Lokasi GPS Anda' : 'Pusat Balige (Default)'}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#0f172a', fontWeight: 700 }}>
+              <Navigation size={13} color="#ef4444" /> Tujuan: {activeTarget.nama} ({activeTarget.kecamatan})
+            </div>
+          </div>
+
+          {routeInfo && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: '#f0f9ff', padding: '0.4rem 0.65rem', borderRadius: '6px', marginBottom: '0.6rem', fontSize: '0.8rem', color: '#0369a1', fontWeight: 600 }}>
+              <span>📏 Jarak: ~{routeInfo.distanceKm} km</span>
+              <span>⏱️ Waktu: ~{routeInfo.durationMin} menit</span>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <a 
+              href={`https://www.google.com/maps/dir/?api=1&origin=${userLocation ? `${userLocation[0]},${userLocation[1]}` : `${DEFAULT_START_ORIGIN[0]},${DEFAULT_START_ORIGIN[1]}`}&destination=${activeTarget.latitude},${activeTarget.longitude}`}
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{
+                flex: 1,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem',
+                background: '#0284c7',
+                color: 'white',
+                padding: '0.45rem 0.75rem',
+                borderRadius: '6px',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                textDecoration: 'none',
+                transition: 'background 0.2s'
+              }}
+            >
+              <Navigation size={13} /> Buka di Google Maps
+            </a>
+            {!userLocation && (
+              <button
+                onClick={() => handleEnableGPS()}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  background: '#f3e8ff',
+                  color: '#7c3aed',
+                  border: '1px solid #c084fc',
+                  padding: '0.45rem 0.65rem',
+                  borderRadius: '6px',
+                  fontSize: '0.78rem',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                <LocateFixed size={13} /> Aktifkan GPS
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* LEAFLET FULL-BLEED MAP */}
       {loadingMap ? (
@@ -432,7 +687,7 @@ const Explore = () => {
         </div>
       ) : (
         <MapContainer 
-          key={`map-dest-${displayedMarkers.length}-${activeTarget?.id || 'none'}`}
+          key={`map-dest-${filteredVisibleMarkers.length}-${activeTarget?.id || 'none'}-${userLocation ? 'gps-on' : 'gps-off'}`}
           center={mapCenter} 
           zoom={mapZoom} 
           style={{ height: '100%', width: '100%' }}
@@ -443,44 +698,75 @@ const Explore = () => {
             url={MAP_STYLES[mapStyle].url}
           />
 
-          {/* Controller to flyTo target coordinates smoothly */}
           <MapFlyController centerCoords={mapCenter} zoom={mapZoom} />
           
-          {/* User Live GPS Marker */}
+          {/* User Live GPS Pin Marker (Starting Point A) */}
           {userLocation && (
-            <Marker position={userLocation} icon={userGpsIcon}>
+            <Marker 
+              position={userLocation} 
+              icon={userGpsIcon} 
+              zIndexOffset={900}
+              draggable={true}
+              eventHandlers={{
+                dragend: (e) => {
+                  const latLng = e.target.getLatLng();
+                  const newCoords = [latLng.lat, latLng.lng];
+                  setUserLocation(newCoords);
+                  localStorage.setItem('tobaroute_user_gps', JSON.stringify(newCoords));
+                  sessionStorage.setItem('tobaroute_user_gps', JSON.stringify(newCoords));
+                  if (activeTarget && activeTarget.latitude && activeTarget.longitude) {
+                    setRouteWaypoints([newCoords, [activeTarget.latitude, activeTarget.longitude]]);
+                  }
+                }
+              }}
+            >
               <Popup>
-                <div style={{ minWidth: '140px', textAlign: 'center' }}>
-                  <h4 style={{ margin: '0 0 0.2rem 0', color: '#6b21a8' }}>Lokasi Anda (GPS)</h4>
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Titik Keberangkatan Awal</p>
+                <div style={{ minWidth: '160px', textAlign: 'center' }}>
+                  <h4 style={{ margin: '0 0 0.2rem 0', color: '#6b21a8', fontSize: '0.9rem' }}>📍 Lokasi Anda (GPS Aktif)</h4>
+                  <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b' }}>Titik Pangkal / Keberangkatan Awal</p>
+                  <div style={{ marginTop: '0.35rem', fontSize: '0.72rem', color: '#0284c7', background: '#f0f9ff', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
+                    💡 Geser pin ini untuk ubah lokasi GPS Anda
+                  </div>
                 </div>
               </Popup>
             </Marker>
           )}
 
-          {/* Default Start Origin Marker if GPS is not enabled */}
+          {/* Default Start Origin Marker if GPS is not enabled and route is active */}
           {!userLocation && routeWaypoints.length >= 2 && (
-            <Marker position={routeWaypoints[0]} icon={userGpsIcon}>
+            <Marker 
+              position={routeWaypoints[0]} 
+              icon={userGpsIcon} 
+              zIndexOffset={900}
+              draggable={true}
+              eventHandlers={{
+                dragend: (e) => {
+                  const latLng = e.target.getLatLng();
+                  const newCoords = [latLng.lat, latLng.lng];
+                  setUserLocation(newCoords);
+                  localStorage.setItem('tobaroute_user_gps', JSON.stringify(newCoords));
+                  sessionStorage.setItem('tobaroute_user_gps', JSON.stringify(newCoords));
+                  if (activeTarget && activeTarget.latitude && activeTarget.longitude) {
+                    setRouteWaypoints([newCoords, [activeTarget.latitude, activeTarget.longitude]]);
+                  }
+                }
+              }}
+            >
               <Popup>
-                <div style={{ minWidth: '150px', textAlign: 'center' }}>
-                  <h4 style={{ margin: '0 0 0.2rem 0', color: '#6b21a8' }}>Titik Keberangkatan Awal</h4>
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Pusat Balige (Default)</p>
+                <div style={{ minWidth: '160px', textAlign: 'center' }}>
+                  <h4 style={{ margin: '0 0 0.2rem 0', color: '#6b21a8', fontSize: '0.9rem' }}>Titik Keberangkatan Awal</h4>
+                  <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b' }}>Pusat Balige (Default)</p>
+                  <div style={{ marginTop: '0.35rem', fontSize: '0.72rem', color: '#0284c7', background: '#f0f9ff', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
+                    💡 Geser pin ini untuk sesuaikan titik awal
+                  </div>
                 </div>
               </Popup>
             </Marker>
           )}
 
-          {/* Guaranteed Blue Dashed Polyline Route Line */}
+          {/* Real Road Routing Engine (Clean OSRM Road Polyline) */}
           {routeWaypoints.length >= 2 && (
-            <Polyline 
-              positions={routeWaypoints} 
-              pathOptions={{ color: '#0284c7', weight: 5, opacity: 0.9, dashArray: '8, 12' }} 
-            />
-          )}
-
-          {/* Real Road Routing Machine */}
-          {routeWaypoints.length >= 2 && (
-            <RoutingMachine waypoints={routeWaypoints} />
+            <RoutingMachine waypoints={routeWaypoints} onRouteInfo={setRouteInfo} />
           )}
 
           {/* Guaranteed Active Target Destination Red Pin Marker */}
@@ -494,7 +780,7 @@ const Explore = () => {
               <Popup autoOpen={true}>
                 <div style={{ minWidth: '220px' }}>
                   <div style={{ background: '#ef4444', color: 'white', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '0.4rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <MapPin size={12} /> Target Pencarian Navigasi
+                    <MapPin size={12} /> Target Navigasi Rute
                   </div>
                   <h4 style={{ margin: '0 0 0.4rem 0', color: 'var(--color-primary-dark)' }}>
                     {activeTarget.nama}
@@ -515,45 +801,65 @@ const Explore = () => {
             </Marker>
           )}
 
-          {/* Dynamically requested relevant destinations markers */}
-          {displayedMarkers.map((dest, idx) => {
+          {/* Render ONLY Requested / Recommended Places (Clean & Focused) */}
+          {filteredVisibleMarkers.map((dest, idx) => {
             if (!dest.latitude || !dest.longitude) return null;
             if (activeTarget && (activeTarget.id === dest.id || activeTarget.nama.trim().toLowerCase() === dest.nama.trim().toLowerCase())) {
               return null;
             }
-            const isUmkm = (dest.kategori || '').toLowerCase() === 'umkm';
+            const icon = getMarkerIconByCategory(dest.kategori);
 
             return (
               <Marker 
                 key={`disp-marker-${dest.id || idx}-${dest.nama}`} 
                 position={[dest.latitude, dest.longitude]} 
-                icon={isUmkm ? umkmIcon : wisataIcon}
+                icon={icon}
               >
                 <Popup>
                   <div style={{ minWidth: '220px' }}>
-                    <h4 style={{ margin: '0 0 0.4rem 0', color: isUmkm ? 'var(--color-accent-dark, #16a34a)' : 'var(--color-primary-dark)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                      <span className={`rec-card-badge badge-cat-${(dest.kategori || 'wisata').toLowerCase()}`}>
+                        {dest.kategori || 'Wisata'}
+                      </span>
+                      {dest.rating && (
+                        <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#b45309', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                          <Star size={12} fill="#fbbf24" color="#fbbf24" /> {dest.rating}
+                        </span>
+                      )}
+                    </div>
+
+                    <h4 style={{ margin: '0 0 0.3rem 0', color: 'var(--color-primary-dark)', fontSize: '0.92rem' }}>
                       {dest.nama}
                     </h4>
                     
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.4rem', fontSize: '0.85rem', color: '#64748b' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.4rem', fontSize: '0.82rem', color: '#64748b' }}>
                       <Navigation size={12} /> {dest.kecamatan}
                     </div>
-                    
-                    {dest.rating && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.5rem', fontSize: '0.85rem', color: '#64748b' }}>
-                        <Star size={12} fill="#fbbf24" color="#fbbf24" /> {dest.rating} ({dest.jumlah_ulasan || 10} ulasan)
-                      </div>
-                    )}
 
-                    <p style={{ margin: '0', fontSize: '0.85rem', lineHeight: '1.4' }}>
+                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.82rem', lineHeight: '1.4', color: '#475569' }}>
                       {formatDescription(dest.deskripsi_singkat)}
                     </p>
                     
-                    {isUmkm && (
-                      <div style={{ marginTop: '0.5rem', padding: '0.25rem 0.5rem', background: '#dcfce7', color: '#166534', borderRadius: '4px', fontSize: '0.75rem', display: 'inline-block', fontWeight: 'bold' }}>
-                        Rekomendasi UMKM Lokal
-                      </div>
-                    )}
+                    <button
+                      onClick={() => highlightLocationOnMap(dest)}
+                      style={{
+                        width: '100%',
+                        background: '#0284c7',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '0.4rem',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.3rem'
+                      }}
+                    >
+                      <RouteIcon size={13} /> Rute dari GPS Saya
+                    </button>
                   </div>
                 </Popup>
               </Marker>
@@ -578,14 +884,14 @@ const Explore = () => {
             <div className="gmaps-panel-header-pro">
               <div className="header-title-flex">
                 <div className="bot-avatar-badge">
-                  <Sparkles size={18} color="#0284c7" />
+                  <Sparkles size={20} color="#0284c7" />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '0.92rem', margin: 0, fontWeight: '700', color: '#0f172a' }}>
+                  <h3 style={{ fontSize: '0.94rem', margin: 0, fontWeight: '700', color: '#0f172a' }}>
                     Asisten TobaRoute
                   </h3>
-                  <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '2px' }}>
-                    Panduan navigasi & rekomendasi tempat
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
+                    Navigasi presisi & rekomendasi berbasis GPS
                   </div>
                 </div>
               </div>
@@ -601,7 +907,7 @@ const Explore = () => {
 
             {/* Quick Location Chips */}
             <div className="location-quick-chips">
-              <div className="chips-label"><Compass size={12} /> Lokasi Populer:</div>
+              <div className="chips-label"><Compass size={12} /> Rekomendasi Cepat:</div>
               <div className="chips-list">
                 {QUICK_LOCATIONS.map((loc, idx) => (
                   <button key={idx} onClick={() => handleLocationSearch(null, loc.query)}>
@@ -611,22 +917,8 @@ const Explore = () => {
               </div>
             </div>
 
-            {/* Active Route Info Overlay */}
-            {activeTarget && (
-              <div className="active-route-badge" style={{ position: 'relative', top: 0, right: 0, margin: '0.5rem', zIndex: 1, border: '1px solid #7dd3fc', background: '#f0f9ff' }}>
-                <div className="badge-icon"><RouteIcon size={18} color="#0284c7" /></div>
-                <div className="badge-info">
-                  <span className="badge-title">
-                    {userLocation ? 'Lokasi Anda (GPS)' : 'Awal: Balige'} ➔ {activeTarget.nama}
-                  </span>
-                  <span className="badge-sub">{activeTarget.kecamatan} • {activeTarget.kategori.toUpperCase()}</span>
-                </div>
-                <button className="badge-close" onClick={() => { setActiveTarget(null); setRouteWaypoints([]); }}>✕</button>
-              </div>
-            )}
-
-            {/* Chat Messages Stream */}
-            <div className="chat-panel-messages" style={{ flex: 1 }}>
+            {/* Chat Messages Stream with Rich Typography & Multiple Recommendation Cards */}
+            <div className="chat-panel-messages">
               {chatMessages.map((msg, idx) => (
                 <div key={idx} className={`chat-message ${msg.role}`}>
                   <div className="message-icon">
@@ -636,20 +928,38 @@ const Explore = () => {
                     {msg.role === 'model' ? (
                       <>
                         <ReactMarkdown>{msg.text}</ReactMarkdown>
-                        {msg.targetDest && (
-                          <div 
-                            className="location-card-action" 
-                            onClick={() => highlightLocationOnMap(msg.targetDest)}
-                            title="Klik untuk lihat rute di peta"
-                          >
-                            <div className="loc-card-header">
-                              <MapPin size={16} color="#ef4444" />
-                              <strong>{msg.targetDest.nama}</strong>
-                            </div>
-                            <p className="loc-card-desc">{msg.targetDest.kecamatan} • {msg.targetDest.deskripsi_singkat}</p>
-                            <div className="loc-card-btn">
-                              <RouteIcon size={14} /> Lihat Rute & Pin di Peta
-                            </div>
+                        
+                        {/* Multiple Recommendation Cards */}
+                        {msg.recommendedPlaces && msg.recommendedPlaces.length > 0 && (
+                          <div className="rec-cards-container">
+                            {msg.recommendedPlaces.slice(0, 4).map((place, pIdx) => {
+                              const catKey = (place.kategori || 'wisata').toLowerCase();
+                              return (
+                                <div key={place.id || pIdx} className="rec-card-item">
+                                  <div className="rec-card-top">
+                                    <div className="rec-card-title">
+                                      <MapPin size={14} color="#ef4444" />
+                                      <span>{place.nama}</span>
+                                    </div>
+                                    <span className={`rec-card-badge badge-cat-${catKey}`}>
+                                      {place.kategori || 'Wisata'}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="rec-card-sub">
+                                    {place.kecamatan} {place.rating ? `• ⭐ ${place.rating}` : ''} • {formatDescription(place.deskripsi_singkat)}
+                                  </div>
+
+                                  <button 
+                                    className="rec-card-action-btn"
+                                    onClick={() => highlightLocationOnMap(place)}
+                                    title="Lihat Rute di Peta"
+                                  >
+                                    <RouteIcon size={13} /> Lihat Rute & Pin di Peta
+                                  </button>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </>
@@ -677,7 +987,7 @@ const Explore = () => {
             <form className="chat-panel-input" onSubmit={handleLocationSearch}>
               <input 
                 type="text" 
-                placeholder="Tanyakan lokasi / rekomendasi wisata..." 
+                placeholder="Tanyakan lokasi / kuliner di kecamatan..." 
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 disabled={isChatLoading}

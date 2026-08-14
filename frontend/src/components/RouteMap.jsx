@@ -102,17 +102,40 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
   const [userLocation, setUserLocation] = useState(null);
   const [mapStyle, setMapStyle] = useState('osm');
 
-  // Automatic GPS Geolocation trigger
+  // Automatic GPS Geolocation with LocalStorage Persistence & Toba Boundary Protection
   useEffect(() => {
+    // 1. Check if user already set or saved their GPS in localStorage
+    const cachedGps = localStorage.getItem('tobaroute_user_gps');
+    if (cachedGps) {
+      try {
+        const parsed = JSON.parse(cachedGps);
+        if (Array.isArray(parsed) && parsed.length === 2 && !isNaN(parsed[0]) && !isNaN(parsed[1])) {
+          setUserLocation(parsed);
+        }
+      } catch (e) {}
+    }
+
+    // 2. Request live GPS with High Accuracy
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation([position.coords.latitude, position.coords.longitude]);
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+
+          // Check if coordinate is within Toba / North Sumatra tourism area
+          // If browser IP gives an out-of-province / Medan gateway (lat > 3.3) while user has cached Toba GPS, keep the cached Toba GPS
+          const isInTobaRegion = (lat >= 1.9 && lat <= 3.2 && lon >= 98.0 && lon <= 99.8);
+          
+          if (isInTobaRegion || !cachedGps) {
+            const newCoords = [lat, lon];
+            setUserLocation(newCoords);
+            localStorage.setItem('tobaroute_user_gps', JSON.stringify(newCoords));
+          }
         },
         (error) => {
           console.warn("Akses GPS tidak diaktifkan, menggunakan titik awal default.");
         },
-        { enableHighAccuracy: true, timeout: 8000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
       );
     }
   }, []);
@@ -149,6 +172,13 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
     ? userLocation 
     : (orderedTargets.length > 0 ? orderedTargets[0].coords : [2.6105, 98.8106]);
 
+  const handleMarkerDragEnd = (e) => {
+    const latLng = e.target.getLatLng();
+    const newCoords = [latLng.lat, latLng.lng];
+    setUserLocation(newCoords);
+    localStorage.setItem('tobaroute_user_gps', JSON.stringify(newCoords));
+  };
+
   return (
     <div className="route-map-container" style={{ marginTop: '1.75rem' }}>
       {/* Route Header & Professional Sequence Panel */}
@@ -159,7 +189,7 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
               <Navigation size={18} color="#0284c7" /> Alur Rute Navigasi Perjalanan Presisi
             </h4>
             <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.82rem', color: '#64748b' }}>
-              {userLocation ? 'Rute dioptimalkan secara geografis dari titik GPS Anda saat ini.' : 'Rute dioptimalkan secara geografis ke destinasi terdekat.'}
+              {userLocation ? 'Rute dioptimalkan secara geografis dari titik GPS Anda. (Pin ungu dapat digeser untuk ubah titik awal).' : 'Rute dioptimalkan secara geografis ke destinasi terdekat.'}
             </p>
           </div>
         </div>
@@ -233,13 +263,24 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
 
           <MapViewController center={center} waypoints={routeCoordinates} />
 
-          {/* User Live GPS Marker */}
+          {/* User Live GPS Draggable Marker */}
           {userLocation && (
-            <Marker position={userLocation} icon={userGpsIcon}>
+            <Marker 
+              position={userLocation} 
+              icon={userGpsIcon}
+              draggable={true}
+              eventHandlers={{
+                dragend: handleMarkerDragEnd
+              }}
+              zIndexOffset={1000}
+            >
               <Popup>
-                <div style={{ minWidth: '140px', textAlign: 'center' }}>
-                  <h4 style={{ margin: '0 0 0.2rem 0', color: '#6b21a8' }}>Lokasi Anda (GPS)</h4>
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Titik Keberangkatan Awal</p>
+                <div style={{ minWidth: '160px', textAlign: 'center' }}>
+                  <h4 style={{ margin: '0 0 0.2rem 0', color: '#6b21a8' }}>📍 Lokasi Anda (GPS)</h4>
+                  <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b' }}>Titik Keberangkatan Awal</p>
+                  <div style={{ marginTop: '0.35rem', fontSize: '0.72rem', color: '#0284c7', background: '#f0f9ff', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
+                    💡 Geser pin ini untuk ubah titik awal
+                  </div>
                 </div>
               </Popup>
             </Marker>
@@ -258,16 +299,21 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
               icon={wisataIcon}
             >
               <Popup>
-                <div style={{ minWidth: '160px' }}>
+                <div style={{ minWidth: '180px' }}>
                   <h4 style={{ margin: '0 0 0.4rem 0', color: 'var(--color-primary-dark)' }}>
                     {dest.nama}
                   </h4>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.35rem', fontSize: '0.82rem', color: '#64748b' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem', fontSize: '0.82rem', color: '#64748b' }}>
                     <Navigation size={12} /> {dest.kecamatan}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.82rem', color: '#64748b' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.35rem', fontSize: '0.82rem', color: '#64748b' }}>
                     <Star size={12} fill="#fbbf24" color="#fbbf24" /> {dest.rating}
                   </div>
+                  {dest.full_address && (
+                    <div style={{ background: '#f1f5f9', color: '#334155', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.72rem', fontFamily: 'monospace' }}>
+                      📍 {dest.full_address}
+                    </div>
+                  )}
                 </div>
               </Popup>
             </Marker>
@@ -281,14 +327,19 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
               icon={umkmIcon}
             >
               <Popup>
-                <div style={{ minWidth: '160px' }}>
+                <div style={{ minWidth: '180px' }}>
                   <h4 style={{ margin: '0 0 0.4rem 0', color: 'var(--color-accent-dark, #16a34a)' }}>
                     {umkm.nama}
                   </h4>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.35rem', fontSize: '0.82rem', color: '#64748b' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem', fontSize: '0.82rem', color: '#64748b' }}>
                     <Navigation size={12} /> {umkm.kecamatan}
                   </div>
-                  <div style={{ marginTop: '0.35rem', padding: '0.2rem 0.4rem', background: '#dcfce7', color: '#166534', borderRadius: '4px', fontSize: '0.75rem', display: 'inline-block', fontWeight: 600 }}>
+                  {umkm.full_address && (
+                    <div style={{ background: '#f1f5f9', color: '#334155', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.72rem', fontFamily: 'monospace', marginBottom: '0.35rem' }}>
+                      📍 {umkm.full_address}
+                    </div>
+                  )}
+                  <div style={{ padding: '0.2rem 0.4rem', background: '#dcfce7', color: '#166534', borderRadius: '4px', fontSize: '0.75rem', display: 'inline-block', fontWeight: 600 }}>
                     Rekomendasi UMKM
                   </div>
                 </div>

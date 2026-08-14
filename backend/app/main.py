@@ -20,6 +20,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def format_destinasi_response(d):
+    plus = schemas.generate_plus_code(d.latitude, d.longitude)
+    plus_short = f"{plus[:4]}+{plus[4:8]}" if len(plus) >= 8 else plus
+    full_addr = f"{plus_short}, {d.nama_jalan}"
+    return {
+        "id": d.id,
+        "nama": d.nama,
+        "kategori": d.kategori,
+        "kecamatan": d.kecamatan,
+        "gambar_url": d.gambar_url,
+        "deskripsi_singkat": d.deskripsi_singkat,
+        "deskripsi_lengkap": d.deskripsi_lengkap,
+        "nama_jalan": d.nama_jalan,
+        "latitude": d.latitude,
+        "longitude": d.longitude,
+        "rating": d.rating,
+        "jumlah_ulasan": d.jumlah_ulasan,
+        "plus_code": plus_short,
+        "full_address": full_addr
+    }
+
 # Endpoint Baru: Mengambil rekomendasi rute yang adil bagi UMKM berbasis RAG Semantik
 @app.get("/api/route/fair-recommendation", response_model=schemas.TobaRouteResponse)
 def get_fair_travel_route(
@@ -51,9 +72,12 @@ def get_fair_travel_route(
         print(f"[AI Error] Gagal menghubungi Gemini API: {e}")
         ai_response = "[INFO] Asisten AI TobaRoute sedang sibuk. Menampilkan rekomendasi destinasi terdekat langsung dari database."
     
+    dest_utama_formatted = [format_destinasi_response(d) for d in route_data["destinasi_utama"]]
+    umkm_formatted = [format_destinasi_response(d) for d in route_data["rekomendasi_umkm_sekitar"]]
+
     return {
-        "destinasi_utama": route_data["destinasi_utama"],
-        "rekomendasi_umkm_sekitar": route_data["rekomendasi_umkm_sekitar"],
+        "destinasi_utama": dest_utama_formatted,
+        "rekomendasi_umkm_sekitar": umkm_formatted,
         "ai_response": ai_response
     }
 
@@ -68,7 +92,7 @@ def interactive_chat(request: schemas.ChatbotRequest):
 @app.get("/api/destinasi", response_model=List[schemas.DestinasiResponse])
 def read_destinasi(kecamatan: str = None, limit: int = 1000, db: Session = Depends(get_db)):
     destinasi = crud.get_destinasi(db, kecamatan=kecamatan, limit=limit)
-    return destinasi
+    return [format_destinasi_response(d) for d in destinasi]
 
 # Endpoint untuk Admin: Menambahkan destinasi baru ke database
 @app.post("/api/admin/destinasi", response_model=schemas.DestinasiResponse)
@@ -96,4 +120,33 @@ def remove_destinasi(destinasi_id: int, db: Session = Depends(get_db)):
 def sync_vector_database(db: Session = Depends(get_db)):
     result = crud.sync_all_vectors(db=db)
     return result
+
+# Endpoint untuk Admin: Mengambil ringkasan metrik sistem dan benchmark RAG
+@app.get("/api/admin/metrics")
+def get_system_metrics(db: Session = Depends(get_db)):
+    all_dest = db.query(models.Destinasi).all()
+    total = len(all_dest)
+    
+    wisata = sum(1 for d in all_dest if "wisata" in (d.kategori or "").lower())
+    kuliner = sum(1 for d in all_dest if any(k in (d.kategori or "").lower() for k in ["kuliner", "makan", "resto", "kafe", "kopi"]))
+    umkm = sum(1 for d in all_dest if any(k in (d.kategori or "").lower() for k in ["umkm", "kerajinan", "oleh", "souvenir", "tenun"]))
+    penginapan = sum(1 for d in all_dest if any(k in (d.kategori or "").lower() for k in ["penginapan", "hotel", "homestay"]))
+    transportasi = sum(1 for d in all_dest if any(k in (d.kategori or "").lower() for k in ["transportasi", "dermaga", "pelabuhan", "kapal"]))
+    
+    fairness_count = kuliner + umkm
+    fairness_pct = round((fairness_count / total * 100), 2) if total > 0 else 0.0
+
+    return {
+        "total_destinasi": total,
+        "wisata_count": wisata,
+        "kuliner_count": kuliner,
+        "umkm_count": umkm,
+        "penginapan_count": penginapan,
+        "transportasi_count": transportasi,
+        "fairness_count": fairness_count,
+        "fairness_percentage": fairness_pct,
+        "vector_dimensions": 1024,
+        "embedding_model": "cohere-embed-multilingual-v3.0",
+        "llm_model": "gemini-3.1-flash-lite"
+    }
 

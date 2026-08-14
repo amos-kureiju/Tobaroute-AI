@@ -1,0 +1,1302 @@
+[
+  {
+    "id": "TOBA-001",
+    "nama_lokasi": "Pantai Pasir Putih Lumban Bulbul",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Balige",
+    "koordinat": [
+      2.3485,
+      99.0712
+    ],
+    "ulasan_count": 145,
+    "rating": 4.6,
+    "deskripsi": "Pantai air tawar berpasir putih di pesisir Danau Toba dengan wahana permainan air, pondok santai, dan pemandangan perbukitan Balige."
+  },
+  {
+    "id": "TOBA-002",
+    "nama_lokasi": "Museum TB Silalahi Center",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Balige",
+    "koordinat": [
+      2.3325,
+      99.0558
+    ],
+    "ulasan_count": 210,
+    "rating": 4.8,
+    "deskripsi": "Kompleks museum sejarah Batak terpadu yang menyimpan artefak kuno Batak, rumah adat Bolon, dan benda bersejarah Mopang."
+  },
+  {
+    "id": "TOBA-003",
+    "nama_lokasi": "Batikta & Sentra Tenun Ulos Balige",
+    "kategori": "UMKM Kerajinan & Souvenir",
+    "kecamatan": "Balige",
+    "koordinat": [
+      2.3325,
+      99.0638
+    ],
+    "ulasan_count": 18,
+    "rating": 4.9,
+    "deskripsi": "Galeri UMKM pelestari motif Tenun Ulos khas Batak Toba dan kerajinan souvenir lokal autentik dengan kemasan modern."
+  },
+  {
+    "id": "TOBA-004",
+    "nama_lokasi": "Pantai Lumban Silintong",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Balige",
+    "koordinat": [
+      2.3421,
+      99.051
+    ],
+    "ulasan_count": 98,
+    "rating": 4.5,
+    "deskripsi": "Destinasi wisata tepi danau yang terkenal dengan tradisi anak-anak menyelam koin dan deretan cafe tempat menikmati matahari terbenam."
+  },
+  {
+    "id": "TOBA-005",
+    "nama_lokasi": "Kedai Kopi Arabika Lintong & Toba Specialty Balige",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Balige",
+    "koordinat": [
+      2.3335,
+      99.062
+    ],
+    "ulasan_count": 10,
+    "rating": 4.8,
+    "deskripsi": "Kedai kopi edukasi dan sajian biji Arabika Lintong & Sigarar Utang khas pegunungan Toba buatan petani lokal."
+  },
+  {
+    "id": "TOBA-006",
+    "nama_lokasi": "RM Naniarsik & Ikan Bakar Lumban Silintong",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Balige",
+    "koordinat": [
+      2.3418,
+      99.0525
+    ],
+    "ulasan_count": 12,
+    "rating": 4.7,
+    "deskripsi": "Kuliner autentik olahan ikan Mas Naniarsik dan ikan Mujair Bakar bumbu Andaliman segar di pinggir danau Balige."
+  },
+  {
+    "id": "TOBA-007",
+    "nama_lokasi": "Sentra Kue Tradisional Ombus-ombus & Pohulpohul",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Balige",
+    "koordinat": [
+      2.334,
+      99.064
+    ],
+    "ulasan_count": 15,
+    "rating": 4.7,
+    "deskripsi": "Jajanan hangat khas Batak terbuat dari tepung beras, kelapa parut, dan gula merah hangat."
+  },
+  {
+    "id": "TOBA-008",
+    "nama_lokasi": "Pasar Tradisional Onan Balige",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Balige",
+    "koordinat": [
+      2.335,
+      99.063
+    ],
+    "ulasan_count": 75,
+    "rating": 4.4,
+    "deskripsi": "Pasar tradisional unik dengan arsitektur sopo godang yang menjual bumbu Andaliman, hasil tani lokal, dan kain tenun."
+  },
+  {
+    "id": "TOBA-009",
+    "nama_lokasi": "Makam Pahlawan Nasional Sisingamangaraja XII",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Balige",
+    "koordinat": [
+      2.329,
+      99.068
+    ],
+    "ulasan_count": 55,
+    "rating": 4.7,
+    "deskripsi": "Situs ziarah sejarah perjuangan pahlawan nasional Raja Sisingamangaraja XII di Balige."
+  },
+  {
+    "id": "TOBA-010",
+    "nama_lokasi": "Homestay Mutiara Balige",
+    "kategori": "Akomodasi & Homestay",
+    "kecamatan": "Balige",
+    "koordinat": [
+      2.3345,
+      99.0615
+    ],
+    "ulasan_count": 8,
+    "rating": 4.6,
+    "deskripsi": "Penginapan ramah keluarga bergaya ornamen Batak dengan fasilitas lengkap dekat pusat kota Balige."
+  },
+  {
+    "id": "TOBA-011",
+    "nama_lokasi": "Pelabuhan Balige",
+    "kategori": "Transportasi & Dermaga",
+    "kecamatan": "Balige",
+    "koordinat": [
+      2.336,
+      99.0602
+    ],
+    "ulasan_count": 42,
+    "rating": 4.3,
+    "deskripsi": "Dermaga penyeberangan kapal tradisional dan angkutan danau menghubungkan Balige dengan Samosir dan Onan Runggu."
+  },
+  {
+    "id": "TOBA-012",
+    "nama_lokasi": "Bukit Pahoda Tampahan",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Tampahan",
+    "koordinat": [
+      2.316,
+      99.0125
+    ],
+    "ulasan_count": 64,
+    "rating": 4.8,
+    "deskripsi": "Bukit gundul hijau panorama 360 derajat pemandangan Danau Toba dan lanskap hamparan sawah Desa Meat."
+  },
+  {
+    "id": "TOBA-013",
+    "nama_lokasi": "Desa Wisata Meat Tampahan",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Tampahan",
+    "koordinat": [
+      2.312,
+      99.018
+    ],
+    "ulasan_count": 52,
+    "rating": 4.9,
+    "deskripsi": "Desa terpencil di lembah tepi Danau Toba yang terkenal sebagai pusat penenun Ulos Harungguan dan pemandangan ala New Zealand."
+  },
+  {
+    "id": "TOBA-014",
+    "nama_lokasi": "Sentra Tenun Ulos Tradisional Meat",
+    "kategori": "UMKM Kerajinan & Souvenir",
+    "kecamatan": "Tampahan",
+    "koordinat": [
+      2.3115,
+      99.0185
+    ],
+    "ulasan_count": 6,
+    "rating": 4.9,
+    "deskripsi": "Usaha rumahan perajin wanita di Desa Meat yang menenun kain Ulos kuno dengan pewarna alami tumbuh-tumbuhan."
+  },
+  {
+    "id": "TOBA-015",
+    "nama_lokasi": "Homestay Rumah Adat Batak Meat",
+    "kategori": "Akomodasi & Homestay",
+    "kecamatan": "Tampahan",
+    "koordinat": [
+      2.313,
+      99.0175
+    ],
+    "ulasan_count": 9,
+    "rating": 4.8,
+    "deskripsi": "Akomodasi autentik menginap di dalam Rumah Bolon kayu bersejarah dengan pemandangan langsung ke danau."
+  },
+  {
+    "id": "TOBA-016",
+    "nama_lokasi": "Pantai Laguboti Permai",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Laguboti",
+    "koordinat": [
+      2.358,
+      99.128
+    ],
+    "ulasan_count": 38,
+    "rating": 4.4,
+    "deskripsi": "Pantai pasir danau di Laguboti dengan pepohonan rindang dan spot bersantai tepi danau yang tenang."
+  },
+  {
+    "id": "TOBA-017",
+    "nama_lokasi": "Rumah Makan Flyover Laguboti",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Laguboti",
+    "koordinat": [
+      2.3544,
+      99.1264
+    ],
+    "ulasan_count": 14,
+    "rating": 4.6,
+    "deskripsi": "Rumah makan khas lokal yang menyajikan olahan Ayam Pinadar, Dekke Naaniura, dan sup iga khas Toba."
+  },
+  {
+    "id": "TOBA-018",
+    "nama_lokasi": "Sentra Tenun Ulos Sitoluama Laguboti",
+    "kategori": "UMKM Kerajinan & Souvenir",
+    "kecamatan": "Laguboti",
+    "koordinat": [
+      2.351,
+      99.131
+    ],
+    "ulasan_count": 7,
+    "rating": 4.8,
+    "deskripsi": "Kelompok perajin tenun kain Ulos Ragidup dan Sadum khas Toba berkualitas tinggi di kawasan Sitoluama."
+  },
+  {
+    "id": "TOBA-019",
+    "nama_lokasi": "IT Del View Point & Danau Laguboti",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Laguboti",
+    "koordinat": [
+      2.3525,
+      99.138
+    ],
+    "ulasan_count": 82,
+    "rating": 4.7,
+    "deskripsi": "Kawasan kampus hijau di tepi Danau Toba dengan pemandangan arsitektur modern berpadu dengan lanskap perairan Toba."
+  },
+  {
+    "id": "TOBA-020",
+    "nama_lokasi": "Warung Kopi & Mie Gomak Sitoluama",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Laguboti",
+    "koordinat": [
+      2.353,
+      99.129
+    ],
+    "ulasan_count": 11,
+    "rating": 4.7,
+    "deskripsi": "Warung makan merakyat penyedia Mie Gomak kuah santan Andaliman dan Mie Gomak goreng yang menggugah selera."
+  },
+  {
+    "id": "TOBA-021",
+    "nama_lokasi": "Makam Dr. IL Nommensen Sigumpar",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Sigumpar",
+    "koordinat": [
+      2.392,
+      99.155
+    ],
+    "ulasan_count": 78,
+    "rating": 4.8,
+    "deskripsi": "Situs religi peninggalan rasul masyarakat Batak Dr. Ingwer Ludwig Nommensen dengan taman peringatan tenang."
+  },
+  {
+    "id": "TOBA-022",
+    "nama_lokasi": "Sentra Tenun Ulos Sigumpar",
+    "kategori": "UMKM Kerajinan & Souvenir",
+    "kecamatan": "Sigumpar",
+    "koordinat": [
+      2.393,
+      99.156
+    ],
+    "ulasan_count": 5,
+    "rating": 4.9,
+    "deskripsi": "Pengrajin rumahan kain Ulos tradisional tenun tangan yang diwariskan secara turun temurun di Sigumpar."
+  },
+  {
+    "id": "TOBA-023",
+    "nama_lokasi": "Kedai Kopi Nommensen Sigumpar",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Sigumpar",
+    "koordinat": [
+      2.3915,
+      99.154
+    ],
+    "ulasan_count": 9,
+    "rating": 4.5,
+    "deskripsi": "Kedai santai menyajikan kopi seduh lokal khas Toba dan kue lapet hangat di jalur raya Lintas Sumatra."
+  },
+  {
+    "id": "TOBA-024",
+    "nama_lokasi": "Pantai Parparean Porsea",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Porsea",
+    "koordinat": [
+      2.451,
+      99.148
+    ],
+    "ulasan_count": 67,
+    "rating": 4.5,
+    "deskripsi": "Taman pantai perairan tenang di tepi Porsea dilengkapi fasilitas olahraga air dan taman bermain anak."
+  },
+  {
+    "id": "TOBA-025",
+    "nama_lokasi": "Taman Wisata Siruar & Bendungan Tangga",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Porsea",
+    "koordinat": [
+      2.4475,
+      99.1538
+    ],
+    "ulasan_count": 45,
+    "rating": 4.6,
+    "deskripsi": "Kawasan hulu Sungai Asahan tempat keluarnya air Danau Toba dengan pemandangan bendungan indah dan taman hijau."
+  },
+  {
+    "id": "TOBA-026",
+    "nama_lokasi": "Rumah Makan Ikan Mas Arsik Porsea",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Porsea",
+    "koordinat": [
+      2.446,
+      99.155
+    ],
+    "ulasan_count": 13,
+    "rating": 4.7,
+    "deskripsi": "Kuliner legendaris olahan Arsik Ikan Mas bumbu tuba dan Andaliman pedas asam gurih khas Porsea."
+  },
+  {
+    "id": "TOBA-027",
+    "nama_lokasi": "Sentra Kopi Robusta Porsea",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Porsea",
+    "koordinat": [
+      2.448,
+      99.152
+    ],
+    "ulasan_count": 8,
+    "rating": 4.6,
+    "deskripsi": "Kedai kopi olahan biji kopi pilihan lereng Porsea dengan aroma harum dan rasa pekat mantap."
+  },
+  {
+    "id": "TOBA-028",
+    "nama_lokasi": "UMKM Kerajinan Ulos & Aksesori Etnik Silaen",
+    "kategori": "UMKM Kerajinan & Souvenir",
+    "kecamatan": "Silaen",
+    "koordinat": [
+      2.387,
+      99.2051
+    ],
+    "ulasan_count": 8,
+    "rating": 4.8,
+    "deskripsi": "Usaha mikro lokal pembuat tas, gantungan kunci, dan selendang etnik dari kain ulos ATBM."
+  },
+  {
+    "id": "TOBA-029",
+    "nama_lokasi": "Air Terjun Sampuran Silaen",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Silaen",
+    "koordinat": [
+      2.389,
+      99.208
+    ],
+    "ulasan_count": 22,
+    "rating": 4.6,
+    "deskripsi": "Wisata air terjun tersembunyi di tengah perbukitan hijau Silaen dengan udara segar merelaksasi."
+  },
+  {
+    "id": "TOBA-030",
+    "nama_lokasi": "Sentra Gula Merah Palm Sugar Silaen",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Silaen",
+    "koordinat": [
+      2.385,
+      99.202
+    ],
+    "ulasan_count": 5,
+    "rating": 4.9,
+    "deskripsi": "Produksi gula aren murni rumahan buatan warga Silaen tanpa bahan pengawet."
+  },
+  {
+    "id": "TOBA-031",
+    "nama_lokasi": "Taman Eden 100 Lumban Julu",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Lumban Julu",
+    "koordinat": [
+      2.601,
+      99.048
+    ],
+    "ulasan_count": 110,
+    "rating": 4.7,
+    "deskripsi": "Kawasan ekowisata konservaai hutan seluas 100 hektar dengan ratusan jenis tanaman buah, air terjun 7 tingkat, dan camping ground."
+  },
+  {
+    "id": "TOBA-032",
+    "nama_lokasi": "Air Terjun Jasa Lumban Julu",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Lumban Julu",
+    "koordinat": [
+      2.605,
+      99.042
+    ],
+    "ulasan_count": 19,
+    "rating": 4.5,
+    "deskripsi": "Spot air terjun alami berhawa sejuk yang dikelilingi pepohonan pinus dan perbukitan."
+  },
+  {
+    "id": "TOBA-033",
+    "nama_lokasi": "Sentra Kopi Aek Natolu Lumban Julu",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Lumban Julu",
+    "koordinat": [
+      2.599,
+      99.05
+    ],
+    "ulasan_count": 7,
+    "rating": 4.8,
+    "deskripsi": "Usaha kelompok tani Kopi Arabika olahan basah (wet processed) beraroma rempah unik khas Aek Natolu."
+  },
+  {
+    "id": "TOBA-034",
+    "nama_lokasi": "Pelabuhan Ajibata",
+    "kategori": "Transportasi & Dermaga",
+    "kecamatan": "Ajibata",
+    "koordinat": [
+      2.665,
+      98.932
+    ],
+    "ulasan_count": 310,
+    "rating": 4.6,
+    "deskripsi": "Pelabuhan feri utama penyeberangan kapal Ro-Ro jalur Ajibata menuju Ambarita Samosir."
+  },
+  {
+    "id": "TOBA-035",
+    "nama_lokasi": "Kedai Ikan Pora-pora Goreng Ajibata",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Ajibata",
+    "koordinat": [
+      2.664,
+      98.933
+    ],
+    "ulasan_count": 14,
+    "rating": 4.7,
+    "deskripsi": "Sajian krispi ikan Pora-pora endemik Danau Toba goreng renyah bumbu garam gurih."
+  },
+  {
+    "id": "TOBA-036",
+    "nama_lokasi": "Pantai Bebas Parapat",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Parapat",
+    "koordinat": [
+      2.662,
+      98.935
+    ],
+    "ulasan_count": 420,
+    "rating": 4.6,
+    "deskripsi": "RTH dan pantai publik ikonik Parapat dengan amfiteater laut, menara pandang, dan spot swafoto Danau Toba."
+  },
+  {
+    "id": "TOBA-037",
+    "nama_lokasi": "Pesanggrahan Soekarno Parapat",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Parapat",
+    "koordinat": [
+      2.661,
+      98.938
+    ],
+    "ulasan_count": 130,
+    "rating": 4.7,
+    "deskripsi": "Gedung bersejarah tempat pengasingan Presiden pertama RI Soekarno tahun 1948 berarsitektur kolonial Belanda."
+  },
+  {
+    "id": "TOBA-038",
+    "nama_lokasi": "Pelabuhan Tiga Raja Parapat",
+    "kategori": "Transportasi & Dermaga",
+    "kecamatan": "Parapat",
+    "koordinat": [
+      2.663,
+      98.934
+    ],
+    "ulasan_count": 180,
+    "rating": 4.4,
+    "deskripsi": "Pelabuhan kapal kayu tradisional penumpang jalur Parapat menuju Tomok Pulau Samosir."
+  },
+  {
+    "id": "TOBA-039",
+    "nama_lokasi": "RM Khas Mangaloksa Parapat",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Parapat",
+    "koordinat": [
+      2.6625,
+      98.936
+    ],
+    "ulasan_count": 15,
+    "rating": 4.6,
+    "deskripsi": "Rumah makan tradisional penyedia olahan sup ikan mujair asam pedas dan sambal tuktuk khas Parapat."
+  },
+  {
+    "id": "TOBA-040",
+    "nama_lokasi": "Batu Gantung Parapat",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Girsang Sipangan Bolon",
+    "koordinat": [
+      2.658,
+      98.941
+    ],
+    "ulasan_count": 190,
+    "rating": 4.5,
+    "deskripsi": "Tebing batu tegap legendaris menyerupai sosok menyerupai manusia menggantung dengan cerita rakyat Batak yang mashur."
+  },
+  {
+    "id": "TOBA-041",
+    "nama_lokasi": "Panatapan Parapat Viewpoint",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Girsang Sipangan Bolon",
+    "koordinat": [
+      2.67,
+      98.945
+    ],
+    "ulasan_count": 230,
+    "rating": 4.7,
+    "deskripsi": "Rest area perbukitan jalur jalan lintas meliuk dengan pemandangan lekukan Danau Toba dan wahana monyet jinak."
+  },
+  {
+    "id": "TOBA-042",
+    "nama_lokasi": "Kedai Kopi & Jagung Bakar Panatapan",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Girsang Sipangan Bolon",
+    "koordinat": [
+      2.6705,
+      98.9455
+    ],
+    "ulasan_count": 12,
+    "rating": 4.8,
+    "deskripsi": "Sajian hangat jagung bakar manis pedas manis dan teh jahe hangat sambil menikmati tebing dan danau."
+  },
+  {
+    "id": "TOBA-043",
+    "nama_lokasi": "Waterfront City Pangururan",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Pangururan",
+    "koordinat": [
+      2.6033,
+      98.705
+    ],
+    "ulasan_count": 350,
+    "rating": 4.9,
+    "deskripsi": "Kawasan wisata tepian air modern Pangururan lengkap dengan atraksi air mancur menari, galeri UMKM, dan promenade pedestrian."
+  },
+  {
+    "id": "TOBA-044",
+    "nama_lokasi": "Pemandian Air Panas Aek Rangat Pangururan",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Pangururan",
+    "koordinat": [
+      2.612,
+      98.692
+    ],
+    "ulasan_count": 280,
+    "rating": 4.6,
+    "deskripsi": "Kolam pemandian belerang alami di kaki Gunung Pusuk Buhit dengan air hangat menyehatkan."
+  },
+  {
+    "id": "TOBA-045",
+    "nama_lokasi": "Jembatan Tano Ponggol Pangururan",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Pangururan",
+    "koordinat": [
+      2.6015,
+      98.708
+    ],
+    "ulasan_count": 195,
+    "rating": 4.8,
+    "deskripsi": "Jembatan megah penghubung daratan Sumatra dan Pulau Samosir yang melintasi kanal terusan buatan kolonial."
+  },
+  {
+    "id": "TOBA-046",
+    "nama_lokasi": "Danau Aek Natonang Pangururan",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Pangururan",
+    "koordinat": [
+      2.62,
+      98.74
+    ],
+    "ulasan_count": 72,
+    "rating": 4.6,
+    "deskripsi": "Danau unik di atas danau (danau di daratan Pulau Samosir) dikelilingi hutan pinus nan asri."
+  },
+  {
+    "id": "TOBA-047",
+    "nama_lokasi": "RM Mie Gomak & Mi Batak Pangururan",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Pangururan",
+    "koordinat": [
+      2.6025,
+      98.704
+    ],
+    "ulasan_count": 15,
+    "rating": 4.8,
+    "deskripsi": "Warung olahan Mie Gomak bumbu rempah Andaliman segar racikan bumbu khas Samosir."
+  },
+  {
+    "id": "TOBA-048",
+    "nama_lokasi": "Galeri Souvenir & Ulos Samosir Pangururan",
+    "kategori": "UMKM Kerajinan & Souvenir",
+    "kecamatan": "Pangururan",
+    "koordinat": [
+      2.604,
+      98.706
+    ],
+    "ulasan_count": 10,
+    "rating": 4.7,
+    "deskripsi": "Pusat penjualan hasil kerajinan tangan kayu ukir, sarung Ulos, dan aksesoris etnik khas Samosir."
+  },
+  {
+    "id": "TOBA-049",
+    "nama_lokasi": "Homestay Samosir Green Pangururan",
+    "kategori": "Akomodasi & Homestay",
+    "kecamatan": "Pangururan",
+    "koordinat": [
+      2.605,
+      98.703
+    ],
+    "ulasan_count": 11,
+    "rating": 4.7,
+    "deskripsi": "Penginapan berkonsep hijau bersih dengan pemandangan danau dan Gunung Pusuk Buhit."
+  },
+  {
+    "id": "TOBA-050",
+    "nama_lokasi": "Sentra Pengrajin Tenun Ulos Kampung Hutaraja",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Simanindo",
+    "koordinat": [
+      2.7252,
+      98.7869
+    ],
+    "ulasan_count": 14,
+    "rating": 4.9,
+    "deskripsi": "Desa wisata UMKM tradisional penenun Ulos Sadum, Ragidup, dan Harungguan khas Samosir di Lumban Suhi Suhi."
+  },
+  {
+    "id": "TOBA-051",
+    "nama_lokasi": "Desa Wisata Tomok & Makam Raja Sidabutar",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Simanindo",
+    "koordinat": [
+      2.665,
+      98.862
+    ],
+    "ulasan_count": 480,
+    "rating": 4.7,
+    "deskripsi": "Pusat kebudayaan Batak Toba tempat kompleks makam batu batu tua Raja Sidabutar dan pertunjukan patung Sigale-gale."
+  },
+  {
+    "id": "TOBA-052",
+    "nama_lokasi": "Museum Batak Simanindo",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Simanindo",
+    "koordinat": [
+      2.748,
+      98.752
+    ],
+    "ulasan_count": 160,
+    "rating": 4.7,
+    "deskripsi": "Museum terbuka rumah adat kuno Raja Simalungun/Simanindo penyaji tarian tor-tor tradisional autentik."
+  },
+  {
+    "id": "TOBA-053",
+    "nama_lokasi": "Bukit Holbung Samosir",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Simanindo",
+    "koordinat": [
+      2.583,
+      98.721
+    ],
+    "ulasan_count": 520,
+    "rating": 4.9,
+    "deskripsi": "Perbukitan hijau sabana 'Teletubbies' favorit tempat menikmati pemandangan danau Toba dan perahu nelayan."
+  },
+  {
+    "id": "TOBA-054",
+    "nama_lokasi": "Pantai Batu Hoda Simanindo",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Simanindo",
+    "koordinat": [
+      2.762,
+      98.738
+    ],
+    "ulasan_count": 210,
+    "rating": 4.6,
+    "deskripsi": "Titik paling utara Pulau Samosir dengan ikon patung kuda batu dan fasilitas camping tepi danau."
+  },
+  {
+    "id": "TOBA-055",
+    "nama_lokasi": "Pasar Souvenir & Cenderamata Tomok",
+    "kategori": "UMKM Kerajinan & Souvenir",
+    "kecamatan": "Simanindo",
+    "koordinat": [
+      2.6645,
+      98.8625
+    ],
+    "ulasan_count": 310,
+    "rating": 4.5,
+    "deskripsi": "Deretan kios UMKM penjual baju etnik Batak, ukiran kayu gorga, kain ulos, dan gantungan kunci khas Toba."
+  },
+  {
+    "id": "TOBA-056",
+    "nama_lokasi": "Kedai Kopi & Cafe Batu Hoda Beach",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Simanindo",
+    "koordinat": [
+      2.7615,
+      98.7385
+    ],
+    "ulasan_count": 13,
+    "rating": 4.7,
+    "deskripsi": "Cafe pesisir pantai menyajikan minuman kelapa muda segar, es kopi susu gula aren, dan pizza andaliman."
+  },
+  {
+    "id": "TOBA-057",
+    "nama_lokasi": "Pelabuhan Tomok",
+    "kategori": "Transportasi & Dermaga",
+    "kecamatan": "Simanindo",
+    "koordinat": [
+      2.666,
+      98.861
+    ],
+    "ulasan_count": 240,
+    "rating": 4.5,
+    "deskripsi": "Pintu gerbang penyeberangan kapal penumpang dan feri penghubung Samosir dengan Parapat."
+  },
+  {
+    "id": "TOBA-058",
+    "nama_lokasi": "Menara Pandang Tele",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Harian",
+    "koordinat": [
+      2.583,
+      98.633
+    ],
+    "ulasan_count": 390,
+    "rating": 4.7,
+    "deskripsi": "Menara pandang di tebing perbatasan Samosir dan Humbahas yang menyajikan pemandangan spektakuler Danau Toba dari ketinggian."
+  },
+  {
+    "id": "TOBA-059",
+    "nama_lokasi": "Air Terjun Efrata Harian",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Harian",
+    "koordinat": [
+      2.571,
+      98.648
+    ],
+    "ulasan_count": 210,
+    "rating": 4.8,
+    "deskripsi": "Air terjun terjan melebar seperti tirai putih alami di antara tebing buatan pegunungan Harian Boho."
+  },
+  {
+    "id": "TOBA-060",
+    "nama_lokasi": "Kedai Kopi Tele View & Rest Area",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Harian",
+    "koordinat": [
+      2.5825,
+      98.6335
+    ],
+    "ulasan_count": 12,
+    "rating": 4.6,
+    "deskripsi": "Rest area penjual kopi Arabika hangat, mi rebus, dan mi goreng di puncak bukit ketinggian Tele."
+  },
+  {
+    "id": "TOBA-061",
+    "nama_lokasi": "Desa Wisata Sianjur Mulamula",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Sianjur Mulamula",
+    "koordinat": [
+      2.589,
+      98.642
+    ],
+    "ulasan_count": 120,
+    "rating": 4.9,
+    "deskripsi": "Lembah sakral yang dipercaya sebagai tempat asal muasal peradaban suku Batak di kaki Pusuk Buhit."
+  },
+  {
+    "id": "TOBA-062",
+    "nama_lokasi": "Aek Sipitu Dai Sianjur Mulamula",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Sianjur Mulamula",
+    "koordinat": [
+      2.592,
+      98.64
+    ],
+    "ulasan_count": 85,
+    "rating": 4.8,
+    "deskripsi": "Sumber mata air unik yang memiliki 7 pancuran dengan 7 rasa air berbeda untuk hajat ritual adat."
+  },
+  {
+    "id": "TOBA-063",
+    "nama_lokasi": "Batu Hobon Sianjur Mulamula",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Sianjur Mulamula",
+    "koordinat": [
+      2.588,
+      98.644
+    ],
+    "ulasan_count": 62,
+    "rating": 4.7,
+    "deskripsi": "Situs batu peti pusaka peninggalan Tatae Bulan penyimpan harta naskah kuno sarat nilai mistis."
+  },
+  {
+    "id": "TOBA-064",
+    "nama_lokasi": "Pelabuhan Onan Runggu",
+    "kategori": "Transportasi & Dermaga",
+    "kecamatan": "Onan Runggu",
+    "koordinat": [
+      2.502,
+      98.921
+    ],
+    "ulasan_count": 55,
+    "rating": 4.3,
+    "deskripsi": "Dermaga penyeberangan selatan Samosir penghubung ke Balige dan Muara."
+  },
+  {
+    "id": "TOBA-065",
+    "nama_lokasi": "Tambak Raja Lontung Onan Runggu",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Onan Runggu",
+    "koordinat": [
+      2.505,
+      98.918
+    ],
+    "ulasan_count": 28,
+    "rating": 4.6,
+    "deskripsi": "Situs cagar budaya tugu leluhur marga-marga keturunan Raja Lontung di selatan Pulau Samosir."
+  },
+  {
+    "id": "TOBA-066",
+    "nama_lokasi": "Pantai Palipi Samosir",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Palipi",
+    "koordinat": [
+      2.445,
+      98.79
+    ],
+    "ulasan_count": 34,
+    "rating": 4.5,
+    "deskripsi": "Garis pantai danau nan damai dengan deretan pepohonan kelapa dan pandan laut khas Palipi."
+  },
+  {
+    "id": "TOBA-067",
+    "nama_lokasi": "Warung Ikan Mujair Naniura Palipi",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Palipi",
+    "koordinat": [
+      2.446,
+      98.792
+    ],
+    "ulasan_count": 9,
+    "rating": 4.8,
+    "deskripsi": "Sajian 'sashimi khas Batak' Naaniura ikan mujair segar dimasak fermentasi asam asam jungga tanpa api."
+  },
+  {
+    "id": "TOBA-068",
+    "nama_lokasi": "Danau Sidihoni Ronggur Nihuta",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Ronggur Nihuta",
+    "koordinat": [
+      2.58,
+      98.77
+    ],
+    "ulasan_count": 115,
+    "rating": 4.7,
+    "deskripsi": "Danau alami di atas Pulau Samosir yang dikelilingi padang rumput hijau dan tempat penggembalaan kerbau."
+  },
+  {
+    "id": "TOBA-069",
+    "nama_lokasi": "Pelabuhan Muara",
+    "kategori": "Transportasi & Dermaga",
+    "kecamatan": "Muara",
+    "koordinat": [
+      2.3365,
+      98.9048
+    ],
+    "ulasan_count": 88,
+    "rating": 4.4,
+    "deskripsi": "Pelabuhan penyeberangan kapal ferry Ro-Ro jalur Muara menuju Sipinggan Samosir."
+  },
+  {
+    "id": "TOBA-070",
+    "nama_lokasi": "Sentra Olahan Mangga Muara",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Muara",
+    "koordinat": [
+      2.3385,
+      98.9055
+    ],
+    "ulasan_count": 11,
+    "rating": 4.8,
+    "deskripsi": "Olahan produk manisan, selai, dan sirup buah Mangga Muara yang manis legit khas pesisir Muara."
+  },
+  {
+    "id": "TOBA-071",
+    "nama_lokasi": "Pulau Sibandu & Pulau Unteo Muara",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Muara",
+    "koordinat": [
+      2.342,
+      98.898
+    ],
+    "ulasan_count": 42,
+    "rating": 4.7,
+    "deskripsi": "Pulau kecil eksotis tak berpenghuni di tengah teluk Muara yang dikelilingi air danau jernih."
+  },
+  {
+    "id": "TOBA-072",
+    "nama_lokasi": "Lembah Bakkara & Baktiraja",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Baktiraja",
+    "koordinat": [
+      2.325,
+      98.815
+    ],
+    "ulasan_count": 210,
+    "rating": 4.9,
+    "deskripsi": "Lembah hijau di tepi danau yang diapit dua tebing batu raksasa dengan pemandangan sawah terasering menakjubkan."
+  },
+  {
+    "id": "TOBA-073",
+    "nama_lokasi": "Istana Istani Sisingamangaraja Baktiraja",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Baktiraja",
+    "koordinat": [
+      2.327,
+      98.812
+    ],
+    "ulasan_count": 140,
+    "rating": 4.8,
+    "deskripsi": "Kompleks cagar budaya pusat pemerintahan pahlawan Raja Sisingamangaraja I sampai XII."
+  },
+  {
+    "id": "TOBA-074",
+    "nama_lokasi": "Air Terjun Janji Baktiraja",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Baktiraja",
+    "koordinat": [
+      2.321,
+      98.818
+    ],
+    "ulasan_count": 175,
+    "rating": 4.7,
+    "deskripsi": "Air terjun ikonis tepi danau tempat bertemunya raja-raja Batak untuk mengikrarkan sumpah janji."
+  },
+  {
+    "id": "TOBA-075",
+    "nama_lokasi": "Sentra Tenun Ulos Bakkara",
+    "kategori": "UMKM Kerajinan & Souvenir",
+    "kecamatan": "Baktiraja",
+    "koordinat": [
+      2.326,
+      98.814
+    ],
+    "ulasan_count": 8,
+    "rating": 4.9,
+    "deskripsi": "Pengrajin Tenun Ulos Bakkara berbenang merah gelap dan serat halus bermotif kuno."
+  },
+  {
+    "id": "TOBA-076",
+    "nama_lokasi": "Geosite Sipinsur Pollung",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Pollung",
+    "koordinat": [
+      2.31,
+      98.68
+    ],
+    "ulasan_count": 340,
+    "rating": 4.8,
+    "deskripsi": "Taman geosite hutan pinus di atas bukit yang menyajikan lansekap spektakuler Pulau Samosir dan Danau Toba dari selatan."
+  },
+  {
+    "id": "TOBA-077",
+    "nama_lokasi": "TSTH2 (Taman Sains Teknologi Herbal & Hortikultura) Pollung",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Pollung",
+    "koordinat": [
+      2.308,
+      98.675
+    ],
+    "ulasan_count": 65,
+    "rating": 4.8,
+    "deskripsi": "Pusat riset dan wisata edukasi tanaman obat herbal dan hortikultura unggulan dataran tinggi Toba."
+  },
+  {
+    "id": "TOBA-078",
+    "nama_lokasi": "Sentra Kopi Arabika Lintong Doloksanggul",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Doloksanggul",
+    "koordinat": [
+      2.257,
+      98.751
+    ],
+    "ulasan_count": 15,
+    "rating": 4.9,
+    "deskripsi": "Produsen dan pengolahan Biji Kopi Lintong Arabika terkenal beraroma herbal, earthy, dan berbody tebal."
+  },
+  {
+    "id": "TOBA-079",
+    "nama_lokasi": "Rumah Makan Rendang & Sup Daging Doloksanggul",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Doloksanggul",
+    "koordinat": [
+      2.256,
+      98.752
+    ],
+    "ulasan_count": 12,
+    "rating": 4.7,
+    "deskripsi": "Kuliner hangat lokal penyedia sup rempah daging sapi segar dan olahan masakan khas daerah Doloksanggul."
+  },
+  {
+    "id": "TOBA-080",
+    "nama_lokasi": "Pasar Buah Berastagi",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Berastagi",
+    "koordinat": [
+      3.187,
+      98.511
+    ],
+    "ulasan_count": 610,
+    "rating": 4.6,
+    "deskripsi": "Pasar buah & bunga segar terlengkap penjual buah Markisa, Jeruk Berastagi, Avokad, dan bunga hias."
+  },
+  {
+    "id": "TOBA-081",
+    "nama_lokasi": "Bukit Kubu Berastagi",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Berastagi",
+    "koordinat": [
+      3.182,
+      98.508
+    ],
+    "ulasan_count": 480,
+    "rating": 4.7,
+    "deskripsi": "Lapanag rumput luas bergaya resort kolonial favorit keluarga untuk piknik dan bermain layang-layang."
+  },
+  {
+    "id": "TOBA-082",
+    "nama_lokasi": "Pemandian Air Panas Lau Sidebuk-debuk Berastagi",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Berastagi",
+    "koordinat": [
+      3.205,
+      98.528
+    ],
+    "ulasan_count": 350,
+    "rating": 4.5,
+    "deskripsi": "Pemandian air panas belerang alami terbuka di bawah kaki Gunung Sibayak."
+  },
+  {
+    "id": "TOBA-083",
+    "nama_lokasi": "Taman Wisata Iman (TWI) Sidikalang",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Sidikalang",
+    "koordinat": [
+      2.748,
+      98.312
+    ],
+    "ulasan_count": 280,
+    "rating": 4.7,
+    "deskripsi": "Kawasan wisata simbol kerukunan beragama di perbukitan Sitinjo dengan miniatur tempat ibadah 5 agama."
+  },
+  {
+    "id": "TOBA-084",
+    "nama_lokasi": "Kedai Kopi Mantap Sidikalang",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Sidikalang",
+    "koordinat": [
+      2.749,
+      98.313
+    ],
+    "ulasan_count": 14,
+    "rating": 4.8,
+    "deskripsi": "Kedai kopi legendaris penyaji Kopi Robusta Sidikalang yang terkenal dengan rasa pahit mantap beraroma cokelat."
+  },
+  {
+    "id": "TOBA-085",
+    "nama_lokasi": "Wisata Religi Salib Kasih Tarutung",
+    "kategori": "Wisata Budaya & Sejarah",
+    "kecamatan": "Tarutung",
+    "koordinat": [
+      2.025,
+      98.973
+    ],
+    "ulasan_count": 310,
+    "rating": 4.8,
+    "deskripsi": "Monumen salib raksasa di puncak Bukit Siatas Barita tempat Dr. IL Nommensen memanjatkan doa kedamaian bagi Tanah Batak."
+  },
+  {
+    "id": "TOBA-086",
+    "nama_lokasi": "Pemandian Air Panas Soda Tarutung (Aek Rara)",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Tarutung",
+    "koordinat": [
+      2.031,
+      98.968
+    ],
+    "ulasan_count": 240,
+    "rating": 4.8,
+    "deskripsi": "Mata air panas bersoda alami terlangka di dunia yang berbusa hangat dan menyegarkan kulit."
+  },
+  {
+    "id": "TOBA-087",
+    "nama_lokasi": "Sentra Kacang Sihobuk Tarutung",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Tarutung",
+    "koordinat": [
+      2.028,
+      98.971
+    ],
+    "ulasan_count": 13,
+    "rating": 4.9,
+    "deskripsi": "Oleh-oleh garing unik kacang tanah renyah yang digongseng sangrai memakai pasir pantai alami."
+  },
+  {
+    "id": "TOBA-088",
+    "nama_lokasi": "Sentra Tenun Ulos Tarutung",
+    "kategori": "UMKM Kerajinan & Souvenir",
+    "kecamatan": "Tarutung",
+    "koordinat": [
+      2.026,
+      98.974
+    ],
+    "ulasan_count": 10,
+    "rating": 4.8,
+    "deskripsi": "Pusat perajin tenun Ulos Sadum dan Ulos Tumtuman berkilau benang perak kebanggaan Silindung."
+  },
+  {
+    "id": "TOBA-089",
+    "nama_lokasi": "Resto Ikan Bakar & Mujair Kuah Kuning Muara",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Muara",
+    "koordinat": [
+      2.3375,
+      98.904
+    ],
+    "ulasan_count": 8,
+    "rating": 4.7,
+    "deskripsi": "Kuliner khas olahan ikan segar danau disajikan dengan bumbu asam segar pedas lokal."
+  },
+  {
+    "id": "TOBA-090",
+    "nama_lokasi": "Homestay Bakkara Indah",
+    "kategori": "Akomodasi & Homestay",
+    "kecamatan": "Baktiraja",
+    "koordinat": [
+      2.324,
+      98.816
+    ],
+    "ulasan_count": 7,
+    "rating": 4.8,
+    "deskripsi": "Penginapan berhawa sejuk di tengah persawahan Bakkara dengan akses dekat ke air terjun Janji."
+  },
+  {
+    "id": "TOBA-091",
+    "nama_lokasi": "Puncak Parhabaan Pangururan",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Pangururan",
+    "koordinat": [
+      2.608,
+      98.712
+    ],
+    "ulasan_count": 48,
+    "rating": 4.6,
+    "deskripsi": "Spot gardu pandang tersembunyi untuk menyaksikan matahari terbit di atas perairan danau Samosir."
+  },
+  {
+    "id": "TOBA-092",
+    "nama_lokasi": "Dermaga Kapal Kayu Simanindo",
+    "kategori": "Transportasi & Dermaga",
+    "kecamatan": "Simanindo",
+    "koordinat": [
+      2.749,
+      98.751
+    ],
+    "ulasan_count": 92,
+    "rating": 4.4,
+    "deskripsi": "Pelabuhan penyeberangan kapal ferry dan perahu kayu penghubung Simanindo dengan Tigaras."
+  },
+  {
+    "id": "TOBA-093",
+    "nama_lokasi": "Toko Souvenir Etnik Batak Parapat",
+    "kategori": "UMKM Kerajinan & Souvenir",
+    "kecamatan": "Parapat",
+    "koordinat": [
+      2.6622,
+      98.9355
+    ],
+    "ulasan_count": 14,
+    "rating": 4.6,
+    "deskripsi": "Toko kecil UMKM penjual gantungan kunci ukir, kain ulos, kalung etnik, dan miniatur rumah adat."
+  },
+  {
+    "id": "TOBA-094",
+    "nama_lokasi": "Kedai Tuak Naimarata & Kuliner Lokal",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Pangururan",
+    "koordinat": [
+      2.601,
+      98.702
+    ],
+    "ulasan_count": 6,
+    "rating": 4.7,
+    "deskripsi": "Kedai olahan minuman tuak manis tradisional pohon enau dan gorengan hangat penghangat badan."
+  },
+  {
+    "id": "TOBA-095",
+    "nama_lokasi": "Sentra Kerajinan Pahat Kayu Gorga Laguboti",
+    "kategori": "UMKM Kerajinan & Souvenir",
+    "kecamatan": "Laguboti",
+    "koordinat": [
+      2.355,
+      99.127
+    ],
+    "ulasan_count": 5,
+    "rating": 4.9,
+    "deskripsi": "Pengrajin ukiran kayu motif Gorga Toba untuk hiasan dinding, hiasan pintu, dan pajangan meja."
+  },
+  {
+    "id": "TOBA-096",
+    "nama_lokasi": "Air Terjun Sipiso-piso Brandan",
+    "kategori": "Destinasi Wisata Alam",
+    "kecamatan": "Berastagi",
+    "koordinat": [
+      2.918,
+      98.524
+    ],
+    "ulasan_count": 780,
+    "rating": 4.8,
+    "deskripsi": "Air terjun megah setinggi 120 meter yang jatuh menghujam langsung ke bibir danau Toba di bagian utara."
+  },
+  {
+    "id": "TOBA-097",
+    "nama_lokasi": "Pelabuhan Muara Penyeberangan Sipinggan",
+    "kategori": "Transportasi & Dermaga",
+    "kecamatan": "Muara",
+    "koordinat": [
+      2.338,
+      98.905
+    ],
+    "ulasan_count": 64,
+    "rating": 4.3,
+    "deskripsi": "Titik pemberangkatan kapal kayu antarisland penghubung kecamatan Muara menuju Pulau Samosir."
+  },
+  {
+    "id": "TOBA-098",
+    "nama_lokasi": "Rest Area Kopi & Mie Gomak Lumban Julu",
+    "kategori": "UMKM Kuliner",
+    "kecamatan": "Lumban Julu",
+    "koordinat": [
+      2.602,
+      99.047
+    ],
+    "ulasan_count": 11,
+    "rating": 4.7,
+    "deskripsi": "Tempat rehat Lintas Sumatra menyajikan kopi panas lokal dan mi gomak goreng bumbu andaliman."
+  },
+  {
+    "id": "TOBA-099",
+    "nama_lokasi": "Homestay Kasih Sigumpar",
+    "kategori": "Akomodasi & Homestay",
+    "kecamatan": "Sigumpar",
+    "koordinat": [
+      2.3925,
+      99.1545
+    ],
+    "ulasan_count": 4,
+    "rating": 4.8,
+    "deskripsi": "Penginapan rumahan bersih, tenang, dan terjangkau di sekitar kompleks bersejarah Nommensen Sigumpar."
+  },
+  {
+    "id": "TOBA-100",
+    "nama_lokasi": "Homestay Pollung Asri",
+    "kategori": "Akomodasi & Homestay",
+    "kecamatan": "Pollung",
+    "koordinat": [
+      2.309,
+      98.678
+    ],
+    "ulasan_count": 6,
+    "rating": 4.7,
+    "deskripsi": "Akomodasi pedesaan sejuk di sekitar Geosite Sipinsur dengan suasana alam pinus yang menenangkan."
+  }
+]

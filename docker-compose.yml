@@ -1,0 +1,58 @@
+services:
+  # Local PostgreSQL Database fallback for DGX B200 / Offline environment
+  db:
+    image: postgres:15-alpine
+    container_name: tobaguide-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: amos123
+      POSTGRES_DB: tobaguide_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tobaguide_db || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # FastAPI Backend API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tobaguide-backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - PROJECT_NAME=TobaGuide Backend API
+      - DATABASE_URL=postgresql://postgres:amos123@db:5432/tobaguide_db
+      - SECRET_KEY=development_secret_key_please_change_in_production_12345
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=10080
+      - PINECONE_API_KEY=${PINECONE_API_KEY:-pcsk_38mDkG_AUrnQ5yf4rG5How1Jn3zw5X4p646dii4mq7pxJnvS1M2EPSMLAVkxtpmQhrEhNn}
+      - PINECONE_INDEX_NAME=${PINECONE_INDEX_NAME:-tobaguide-index}
+      - COHERE_API_KEY=${COHERE_API_KEY:-gFVspCBouVSx08IEQ66yWvoKGuw2a8aU4a6rcBGa}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-AQ.Ab8RN6KUv2Ow_M3S84uVD5t_cXNcuAZHxZq29bZp2SyalEYtQw}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Next.js / Vite React Frontend Web Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tobaguide-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

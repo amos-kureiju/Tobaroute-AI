@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 # Load environment
 BASE_DIR = Path(__file__).resolve().parent.parent
 dotenv_path = BASE_DIR / ".env"
-load_dotenv(dotenv_path=dotenv_path, override=True)
+load_dotenv(dotenv_path=dotenv_path, override=False)
 
 import sys
 sys.path.append(str(BASE_DIR))

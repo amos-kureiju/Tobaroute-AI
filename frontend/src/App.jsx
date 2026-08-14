@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, NavLink, useLocation } from 'react-router-dom';
-import { Compass, WifiOff } from 'lucide-react';
+import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
+import { Compass, WifiOff, ShieldCheck, Heart, ExternalLink, MapPin } from 'lucide-react';
 import Home from './pages/Home';
 import Explore from './pages/Explore';
 import About from './pages/About';
@@ -17,6 +17,15 @@ import {
 } from './admin';
 
 import './App.css';
+
+// Component Route Guard untuk memproteksi halaman Administrator
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('tobaguide_admin_token');
+  if (!token) {
+    return <Navigate to="/admin/login" replace />;
+  }
+  return children;
+};
 
 const MainLayout = ({ children }) => {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -61,10 +70,10 @@ const MainLayout = ({ children }) => {
       {/* Navbar */}
       <nav className="navbar glass-panel">
         <div className="container nav-content">
-          <div className="logo">
+          <NavLink to="/" className="logo" style={{ textDecoration: 'none' }}>
             <Compass size={28} color="var(--color-primary)" />
             <h1>TobaRoute <span className="highlight">AI</span></h1>
-          </div>
+          </NavLink>
           <div className="nav-links">
             <NavLink 
               to="/" 
@@ -89,10 +98,21 @@ const MainLayout = ({ children }) => {
         </div>
       </nav>
 
-      {children}
+      <div className="app-main-body">
+        {children}
+      </div>
 
       <footer className="footer">
-        <p>&copy; 2026 TobaRoute AI. Dibangun untuk mendukung Keadilan Pariwisata Danau Toba.</p>
+        <div className="container footer-content" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', alignItems: 'center', textAlign: 'center' }}>
+          <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', justifyContent: 'center', fontSize: '0.88rem' }}>
+            <NavLink to="/" style={{ color: '#64748b', textDecoration: 'none' }}>Beranda</NavLink>
+            <NavLink to="/explore" style={{ color: '#64748b', textDecoration: 'none' }}>Peta Jelajah</NavLink>
+            <NavLink to="/about" style={{ color: '#64748b', textDecoration: 'none' }}>Tentang & Riset</NavLink>
+          </div>
+          <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8' }}>
+            &copy; 2026 TobaRoute AI. Platform Kecerdasan Pariwisata & Pemberdayaan UMKM Kawasan Danau Toba.
+          </p>
+        </div>
       </footer>
     </div>
   );
@@ -110,15 +130,18 @@ function App() {
         {/* ADMIN AUTH ROUTE */}
         <Route path="/admin/login" element={<AdminLogin />} />
 
-        {/* ADMIN DASHBOARD PORTAL ROUTES */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
+        {/* ADMIN DASHBOARD PORTAL ROUTES (PROTECTED) */}
+        <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="destinations" element={<AdminDestinations />} />
           <Route path="content" element={<AdminContent />} />
           <Route path="ai-monitoring" element={<AdminAIMonitoring />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
+
+        {/* CATCH-ALL FALLBACK */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

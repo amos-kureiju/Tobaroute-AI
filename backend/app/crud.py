@@ -208,8 +208,72 @@ KNOWN_KECAMATANS = [
     "girsang sipangan bolon", "harian", "laguboti", "lumban julu", 
     "muara", "onan runggu", "pangururan", "parapat", "porsea", 
     "ronggur nihuta", "salak", "sianjur mulamula", "sidikalang", 
-    "silaen", "silahisabungan", "simanindo", "tampahan", "tarutung", "toba"
+    "silaen", "silahisabungan", "simanindo", "tampahan", "tarutung", "toba",
+    "sigumpar", "habinsaran", "parmaksian", "siantar narumonda", "uluan", "bonatua lunasi", "borbor"
 ]
+
+# Matriks Ketetanggaan Geografis Danau Toba (Radius Maksimal 2 Kecamatan / ~20 KM)
+KECAMATAN_NEIGHBORS_2_HOPS = {
+    "Laguboti": ["Laguboti", "Sigumpar", "Balige", "Silaen", "Porsea", "Tampahan", "Parmaksian", "Siantar Narumonda"],
+    "Balige": ["Balige", "Laguboti", "Tampahan", "Sigumpar", "Silaen", "Muara", "Porsea", "Habinsaran"],
+    "Sigumpar": ["Sigumpar", "Laguboti", "Silaen", "Porsea", "Balige", "Parmaksian", "Siantar Narumonda"],
+    "Porsea": ["Porsea", "Sigumpar", "Laguboti", "Parmaksian", "Siantar Narumonda", "Uluan", "Bonatua Lunasi", "Lumban Julu", "Balige"],
+    "Silaen": ["Silaen", "Laguboti", "Sigumpar", "Balige", "Porsea", "Habinsaran", "Borbor"],
+    "Tampahan": ["Tampahan", "Balige", "Laguboti", "Muara", "Siborongborong", "Baktiraja"],
+    "Lumban Julu": ["Lumban Julu", "Porsea", "Ajibata", "Uluan", "Bonatua Lunasi", "Girsang Sipangan Bolon", "Parapat"],
+    "Ajibata": ["Ajibata", "Lumban Julu", "Girsang Sipangan Bolon", "Parapat", "Simanindo", "Porsea"],
+    "Parapat": ["Parapat", "Girsang Sipangan Bolon", "Ajibata", "Lumban Julu", "Simanindo", "Haranggaol Horison"],
+    "Girsang Sipangan Bolon": ["Girsang Sipangan Bolon", "Parapat", "Ajibata", "Lumban Julu", "Simanindo"],
+    "Simanindo": ["Simanindo", "Pangururan", "Ronggur Nihuta", "Onan Runggu", "Ajibata", "Parapat", "Haranggaol Horison"],
+    "Pangururan": ["Pangururan", "Simanindo", "Ronggur Nihuta", "Palipi", "Sianjur Mulamula", "Harian", "Sitio-tio"],
+    "Sianjur Mulamula": ["Sianjur Mulamula", "Pangururan", "Harian", "Baktiraja", "Pollung", "Simanindo"],
+    "Harian": ["Harian", "Sianjur Mulamula", "Pangururan", "Sitio-tio", "Baktiraja", "Pollung"],
+    "Onan Runggu": ["Onan Runggu", "Simanindo", "Palipi", "Nainggolan", "Ronggur Nihuta", "Balige"],
+    "Palipi": ["Palipi", "Onan Runggu", "Pangururan", "Nainggolan", "Sitio-tio", "Ronggur Nihuta"],
+    "Ronggur Nihuta": ["Ronggur Nihuta", "Pangururan", "Simanindo", "Palipi", "Onan Runggu"],
+    "Muara": ["Muara", "Tampahan", "Balige", "Baktiraja", "Siborongborong", "Lintong Nihuta"],
+    "Baktiraja": ["Baktiraja", "Muara", "Doloksanggul", "Pollung", "Harian", "Sianjur Mulamula"],
+    "Doloksanggul": ["Doloksanggul", "Lintong Nihuta", "Pollung", "Baktiraja", "Siborongborong", "Onan Ganjang"],
+    "Pollung": ["Pollung", "Doloksanggul", "Baktiraja", "Harian", "Sianjur Mulamula"],
+    "Lintong Nihuta": ["Lintong Nihuta", "Doloksanggul", "Siborongborong", "Muara", "Paranginan"],
+    "Siborongborong": ["Siborongborong", "Lintong Nihuta", "Muara", "Tarutung", "Sipoholon", "Pagaran", "Tampahan"],
+    "Tarutung": ["Tarutung", "Sipoholon", "Siatas Barita", "Siborongborong", "Pahae Jae", "Pahae Julu"],
+    "Sipoholon": ["Sipoholon", "Tarutung", "Siborongborong", "Pagaran"],
+    "Berastagi": ["Berastagi", "Kabanjahe", "Merdeka", "Dolat Rayat", "Merek"],
+    "Kabanjahe": ["Kabanjahe", "Berastagi", "Merek", "Tigapanah"],
+    "Merek": ["Merek", "Kabanjahe", "Silahisabungan", "Tongging", "Berastagi"],
+    "Silahisabungan": ["Silahisabungan", "Merek", "Tongging", "Sidikalang", "Sumbul", "Sitinjo"],
+    "Sidikalang": ["Sidikalang", "Sitinjo", "Sumbul", "Silahisabungan", "Parbuluan"],
+    "Sitinjo": ["Sitinjo", "Sidikalang", "Parbuluan", "Sumbul", "Silahisabungan"],
+    "Salak": ["Salak", "Sitellu Tali Urang Jehe", "Pergetteng-getteng Sengku", "Pakkat", "Doloksanggul"]
+}
+
+KECAMATAN_REFERENCE_CENTERS = {
+    "balige": (2.3387, 99.0625),
+    "laguboti": (2.3544, 99.1264),
+    "sigumpar": (2.3920, 99.1550),
+    "porsea": (2.4475, 99.1538),
+    "silaen": (2.3870, 99.2051),
+    "tampahan": (2.3160, 99.0125),
+    "lumban julu": (2.6010, 99.0480),
+    "ajibata": (2.6650, 98.9320),
+    "parapat": (2.6620, 98.9350),
+    "girsang sipangan bolon": (2.6620, 98.9350),
+    "pangururan": (2.6033, 98.7050),
+    "simanindo": (2.7252, 98.7869),
+    "harian": (2.5830, 98.6330),
+    "sianjur mulamula": (2.5890, 98.6420),
+    "onan runggu": (2.5020, 98.9210),
+    "palipi": (2.4450, 98.7900),
+    "ronggur nihuta": (2.5800, 98.7700),
+    "muara": (2.3378, 98.9048),
+    "baktiraja": (2.3250, 98.8150),
+    "doloksanggul": (2.2570, 98.7510),
+    "pollung": (2.3100, 98.6800),
+    "berastagi": (3.1870, 98.5110),
+    "sidikalang": (2.7480, 98.3120),
+    "tarutung": (2.0250, 98.9730)
+}
 
 def get_fair_route_with_rag(
     db: Session, 
@@ -220,49 +284,136 @@ def get_fair_route_with_rag(
     user_lat: float = None,
     user_lon: float = None
 ):
-    # 0. Deteksi otomatis nama kecamatan dari query jika tidak dikirim via parameter
     query_lower = query.lower() if query else ""
-    if not kecamatan or not str(kecamatan).strip():
+    target_kecamatan_clean = None
+
+    # 0. Deteksi otomatis nama kecamatan dari parameter atau string query
+    if kecamatan and str(kecamatan).strip() and str(kecamatan).strip().lower() != 'all':
+        target_kecamatan_clean = str(kecamatan).strip().title()
+    else:
         for k_name in KNOWN_KECAMATANS:
             if k_name in query_lower:
-                kecamatan = k_name.title()
+                target_kecamatan_clean = k_name.title()
                 break
 
-    # 1. Cari ID destinasi yang paling cocok secara makna lewat Pinecone
-    matched_ids = cari_destinasi_semantik(query)
-    
-    # 2. Filter destinasi utama berdasar kecamatan jika ada
-    query_base = db.query(models.Destinasi)
-    if kecamatan:
-        query_base = query_base.filter(models.Destinasi.kecamatan.ilike(f"%{kecamatan}%"))
-        
+    # Tentukan daftar kecamatan yang diperbolehkan (radius maksimal 2 hop tetangga)
+    allowed_kecamatans = []
+    target_center = None
+    if target_kecamatan_clean:
+        target_kec_key = target_kecamatan_clean.lower()
+        target_center = KECAMATAN_REFERENCE_CENTERS.get(target_kec_key)
+        for k_key, n_list in KECAMATAN_NEIGHBORS_2_HOPS.items():
+            if k_key.lower() == target_kec_key:
+                allowed_kecamatans = [n.lower() for n in n_list]
+                break
+        if not allowed_kecamatans:
+            allowed_kecamatans = [target_kec_key]
+
+    # 1. Deteksi Intensi Kategori Pencarian
+    food_keywords = ['makanan', 'kuliner', 'makan', 'enak', 'terenak', 'rekomendasi', 'laper', 'lapar', 'resto', 'rumah makan', 'warung', 'menu', 'lapo', 'naniarsik', 'arsik', 'mie gomak', 'naniura', 'saksang', 'bpk', 'andaliman', 'sambal', 'tuktuk', 'kopi', 'kue', 'ombus', 'sihobuk', 'minum']
+    umkm_keywords = ['umkm', 'oleh-oleh', 'oleh', 'ulos', 'souvenir', 'toko', 'kerajinan', 'kacang', 'belanja', 'sentra']
+    wisata_keywords = ['wisata', 'pantai', 'museum', 'bukit', 'air terjun', 'taman', 'alam', 'rekreasi', 'liburan', 'jalan-jalan', 'lihat', 'tempat']
+
+    is_food_query = any(k in query_lower for k in food_keywords)
+    is_umkm_query = any(k in query_lower for k in umkm_keywords)
+    is_wisata_query = any(k in query_lower for k in wisata_keywords) or (not is_food_query and not is_umkm_query)
+
+    # 2. Filter kandidat dari database dengan validasi koordinat geografis ketat
+    all_dests = db.query(models.Destinasi).all()
     candidate_pool = []
-    if matched_ids:
-        int_ids = []
-        for mid in matched_ids:
-            try:
-                int_ids.append(int(mid))
-            except ValueError:
-                pass
-        
-        if int_ids:
-            fetched = query_base.filter(models.Destinasi.id.in_(int_ids)).all()
-            id_to_dest = {d.id: d for d in fetched}
-            candidate_pool = [id_to_dest[id_] for id_ in int_ids if id_ in id_to_dest]
-    
-    # Fallback 1: Jika dengan filter kecamatan hasil Pinecone kosong, ambil berdasar rating di kecamatan tsb
-    if not candidate_pool:
-        candidate_pool = query_base.order_by(models.Destinasi.rating.desc()).all()
 
-    # Fallback 2: Jika di kecamatan tersebut belum ada data destinasi utama, lepas filter kecamatan
-    if not candidate_pool and kecamatan:
-        candidate_pool = db.query(models.Destinasi).order_by(models.Destinasi.rating.desc()).all()
+    if target_kecamatan_clean and allowed_kecamatans:
+        for d in all_dests:
+            if not d.latitude or not d.longitude:
+                continue
+            
+            d_name_lower = (d.nama or '').lower()
+            if any(non_poi in d_name_lower for non_poi in ['artikel', 'berita', 'sejarah terbentuknya', 'kawah purba terbesar', 'sejarah, legenda']):
+                continue
 
-    # Prioritaskan Jarak Geografis Terdekat ke User GPS jika koordinat dikirim
-    if user_lat and user_lon:
-        candidate_pool.sort(key=lambda d: haversine_km(user_lat, user_lon, d.latitude, d.longitude))
+            d_kec = (d.kecamatan or '').strip().lower()
+            if d_kec not in allowed_kecamatans:
+                continue
+            
+            # Hard Geofence Cap: Discard if coordinates are > 12 km away from target center
+            if target_center:
+                dist_to_center = haversine_km(target_center[0], target_center[1], d.latitude, d.longitude)
+                if d_kec == target_kecamatan_clean.lower() and dist_to_center > 12.0:
+                    continue
+                if dist_to_center > 20.0:
+                    continue
 
-    # Algoritma Rotasi Offset (Prompt 1 = Terdekat, Prompt 2 = Opsi Alternatif Lainnya)
+            candidate_pool.append(d)
+
+        # Multi-Tier Sorting:
+        # Tier 0: Destinasi di kecamatan target yang sama persis
+        # Tier 1: Destinasi di kecamatan tetangga 1-2 hop
+        def candidate_sort_key(d):
+            d_kec = (d.kecamatan or '').strip().lower()
+            tier = 0 if d_kec == target_kecamatan_clean.lower() else 1
+            
+            d_cat = (d.kategori or '').strip().lower()
+            cat_match = 1
+            if is_food_query and 'kuliner' in d_cat:
+                cat_match = 0
+            elif is_umkm_query and ('umkm' in d_cat or 'oleh' in d_cat or 'ulos' in d_cat):
+                cat_match = 0
+            elif is_wisata_query and 'wisata' in d_cat:
+                cat_match = 0
+
+            rating_val = float(d.rating or 4.0)
+            dist_to_center = haversine_km(target_center[0], target_center[1], d.latitude, d.longitude) if target_center else 0.0
+
+            return (tier, cat_match, -rating_val, dist_to_center)
+
+        candidate_pool.sort(key=candidate_sort_key)
+    else:
+        # Jika query umum tanpa kecamatan spesifik
+        matched_ids = cari_destinasi_semantik(query)
+        if matched_ids:
+            int_ids = set()
+            for mid in matched_ids:
+                try:
+                    int_ids.add(int(mid))
+                except ValueError:
+                    pass
+            # Filter berdasarkan intent
+            temp_pool = []
+            for d in all_dests:
+                if d.id in int_ids:
+                    d_cat = (d.kategori or '').strip().lower()
+                    if is_food_query:
+                        if 'kuliner' in d_cat or 'resto' in d_cat or 'makan' in d_cat:
+                            temp_pool.append(d)
+                    elif is_umkm_query:
+                        if 'umkm' in d_cat or 'oleh' in d_cat or 'ulos' in d_cat:
+                            temp_pool.append(d)
+                    elif is_wisata_query:
+                        if 'wisata' in d_cat or 'alam' in d_cat:
+                            temp_pool.append(d)
+                    else:
+                        temp_pool.append(d)
+            
+            # Jika hasil filter berdasarkan intent kosong (misal Pinecone tidak menemukan kuliner), ambil dari seluruh DB
+            if not temp_pool:
+                if is_food_query:
+                    temp_pool = [d for d in all_dests if 'kuliner' in (d.kategori or '').strip().lower()]
+                elif is_umkm_query:
+                    temp_pool = [d for d in all_dests if 'umkm' in (d.kategori or '').strip().lower()]
+                else:
+                    temp_pool = [d for d in all_dests if d.id in int_ids]
+
+            candidate_pool = temp_pool
+
+        if not candidate_pool:
+            ref_lat = user_lat or 2.3387
+            ref_lon = user_lon or 99.0625
+            candidate_pool = sorted(
+                all_dests, 
+                key=lambda d: (-float(d.rating or 4.0), haversine_km(ref_lat, ref_lon, d.latitude, d.longitude))
+            )
+
+    # Ambil destinasi utama dengan rotasi offset
     total_candidates = len(candidate_pool)
     if total_candidates > 0:
         start_idx = (offset * limit_utama) % total_candidates
@@ -272,44 +423,37 @@ def get_fair_route_with_rag(
     else:
         destinasi_utama = []
 
-    # 3. Deteksi Intensi Pencarian (Kuliner / Makanan vs Wisata / UMKM)
-    food_keywords = ['makanan', 'kuliner', 'makan', 'enak', 'laper', 'lapar', 'resto', 'rumah makan', 'warung', 'menu', 'lapo', 'naniarsik', 'arsik', 'mie gomak', 'naniura', 'saksang', 'bpk', 'andaliman', 'kopi', 'kue', 'ombus', 'sihobuk', 'minum']
-    is_food_query = any(k in query_lower for k in food_keywords)
-    allowed_categories = ['kuliner'] if is_food_query else ['umkm', 'kuliner']
+    # 3. UMKM & Kuliner Rekomendasi Sekitar
+    ref_center_lat = target_center[0] if target_center else (user_lat or 2.3387)
+    ref_center_lon = target_center[1] if target_center else (user_lon or 99.0625)
 
-    # 4. Hitung titik acuan koordinat (Lat, Long) dari User GPS atau Destinasi Utama
-    center_lat, center_lon = user_lat, user_lon
-    if not (center_lat and center_lon):
-        valid_coords = [(d.latitude, d.longitude) for d in destinasi_utama if d.latitude and d.longitude]
-        if valid_coords:
-            center_lat = sum(c[0] for c in valid_coords) / len(valid_coords)
-            center_lon = sum(c[1] for c in valid_coords) / len(valid_coords)
-
-    target_kecamatans = list(set([d.kecamatan for d in destinasi_utama if d.kecamatan]))
-    if not target_kecamatans and kecamatan:
-        target_kecamatans = [kecamatan]
-        
     utama_ids = set([d.id for d in destinasi_utama])
-    
-    # Ambil seluruh kandidat UMKM/Kuliner
-    all_umkm_candidates = db.query(models.Destinasi).filter(
-        models.Destinasi.kategori.in_(allowed_categories)
+    allowed_umkm_cats = ['kuliner'] if is_food_query else ['umkm', 'kuliner']
+
+    all_umkm_db = db.query(models.Destinasi).filter(
+        models.Destinasi.kategori.in_(allowed_umkm_cats)
     ).all()
-    
-    # Filter & Urutkan UMKM berdasarkan Jarak Geografis Terdekat (Haversine Presisi)
-    umkm_with_dist = []
-    for cand in all_umkm_candidates:
-        if cand.id not in utama_ids:
-            dist = haversine_km(center_lat, center_lon, cand.latitude, cand.longitude)
-            # Beri bonus prioritas jarak bagi kecamatan yang persis sama
-            if cand.kecamatan in target_kecamatans:
-                dist *= 0.5
-            umkm_with_dist.append((dist, cand))
-            
-    umkm_with_dist.sort(key=lambda x: x[0])
-    sorted_umkms = [x[1] for x in umkm_with_dist]
-    
-    # Rotational Offset untuk UMKM/Kuliner pada prompt ke-2 dst
+
+    umkm_filtered = []
+    for cand in all_umkm_db:
+        if cand.id in utama_ids or not cand.latitude or not cand.longitude:
+            continue
+        
+        cand_kec = (cand.kecamatan or '').strip().lower()
+        if allowed_kecamatans and cand_kec not in allowed_kecamatans:
+            continue
+
+        dist = haversine_km(ref_center_lat, ref_center_lon, cand.latitude, cand.longitude)
+        if dist > 15.0:
+            continue
+
+        # Prioritas skor: bobot lebih dekat untuk kecamatan yang sama persis
+        weighted_dist = dist * 0.3 if (target_kecamatan_clean and cand_kec == target_kecamatan_clean.lower()) else dist * 0.7
+        umkm_filtered.append((weighted_dist, -float(cand.rating or 4.0), cand))
+
+    umkm_filtered.sort(key=lambda x: (x[0], x[1]))
+    sorted_umkms = [x[2] for x in umkm_filtered]
+
     total_umkms = len(sorted_umkms)
     if total_umkms > 0:
         umkm_start_idx = (offset * 4) % total_umkms
@@ -323,3 +467,5 @@ def get_fair_route_with_rag(
         "destinasi_utama": destinasi_utama,
         "rekomendasi_umkm_sekitar": umkm_sekitar
     }
+
+

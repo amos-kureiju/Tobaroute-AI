@@ -91,3 +91,14 @@ export const syncPineconeVectors = async () => {
   }
 };
 
+export const getSystemMetrics = async () => {
+  try {
+    const response = await apiClient.get('/admin/metrics');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching admin metrics:', error);
+    throw error;
+  }
+};
+
+
