@@ -1,11 +1,22 @@
+// ====================================================================================================
+// FILE: frontend/src/admin/AdminLayout.jsx
+// TUJUAN:
+// Kerangka antarmuka khusus Administrator (Admin Portal Layout).
+// Mengatur:
+// 1. Sidebar Navigasi Kiri (Dashboard, Manajemen Destinasi, Konten Beranda, Monitoring AI, Pengaturan).
+// 2. Top Header Bar (Status koneksi server, indikator profil admin, tombol Logout).
+// 3. Outlet: Tempat merender sub-halaman admin yang sedang aktif.
+// ====================================================================================================
+
 import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Compass, LayoutDashboard, MapPin, FileText, Activity, Settings, LogOut, Search, Bell, HelpCircle } from 'lucide-react';
+import { Compass, LayoutDashboard, MapPin, FileText, Activity, Settings, LogOut, Bell } from 'lucide-react';
 import './Admin.css';
 
 const AdminLayout = () => {
   const navigate = useNavigate();
 
+  // FUNGSI: Logout dan menghapus token otentikasi dari localStorage
   const handleLogout = () => {
     localStorage.removeItem('tobaguide_admin_token');
     navigate('/admin/login');
@@ -13,10 +24,10 @@ const AdminLayout = () => {
 
   return (
     <div className="admin-portal-layout">
-      {/* DARK BLUE LEFT SIDEBAR */}
+      {/* SIDEBAR ADMINISTRATOR */}
       <aside className="admin-sidebar">
         <div>
-          {/* Header Brand */}
+          {/* Logo & Header Portal */}
           <div className="sidebar-header">
             <div className="sidebar-logo">
               <Compass size={28} color="#38bdf8" />
@@ -27,7 +38,7 @@ const AdminLayout = () => {
             </div>
           </div>
 
-          {/* Nav Links */}
+          {/* Menu Navigasi Sidebar */}
           <nav className="sidebar-nav">
             <NavLink 
               to="/admin/dashboard" 
@@ -60,66 +71,56 @@ const AdminLayout = () => {
               <Activity size={18} />
               <span>AI Monitoring</span>
             </NavLink>
+
+            <NavLink 
+              to="/admin/settings" 
+              className={({ isActive }) => (isActive ? 'sidebar-link active' : 'sidebar-link')}
+            >
+              <Settings size={18} />
+              <span>Settings</span>
+            </NavLink>
           </nav>
         </div>
 
-        {/* Footer Status & Actions */}
+        {/* Footer Sidebar & Tombol Logout */}
         <div className="sidebar-footer">
-          <div className="status-indicator-badge">
-            <span className="status-dot"></span>
-            <span>SYSTEM STATUS: ACTIVE</span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            <NavLink to="/admin/settings" className={({ isActive }) => (isActive ? 'sidebar-link active' : 'sidebar-link')} style={{ padding: '0.5rem 0.75rem', fontSize: '0.85rem' }}>
-              <Settings size={16} />
-              <span>Settings</span>
-            </NavLink>
-            <button 
-              onClick={handleLogout} 
-              className="sidebar-link" 
-              style={{ padding: '0.5rem 0.75rem', fontSize: '0.85rem', background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}
-            >
-              <LogOut size={16} color="#ef4444" />
-              <span style={{ color: '#fca5a5' }}>Logout</span>
-            </button>
-          </div>
+          <button onClick={handleLogout} className="btn-logout">
+            <LogOut size={18} />
+            <span>Keluar (Logout)</span>
+          </button>
         </div>
       </aside>
 
-      {/* RIGHT MAIN WRAPPER */}
+      {/* AREA KONTEN KANAN */}
       <div className="admin-main-wrapper">
-        {/* TOP HEADER BAR */}
-        <header className="admin-header">
-          <div className="admin-search-box">
-            <Search className="admin-search-icon" size={16} />
-            <input type="text" placeholder="Search system data..." />
+        {/* Topbar Administrator */}
+        <header className="admin-topbar">
+          <div className="topbar-search">
+            <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500 }}>
+              Sistem Manajemen Pariwisata Berkelanjutan Danau Toba
+            </span>
           </div>
 
-          <div className="admin-header-actions">
-            <button className="header-icon-btn" title="Notifikasi">
+          <div className="topbar-actions">
+            <button className="topbar-btn" title="Notifikasi Sistem">
               <Bell size={18} />
-              <span className="icon-badge-dot"></span>
-            </button>
-
-            <button className="header-icon-btn" title="Bantuan">
-              <HelpCircle size={18} />
+              <span className="badge-dot"></span>
             </button>
 
             <div className="admin-profile-pill">
-              <div className="admin-avatar">AP</div>
-              <div className="admin-user-info">
-                <span className="admin-name">Admin Portal</span>
-                <span className="admin-role">SUPERUSER</span>
+              <div className="profile-avatar">A</div>
+              <div className="profile-info">
+                <span className="profile-name">Administrator</span>
+                <span className="profile-role">Super Admin</span>
               </div>
             </div>
           </div>
         </header>
 
-        {/* BODY PAGE CONTENT */}
-        <div className="admin-body">
+        {/* Render Konten Halaman Admin yang Dipilih */}
+        <main className="admin-content-body">
           <Outlet />
-        </div>
+        </main>
       </div>
     </div>
   );

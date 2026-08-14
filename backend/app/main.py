@@ -1,3 +1,11 @@
+# ====================================================================================================
+# FILE: backend/app/main.py
+# TUJUAN:
+# File utama (Entry Point) server API Backend TobaRoute AI berbasis FastAPI.
+# Menghubungkan seluruh modul: database PostgreSQL, pencarian vektor Pinecone (RAG),
+# model LLM Gemini, dan menyediakan REST API endpoints untuk frontend pengguna & admin.
+# ====================================================================================================
+
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -6,12 +14,17 @@ from .database import engine, Base, get_db
 from . import crud, schemas, models
 from .ai_bot import generate_tourist_response, chat_with_bot, generate_destination_ai_insight
 
-# Otomatis membuat tabel di PostgreSQL saat aplikasi backend dinyalakan
+# Otomatis membuat tabel-tabel di PostgreSQL saat server backend pertama kali dijalankan
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="TobaRoute AI: Backend Keadilan Data")
+# Inisialisasi aplikasi FastAPI
+app = FastAPI(
+    title="TobaRoute AI: API Keadilan Pariwisata & Rekomendasi Cerdas Danau Toba",
+    description="Sistem rekomendasi rute presisi dan keterpaparan UMKM kawasan Danau Toba",
+    version="2.0.0"
+)
 
-# CORS middleware configuration
+# Konfigurasi CORS (Cross-Origin Resource Sharing) agar frontend Vite React dapat mengakses API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,6 +33,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ====================================================================================================
+# HELPER: format_destinasi_response
+# TUJUAN: Menyeragamkan format objek destinasi sebelum dikirimkan ke frontend (termasuk Plus Code).
+# ====================================================================================================
 def format_destinasi_response(d):
     plus = schemas.generate_plus_code(d.latitude, d.longitude)
     plus_short = f"{plus[:4]}+{plus[4:8]}" if len(plus) >= 8 else plus
@@ -41,7 +58,12 @@ def format_destinasi_response(d):
         "full_address": full_addr
     }
 
-# Endpoint Baru: Mengambil rekomendasi rute yang adil bagi UMKM berbasis RAG Semantik
+# ====================================================================================================
+# ENDPOINT: GET /api/route/fair-recommendation
+# TUJUAN:
+# Endpoint utama untuk menghasilkan rekomendasi rute perjalanan yang adil bagi UMKM (Fairness Algorithm)
+# Menggunakan Pinecone Vector Search (RAG) + Google Gemini LLM + Titik Koordinat GPS Wisatawan.
+# ====================================================================================================
 @app.get("/api/route/fair-recommendation", response_model=schemas.TobaRouteResponse)
 def get_fair_travel_route(
     query: str, 
@@ -51,7 +73,7 @@ def get_fair_travel_route(
     user_lon: Optional[float] = None,
     db: Session = Depends(get_db)
 ):
-    print(f"\n[DIAGNOSTIC] Endpoint /api/route/fair-recommendation dipanggil dengan query: {query}, kecamatan: {kecamatan}, offset: {offset}, user_lat: {user_lat}, user_lon: {user_lon}")
+    print(f"\n[API] /api/route/fair-recommendation dipanggil: query='{query}', kec='{kecamatan}', offset={offset}")
     if not query:
         raise HTTPException(status_code=400, detail="Parameter query (keinginan wisata) harus diisi")
     
@@ -65,12 +87,12 @@ def get_fair_travel_route(
         user_lon=user_lon
     )
     
-    # 2. Hasil pencarian AI berbasis RAG
+    # 2. Hasilkan narasi kurasi perjalanan menggunakan LLM Gemini (RAG)
     try:
         ai_response = generate_tourist_response(user_query=query, fair_route_data=route_data)
     except Exception as e:
         print(f"[AI Error] Gagal menghubungi Gemini API: {e}")
-        ai_response = "[INFO] Asisten AI TobaRoute sedang sibuk. Menampilkan rekomendasi destinasi terdekat langsung dari database."
+        ai_response = "Horas! Asisten AI TobaRoute sedang sibuk. Menampilkan rekomendasi destinasi terdekat langsung dari database."
     
     dest_utama_formatted = [format_destinasi_response(d) for d in route_data["destinasi_utama"]]
     umkm_formatted = [format_destinasi_response(d) for d in route_data["rekomendasi_umkm_sekitar"]]
@@ -81,20 +103,32 @@ def get_fair_travel_route(
         "ai_response": ai_response
     }
 
-# Endpoint Baru: Chatbot Interaktif
+# ====================================================================================================
+# ENDPOINT: POST /api/chat
+# TUJUAN:
+# Endpoint untuk chatbot pemandu wisata interaktif real-time dengan riwayat percakapan.
+# ====================================================================================================
 @app.post("/api/chat")
 def interactive_chat(request: schemas.ChatbotRequest):
     history_dicts = [{"role": msg.role, "text": msg.text} for msg in request.history]
     ai_reply = chat_with_bot(request.message, history_dicts)
     return {"reply": ai_reply}
 
-# Endpoint untuk User & Admin: Mengambil daftar destinasi pariwisata
+# ====================================================================================================
+# ENDPOINT: GET /api/destinasi
+# TUJUAN:
+# Mengambil seluruh daftar destinasi & UMKM dari database PostgreSQL (bisa difilter per kecamatan).
+# ====================================================================================================
 @app.get("/api/destinasi", response_model=List[schemas.DestinasiResponse])
 def read_destinasi(kecamatan: str = None, limit: int = 1000, db: Session = Depends(get_db)):
     destinasi = crud.get_destinasi(db, kecamatan=kecamatan, limit=limit)
     return [format_destinasi_response(d) for d in destinasi]
 
-# Endpoint untuk User: Mengambil Wawasan Otentik & Tips AI untuk Kartu Destinasi / UMKM
+# ====================================================================================================
+# ENDPOINT: GET /api/destinasi/{destinasi_id}/ai-insights
+# TUJUAN:
+# Menghasilkan wawasan budaya, tips wisatawan, dan keunikan produk untuk kartu destinasi/UMKM.
+# ====================================================================================================
 @app.get("/api/destinasi/{destinasi_id}/ai-insights")
 def get_destinasi_ai_insight(destinasi_id: int, db: Session = Depends(get_db)):
     d = db.query(models.Destinasi).filter(models.Destinasi.id == destinasi_id).first()
@@ -110,12 +144,20 @@ def get_destinasi_ai_insight(destinasi_id: int, db: Session = Depends(get_db)):
     )
     return insight
 
-# Endpoint untuk Admin: Menambahkan destinasi baru ke database
+# ====================================================================================================
+# ENDPOINT: POST /api/admin/destinasi
+# TUJUAN:
+# Menambahkan entitas destinasi baru ke database PostgreSQL dan otomatis membuat vektor di Pinecone.
+# ====================================================================================================
 @app.post("/api/admin/destinasi", response_model=schemas.DestinasiResponse)
 def add_new_destinasi(destinasi: schemas.DestinasiCreate, db: Session = Depends(get_db)):
     return crud.create_destinasi(db=db, destinasi=destinasi)
 
-# Endpoint untuk Admin: Mengedit destinasi yang sudah ada di database & Pinecone
+# ====================================================================================================
+# ENDPOINT: PUT /api/admin/destinasi/{destinasi_id}
+# TUJUAN:
+# Memperbarui data destinasi yang sudah ada di database dan menyinkronkan vektornya di Pinecone.
+# ====================================================================================================
 @app.put("/api/admin/destinasi/{destinasi_id}", response_model=schemas.DestinasiResponse)
 def update_existing_destinasi(destinasi_id: int, destinasi: schemas.DestinasiUpdate, db: Session = Depends(get_db)):
     updated = crud.update_destinasi(db=db, destinasi_id=destinasi_id, update_data=destinasi)
@@ -123,7 +165,11 @@ def update_existing_destinasi(destinasi_id: int, destinasi: schemas.DestinasiUpd
         raise HTTPException(status_code=404, detail="Destinasi tidak ditemukan")
     return updated
 
-# Endpoint untuk Admin: Menghapus destinasi dari database
+# ====================================================================================================
+# ENDPOINT: DELETE /api/admin/destinasi/{destinasi_id}
+# TUJUAN:
+# Menghapus data destinasi dari database PostgreSQL dan menghapus vektornya dari Pinecone.
+# ====================================================================================================
 @app.delete("/api/admin/destinasi/{destinasi_id}")
 def remove_destinasi(destinasi_id: int, db: Session = Depends(get_db)):
     success = crud.delete_destinasi(db=db, destinasi_id=destinasi_id)
@@ -131,13 +177,21 @@ def remove_destinasi(destinasi_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Destinasi tidak ditemukan")
     return {"message": f"Destinasi ID {destinasi_id} berhasil dihapus"}
 
-# Endpoint untuk Admin: Memicu sinkronisasi manual seluruh data ke database vektor Pinecone
+# ====================================================================================================
+# ENDPOINT: POST /api/admin/sync-pinecone
+# TUJUAN:
+# Memicu sinkronisasi manual seluruh data dari PostgreSQL ke database vektor Pinecone (1024-dim).
+# ====================================================================================================
 @app.post("/api/admin/sync-pinecone")
 def sync_vector_database(db: Session = Depends(get_db)):
     result = crud.sync_all_vectors(db=db)
     return result
 
-# Endpoint untuk Admin: Mengambil ringkasan metrik sistem dan benchmark RAG
+# ====================================================================================================
+# ENDPOINT: GET /api/admin/metrics
+# TUJUAN:
+# Mengambil ringkasan metrik statistik real-time untuk dashboard administrator (rasio keadilan UMKM, dll).
+# ====================================================================================================
 @app.get("/api/admin/metrics")
 def get_system_metrics(db: Session = Depends(get_db)):
     all_dest = db.query(models.Destinasi).all()
@@ -165,4 +219,3 @@ def get_system_metrics(db: Session = Depends(get_db)):
         "embedding_model": "cohere-embed-multilingual-v3.0",
         "llm_model": "gemini-3.1-flash-lite"
     }
-

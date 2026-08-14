@@ -1,3 +1,13 @@
+// ====================================================================================================
+// FILE: frontend/src/pages/About.jsx
+// TUJUAN:
+// Halaman "Tentang & Riset" TobaRoute AI.
+// Menjelaskan:
+// 1. Latar Belakang & Visi Riset: Mengatasi bias algoritma pariwisata yang hanya menguntungkan POI besar (Tourism Fairness).
+// 2. Metodologi Sistem: Kombinasi RAG (Retrieval-Augmented Generation), Pinecone Vector DB, dan LLM Gemini.
+// 3. Dampak Nyata: Pemerataan kunjungan wisatawan ke pengrajin Ulos desa dan warung kuliner tradisional.
+// ====================================================================================================
+
 import React from 'react';
 import { Compass, Users, Heart } from 'lucide-react';
 
@@ -10,6 +20,7 @@ const About = () => {
       </div>
 
       <div className="about-content glass-panel" style={{ padding: '3rem', borderRadius: 'var(--radius-lg)' }}>
+        {/* Bagian Visi & Latar Belakang */}
         <section style={{ marginBottom: '3rem' }}>
           <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-primary)' }}>
             <Compass size={24} /> Visi Kami
@@ -19,6 +30,7 @@ const About = () => {
           </p>
         </section>
 
+        {/* Bagian Metodologi RAG & Algoritma Keadilan Data */}
         <section style={{ marginBottom: '3rem' }}>
           <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-primary)' }}>
             <Heart size={24} /> Bagaimana Kami Membantu?
@@ -27,15 +39,16 @@ const About = () => {
             Melalui asisten kecerdasan buatan (AI) berbasis <em>Retrieval-Augmented Generation (RAG)</em>, kami tidak hanya merekomendasikan destinasi wisata utama yang sesuai dengan preferensi liburan Anda, tetapi juga secara cerdas menyisipkan rekomendasi UMKM lokal di sekitar destinasi tersebut. 
           </p>
           <ul style={{ lineHeight: '1.8', fontSize: '1.1rem', marginTop: '1rem', paddingLeft: '1.5rem' }}>
-            <li>Menyebarkan kunjungan wisatawan secara lebih merata.</li>
+            <li>Menyebarkan kunjungan wisatawan secara lebih merata ke 24 kecamatan lingkar Toba.</li>
             <li>Membantu pertumbuhan ekonomi masyarakat lokal di sekitar Danau Toba.</li>
-            <li>Memberikan pengalaman wisata yang lebih otentik bagi pengguna.</li>
+            <li>Memberikan pengalaman wisata yang lebih otentik bagi pengguna dengan akurasi rute jalan nyata.</li>
           </ul>
         </section>
 
+        {/* Bagian Informasi Tim Riset */}
         <section>
           <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-primary)' }}>
-            <Users size={24} /> Tim Pengembang
+            <Users size={24} /> Tim Pengembang & Peneliti
           </h2>
           <p style={{ lineHeight: '1.8', fontSize: '1.1rem', marginTop: '1rem' }}>
             Aplikasi ini dikembangkan untuk mengedepankan etika AI dan keadilan data, memastikan bahwa sistem rekomendasi yang dibuat bermanfaat bagi semua pihak dalam ekosistem pariwisata Danau Toba.

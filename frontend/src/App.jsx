@@ -1,11 +1,21 @@
+// ====================================================================================================
+// FILE: frontend/src/App.jsx
+// TUJUAN:
+// Komponen Root aplikasi Single Page Application (SPA) React menggunakan React Router v6.
+// Mengatur:
+// 1. Sistem Routing Halaman Publik (Beranda '/', Jelajah '/explore', Tentang '/about').
+// 2. Proteksi Halaman Administrator ('/admin/*') dengan Route Guard berbasis Token.
+// 3. Layout Utama (Navbar kaca modern, Hero tanpa jarak/gap, Footer, dan deteksi offline status).
+// ====================================================================================================
+
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
-import { Compass, WifiOff, ShieldCheck, Heart, ExternalLink, MapPin } from 'lucide-react';
+import { BrowserRouter as Router, Routes, Route, NavLink, Navigate } from 'react-router-dom';
+import { Compass, WifiOff } from 'lucide-react';
 import Home from './pages/Home';
 import Explore from './pages/Explore';
 import About from './pages/About';
 
-// Admin Imports dari Folder Khusus (src/admin)
+// Mengimpor halaman & modul khusus Administrator dari folder src/admin
 import { 
   AdminLogin, 
   AdminLayout, 
@@ -18,7 +28,12 @@ import {
 
 import './App.css';
 
-// Component Route Guard untuk memproteksi halaman Administrator
+// ====================================================================================================
+// KOMPONEN: ProtectedRoute (Route Guard)
+// TUJUAN:
+// Memastikan hanya user yang memiliki token login valid di localStorage yang dapat mengakses
+// halaman manajemen admin. Jika belum login, otomatis dialihkan ke '/admin/login'.
+// ====================================================================================================
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('tobaguide_admin_token');
   if (!token) {
@@ -27,7 +42,14 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+// ====================================================================================================
+// KOMPONEN: MainLayout
+// TUJUAN:
+// Kerangka antarmuka pengguna publik yang mencakup Navbar responsif, Banner deteksi koneksi offline,
+// kontainer konten utama yang rapat ke atas (flush edge-to-edge), dan Footer resmi.
+// ====================================================================================================
 const MainLayout = ({ children }) => {
+  // State untuk memonitor apakah perangkat pengguna terputus dari internet (offline mode)
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   useEffect(() => {
@@ -45,7 +67,7 @@ const MainLayout = ({ children }) => {
 
   return (
     <div className="app-container">
-      {/* Offline Status Warning Banner */}
+      {/* Banner peringatan jika internet terputus */}
       {isOffline && (
         <div className="offline-banner fade-in" style={{
           background: '#fef2f2',
@@ -67,7 +89,7 @@ const MainLayout = ({ children }) => {
         </div>
       )}
 
-      {/* Navbar */}
+      {/* Navigasi Utama Publik */}
       <nav className="navbar glass-panel">
         <div className="container nav-content">
           <NavLink to="/" className="logo" style={{ textDecoration: 'none' }}>
@@ -98,10 +120,12 @@ const MainLayout = ({ children }) => {
         </div>
       </nav>
 
+      {/* Kontainer Badan Aplikasi (Tanpa Padding Gap ke Navbar) */}
       <div className="app-main-body">
         {children}
       </div>
 
+      {/* Footer Navigasi Publik */}
       <footer className="footer">
         <div className="container footer-content" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', alignItems: 'center', textAlign: 'center' }}>
           <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', justifyContent: 'center', fontSize: '0.88rem' }}>
@@ -118,19 +142,23 @@ const MainLayout = ({ children }) => {
   );
 };
 
+// ====================================================================================================
+// KOMPONEN UTAMA: App
+// TUJUAN: Mendefinisikan seluruh pemetaan URL rute aplikasi dengan React Router.
+// ====================================================================================================
 function App() {
   return (
     <Router>
       <Routes>
-        {/* PUBLIC ROUTES */}
+        {/* RUTE HALAMAN PUBLIK */}
         <Route path="/" element={<MainLayout><Home /></MainLayout>} />
         <Route path="/explore" element={<MainLayout><Explore /></MainLayout>} />
         <Route path="/about" element={<MainLayout><About /></MainLayout>} />
 
-        {/* ADMIN AUTH ROUTE */}
+        {/* RUTE OTENTIKASI ADMINISTRATOR */}
         <Route path="/admin/login" element={<AdminLogin />} />
 
-        {/* ADMIN DASHBOARD PORTAL ROUTES (PROTECTED) */}
+        {/* RUTE PORTAL ADMINISTRATOR (DIPROTEKSI OLEH TOKEN) */}
         <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
@@ -140,7 +168,7 @@ function App() {
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 
-        {/* CATCH-ALL FALLBACK */}
+        {/* REDIRECT URL TIDAK DIKENAL KEMBALI KE BERANDA */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
@@ -148,4 +176,3 @@ function App() {
 }
 
 export default App;
-

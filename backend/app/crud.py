@@ -1,15 +1,28 @@
+# ====================================================================================================
+# FILE: backend/app/crud.py
+# TUJUAN:
+# File ini mengelola operasi CRUD (Create, Read, Update, Delete) database PostgreSQL dan logika
+# algoritma inti rekomendasi TobaRoute AI (RAG Semantik + Geofencing Presisi + Keadilan Data UMKM).
+# ====================================================================================================
+
+import math
 from sqlalchemy.orm import Session
 from . import models, schemas
-import math
 
-# Menampilkan semua destinasi (Bisa difilter berdasarkan kecamatan untuk kebutuhan User/Admin)
+# ====================================================================================================
+# OPERASI CRUD DASAR UNTUK DESTINASI & UMKM
+# ====================================================================================================
+
+# FUNGSI: get_destinasi
+# TUJUAN: Mengambil daftar destinasi dari database, dengan opsi filter per kecamatan.
 def get_destinasi(db: Session, kecamatan: str = None, limit: int = 1000):
     query = db.query(models.Destinasi)
     if kecamatan:
         query = query.filter(models.Destinasi.kecamatan.ilike(kecamatan))
     return query.order_by(models.Destinasi.id.desc()).limit(limit).all()
 
-# Fungsi untuk Admin menambah destinasi baru
+# FUNGSI: create_destinasi
+# TUJUAN: Menambahkan entitas destinasi/UMKM baru ke PostgreSQL dan otomatis melakukan upsert vektor ke Pinecone.
 def create_destinasi(db: Session, destinasi: schemas.DestinasiCreate):
     db_destinasi = models.Destinasi(**destinasi.model_dump())
     db.add(db_destinasi)
@@ -23,7 +36,8 @@ def create_destinasi(db: Session, destinasi: schemas.DestinasiCreate):
         
     return db_destinasi
 
-# Fungsi untuk Admin mengedit data destinasi yang sudah ada
+# FUNGSI: update_destinasi
+# TUJUAN: Memperbarui data destinasi di PostgreSQL dan menyinkronkan ulang vektor embedding-nya di Pinecone.
 def update_destinasi(db: Session, destinasi_id: int, update_data: schemas.DestinasiUpdate):
     db_destinasi = db.query(models.Destinasi).filter(models.Destinasi.id == destinasi_id).first()
     if not db_destinasi:
@@ -44,7 +58,8 @@ def update_destinasi(db: Session, destinasi_id: int, update_data: schemas.Destin
         
     return db_destinasi
 
-# Fungsi untuk Admin menghapus destinasi dari database
+# FUNGSI: delete_destinasi
+# TUJUAN: Menghapus data destinasi dari PostgreSQL dan menghapus record vektor terkait dari Pinecone.
 def delete_destinasi(db: Session, destinasi_id: int):
     db_destinasi = db.query(models.Destinasi).filter(models.Destinasi.id == destinasi_id).first()
     if db_destinasi:
@@ -59,45 +74,15 @@ def delete_destinasi(db: Session, destinasi_id: int):
         return True
     return False
 
-# Fungsi bantuan untuk menghitung jarak koordinat (Haversine Formula) jika diperlukan di lokal
-def hitung_jarak(lat1, lon1, lat2, lon2):
-    rad = math.pi / 180
-    dlat = (lat2 - lat1) * rad
-    dlon = (lon2 - lon1) * rad
-    a = math.sin(dlat/2)**2 + math.cos(lat1*rad) * math.cos(lat2*rad) * math.sin(dlon/2)**2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-    return 6371 * c # Jarak dalam Kilometer
-
-def get_fair_route(db: Session, kecamatan: str, limit_utama: int = 3):
-    # 1. Ambil destinasi wisata utama dengan rating tertinggi di kecamatan tersebut
-    destinasi_utama = db.query(models.Destinasi).\
-        filter(models.Destinasi.kecamatan.ilike(kecamatan)).\
-        filter(models.Destinasi.kategori == 'wisata').\
-        order_by(models.Destinasi.rating.desc()).\
-        limit(limit_utama).all()
-    
-    # 2. Ambil pendukung UMKM/Kuliner lokal yang terkena bias (ulasan sedikit) sebagai bentuk keadilan data
-    # Kriteria: ulasan di bawah 15 tapi rating di atas 4.0
-    umkm_sekitar = db.query(models.Destinasi).\
-        filter(models.Destinasi.kecamatan.ilike(kecamatan)).\
-        filter(models.Destinasi.kategori.in_(['umkm', 'kuliner'])).\
-        filter(models.Destinasi.jumlah_ulasan < 15).\
-        filter(models.Destinasi.rating >= 4.0).\
-        order_by(models.Destinasi.rating.desc()).\
-        limit(4).all()
-        
-    return {
-        "destinasi_utama": destinasi_utama,
-        "rekomendasi_umkm_sekitar": umkm_sekitar
-    }
-
-# ==============================================================================
-# INTEGRASI RAG & VECTOR DATABASE (PINECONE)
-# ==============================================================================
+# ====================================================================================================
+# INTEGRASI RAG & DATABASE VEKTOR (PINECONE + COHERE EMBEDDINGS)
+# ====================================================================================================
 from pinecone import Pinecone  # type: ignore
 from openai import OpenAI  # type: ignore
 from app.config import settings
 
+# FUNGSI: get_pinecone_index
+# TUJUAN: Menginisialisasi koneksi ke index Pinecone Serverless (dimensi 1024).
 def get_pinecone_index():
     if settings.PINECONE_API_KEY and settings.PINECONE_INDEX_NAME:
         try:
@@ -107,17 +92,20 @@ def get_pinecone_index():
             print(f"[RAG] Gagal inisialisasi Pinecone: {e}")
     return None
 
+# FUNGSI: get_cohere_embedding
+# TUJUAN: Mengubah teks deskripsi destinasi menjadi vektor embedding 1024 dimensi menggunakan model Cohere Multilingual v3.0.
 def get_cohere_embedding(query_user: str):
     try:
-        # pyrefly: ignore [missing-import]
         from cohere import Client
         co = Client(api_key=settings.COHERE_API_KEY)
         res = co.embed(texts=[query_user], model="embed-multilingual-v3.0", input_type="search_query")
         return res.embeddings[0]
     except Exception as e:
         print(f"[RAG] Cohere Embedding failed: {e}")
-        return [0.1] * 1024 # Dummy fallback
+        return [0.1] * 1024
 
+# FUNGSI: sync_single_destinasi_vector
+# TUJUAN: Mengunggah satu data destinasi lengkap dengan metadata ke Pinecone.
 def sync_single_destinasi_vector(d):
     index = get_pinecone_index()
     if not index:
@@ -143,6 +131,8 @@ def sync_single_destinasi_vector(d):
         }
     }])
 
+# FUNGSI: sync_all_vectors
+# TUJUAN: Menyinkronkan seluruh 491 destinasi dari PostgreSQL ke Pinecone dalam sekali proses (Fitur Admin).
 def sync_all_vectors(db: Session):
     index = get_pinecone_index()
     if not index:
@@ -159,10 +149,10 @@ def sync_all_vectors(db: Session):
             
     return {"status": "success", "synced_count": count, "total": len(all_dest)}
 
+# FUNGSI: cari_destinasi_semantik
+# TUJUAN: Melakukan pencarian semantic vector search di Pinecone berdasarkan makna kata query pengguna.
 def cari_destinasi_semantik(query_user: str, top_k: int = 20):
     query_vector = None
-    
-    # Pilih model embedding yang tersedia (OpenAI atau Cohere fallback)
     if settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("sk-proj-placeholder"):
         try:
             client = OpenAI(api_key=settings.OPENAI_API_KEY)
@@ -177,7 +167,6 @@ def cari_destinasi_semantik(query_user: str, top_k: int = 20):
     else:
         query_vector = get_cohere_embedding(query_user)
 
-    # Lakukan pencarian di Pinecone
     index = get_pinecone_index()
     if index and query_vector:
         try:
@@ -187,14 +176,18 @@ def cari_destinasi_semantik(query_user: str, top_k: int = 20):
             print(f"[RAG] Pinecone Query failed: {e}")
     return []
 
-import math
+# ====================================================================================================
+# PERHITUNGAN GEOGRAFIS & GEOFENCING KAWASAN DANAU TOBA
+# ====================================================================================================
 
+# FUNGSI: haversine_km
+# TUJUAN: Menghitung jarak lengkung bumi (Great-circle distance) dalam Kilometer antara dua koordinat GPS.
 def haversine_km(lat1, lon1, lat2, lon2):
     if lat1 is None or lon1 is None or lat2 is None or lon2 is None:
         return 999999.0
     try:
         lat1, lon1, lat2, lon2 = float(lat1), float(lon1), float(lat2), float(lon2)
-        R = 6371.0  # radius Bumi dalam kilometer
+        R = 6371.0  # Radius Bumi dalam kilometer
         dlat = math.radians(lat2 - lat1)
         dlon = math.radians(lon2 - lon1)
         a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
@@ -203,6 +196,7 @@ def haversine_km(lat1, lon1, lat2, lon2):
     except Exception:
         return 999999.0
 
+# Daftar nama kecamatan resmi di kawasan 8 kabupaten lingkar Danau Toba
 KNOWN_KECAMATANS = [
     "ajibata", "baktiraja", "balige", "berastagi", "doloksanggul", 
     "girsang sipangan bolon", "harian", "laguboti", "lumban julu", 
@@ -213,6 +207,7 @@ KNOWN_KECAMATANS = [
 ]
 
 # Matriks Ketetanggaan Geografis Danau Toba (Radius Maksimal 2 Kecamatan / ~20 KM)
+# Digunakan agar sistem hanya merekomendasikan UMKM yang benar-benar bisa dijangkau oleh wisatawan.
 KECAMATAN_NEIGHBORS_2_HOPS = {
     "Laguboti": ["Laguboti", "Sigumpar", "Balige", "Silaen", "Porsea", "Tampahan", "Parmaksian", "Siantar Narumonda"],
     "Balige": ["Balige", "Laguboti", "Tampahan", "Sigumpar", "Silaen", "Muara", "Porsea", "Habinsaran"],
@@ -248,6 +243,7 @@ KECAMATAN_NEIGHBORS_2_HOPS = {
     "Salak": ["Salak", "Sitellu Tali Urang Jehe", "Pergetteng-getteng Sengku", "Pakkat", "Doloksanggul"]
 }
 
+# Koordinat Daratan Resmi Pusat Tiap Kecamatan
 KECAMATAN_REFERENCE_CENTERS = {
     "balige": (2.3387, 99.0625),
     "laguboti": (2.3544, 99.1264),
@@ -275,6 +271,14 @@ KECAMATAN_REFERENCE_CENTERS = {
     "tarutung": (2.0250, 98.9730)
 }
 
+# ====================================================================================================
+# FUNGSI UTAMA: get_fair_route_with_rag
+# TUJUAN:
+# Algoritma Rekomendasi Keadilan Data & RAG:
+# 1. Mendeteksi intent pengguna (kuliner, UMKM belanja, atau wisata alam).
+# 2. Menerapkan geofencing ketat agar tidak ada rekomendasi lintas danau/pulau yang mustahil ditempuh.
+# 3. Menyandingkan destinasi utama dengan UMKM lokal terdekat (Fairness Engine) yang butuh eksposur.
+# ====================================================================================================
 def get_fair_route_with_rag(
     db: Session, 
     query: str, 
@@ -335,7 +339,7 @@ def get_fair_route_with_rag(
             if d_kec not in allowed_kecamatans:
                 continue
             
-            # Hard Geofence Cap: Discard if coordinates are > 12 km away from target center
+            # Hard Geofence Cap: Batasi koordinat maksimal 12-20 km dari pusat kecamatan
             if target_center:
                 dist_to_center = haversine_km(target_center[0], target_center[1], d.latitude, d.longitude)
                 if d_kec == target_kecamatan_clean.lower() and dist_to_center > 12.0:
@@ -368,7 +372,7 @@ def get_fair_route_with_rag(
 
         candidate_pool.sort(key=candidate_sort_key)
     else:
-        # Jika query umum tanpa kecamatan spesifik
+        # Jika query umum tanpa kecamatan spesifik, gunakan pencarian semantik Pinecone
         matched_ids = cari_destinasi_semantik(query)
         if matched_ids:
             int_ids = set()
@@ -377,7 +381,6 @@ def get_fair_route_with_rag(
                     int_ids.add(int(mid))
                 except ValueError:
                     pass
-            # Filter berdasarkan intent
             temp_pool = []
             for d in all_dests:
                 if d.id in int_ids:
@@ -394,7 +397,6 @@ def get_fair_route_with_rag(
                     else:
                         temp_pool.append(d)
             
-            # Jika hasil filter berdasarkan intent kosong (misal Pinecone tidak menemukan kuliner), ambil dari seluruh DB
             if not temp_pool:
                 if is_food_query:
                     temp_pool = [d for d in all_dests if 'kuliner' in (d.kategori or '').strip().lower()]
@@ -413,7 +415,7 @@ def get_fair_route_with_rag(
                 key=lambda d: (-float(d.rating or 4.0), haversine_km(ref_lat, ref_lon, d.latitude, d.longitude))
             )
 
-    # Ambil destinasi utama dengan rotasi offset
+    # Ambil destinasi utama dengan rotasi offset saat user menekan 'Cari Opsi Lain'
     total_candidates = len(candidate_pool)
     if total_candidates > 0:
         start_idx = (offset * limit_utama) % total_candidates
@@ -423,7 +425,7 @@ def get_fair_route_with_rag(
     else:
         destinasi_utama = []
 
-    # 3. UMKM & Kuliner Rekomendasi Sekitar
+    # 3. UMKM & Kuliner Rekomendasi Sekitar (Fairness Engine)
     ref_center_lat = target_center[0] if target_center else (user_lat or 2.3387)
     ref_center_lon = target_center[1] if target_center else (user_lon or 99.0625)
 
@@ -467,5 +469,3 @@ def get_fair_route_with_rag(
         "destinasi_utama": destinasi_utama,
         "rekomendasi_umkm_sekitar": umkm_sekitar
     }
-
-

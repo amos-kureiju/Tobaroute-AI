@@ -1,3 +1,16 @@
+// ====================================================================================================
+// FILE: frontend/src/pages/Explore.jsx
+// TUJUAN:
+// Halaman Peta Eksplorasi Interaktif Kawasan Danau Toba.
+// Fitur Utama:
+// 1. Peta Penuh (Full-Screen Interactive GIS): Leaflet Map dengan penanda warna kategori berbeda.
+// 2. Filter Multi-Kategori (Wisata, Kuliner Batak, Sentra UMKM, Penginapan, Transportasi Feri).
+// 3. Filter Multi-Kecamatan (24 Wilayah Lingkar Toba).
+// 4. Panel Drawer Detail POI: Info operasional, tarif tiket, menu, dan kode alamat presisi.
+// 5. Floating AI Chatbot Concierge: Chatbot interaktif tanya-jawab rute dan budaya Batak (Gemini AI).
+// 6. Real Road Navigation Routing: Menghitung rute perjalanan mobil dari titik GPS ke destinasi tujuan.
+// ====================================================================================================
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
@@ -8,6 +21,7 @@ import { Map, AlertCircle, Navigation, Star, Send, Bot, User, Compass, Route as 
 import ReactMarkdown from 'react-markdown';
 import RoutingMachine from '../components/RoutingMachine';
 
+// HELPER: Membersihkan nilai 'nan', 'null', atau tanda strip dari database
 const formatDescription = (desc) => {
   if (!desc) return 'Destinasi unggulan di kawasan Danau Toba dengan keindahan alam dan nilai budaya yang khas.';
   let clean = String(desc)

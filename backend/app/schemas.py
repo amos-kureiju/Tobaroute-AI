@@ -1,8 +1,23 @@
+# ====================================================================================================
+# FILE: backend/app/schemas.py
+# TUJUAN:
+# Mendefinisikan skema validasi tipe data (Data Transfer Objects / DTO) menggunakan Pydantic.
+# Berfungsi memvalidasi input JSON yang masuk ke server serta mengatur format data keluar (response).
+# Juga mencakup algoritma generator Open Location Code (Plus Code) untuk alamat digital lokasi.
+# ====================================================================================================
+
 from pydantic import BaseModel
 from typing import Optional, List
 
+# Alfabet standar Open Location Code (Google Plus Code) tanpa karakter ambigu
 CODE_ALPHABET = "23456789CFGHJMPQRVWX"
 
+# ====================================================================================================
+# FUNGSI: generate_plus_code
+# TUJUAN:
+# Mengonversi koordinat Latitude dan Longitude menjadi kode lokasi digital 8 karakter (misal: 6PVX+G8).
+# Sangat berguna untuk UMKM di pelosok desa Danau Toba yang belum memiliki nomor jalan formal.
+# ====================================================================================================
 def generate_plus_code(lat: float, lon: float) -> str:
     if lat is None or lon is None:
         return ""
@@ -35,7 +50,11 @@ def generate_plus_code(lat: float, lon: float) -> str:
     except Exception:
         return ""
 
-# Base schema untuk struktur data destinasi
+# ====================================================================================================
+# SKEMA MODEL PYDANTIC (VALIDASI DATA)
+# ====================================================================================================
+
+# Base schema properti bersama untuk destinasi
 class DestinasiBase(BaseModel):
     nama: str
     kategori: str
@@ -51,10 +70,11 @@ class DestinasiBase(BaseModel):
     plus_code: Optional[str] = None
     full_address: Optional[str] = None
 
-# Digunakan saat Admin menginput data baru (Data masuk)
+# Skema saat Admin membuat entitas destinasi baru (Input)
 class DestinasiCreate(DestinasiBase):
     pass
 
+# Skema saat Admin mengedit entitas yang sudah ada (Optional Update)
 class DestinasiUpdate(BaseModel):
     nama: Optional[str] = None
     kategori: Optional[str] = None
@@ -70,29 +90,25 @@ class DestinasiUpdate(BaseModel):
     plus_code: Optional[str] = None
     full_address: Optional[str] = None
 
-# Digunakan saat API merespons permintaan User/Admin (Data keluar)
+# Skema respons API destinasi ke antarmuka pengguna (Output)
 class DestinasiResponse(DestinasiBase):
     id: int
 
     class Config:
         from_attributes = True
 
-# Skema permintaan untuk AI Chatbot
-class ChatRequest(BaseModel):
-    user_query: str
-    fair_route_data: dict
-
-
-# Skema khusus untuk merespons rute pintar yang adil
+# Skema format respons rekomendasi rute terpadu (Destinasi Utama + UMKM + AI Concierge)
 class TobaRouteResponse(BaseModel):
     destinasi_utama: List[DestinasiResponse]
     rekomendasi_umkm_sekitar: List[DestinasiResponse]
     ai_response: Optional[str] = None
 
+# Skema pesan individual untuk riwayat obrolan chatbot
 class ChatbotMessage(BaseModel):
     role: str
     text: str
 
+# Skema request obrolan chatbot
 class ChatbotRequest(BaseModel):
     message: str
     history: List[ChatbotMessage] = []

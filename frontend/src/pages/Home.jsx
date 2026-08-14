@@ -1,10 +1,23 @@
+// ====================================================================================================
+// FILE: frontend/src/pages/Home.jsx
+// TUJUAN:
+// Halaman Utama (Landing Page) TobaRoute AI.
+// Fitur Utama:
+// 1. Hero Search Bar: Memungkinkan wisatawan mencari tempat berdasarkan kata bebas (Bahasa Alami / NLP).
+// 2. Dropdown Kecamatan: Filter wilayah opsional untuk membatasi pencarian ke daerah tertentu.
+// 3. Quick Inspiration Tags & History: Tag pencarian populer sekali klik.
+// 4. AI Travel Concierge Bubble: Menampilkan narasi rekomendasi perjalanan hasil kurasi Gemini RAG.
+// 5. Peta Interaktif & Grid Kartu Destinasi Utama + Rekomendasi UMKM Sekitar.
+// ====================================================================================================
+
 import React, { useState, useEffect } from 'react';
-import { Search, Map, Sparkles, AlertCircle, Compass, ShieldCheck, Route, Store, History, Clock, ArrowRight, RotateCw } from 'lucide-react';
+import { Search, Map, Sparkles, AlertCircle, Compass, ShieldCheck, Route, Store, Clock, RotateCw } from 'lucide-react';
 import { getFairRecommendation } from '../services/api';
 import DestinationCard from '../components/DestinationCard';
 import RouteMap from '../components/RouteMap';
 import ReactMarkdown from 'react-markdown';
 
+// Tag inspirasi cepat sekali klik untuk memudahkan pencarian awal pengguna
 const POPULAR_TAGS = [
   { label: 'Wisata Alam Balige', query: 'Wisata alam dan pantai pemandangan indah di Balige' },
   { label: 'Kuliner Khas Batak', query: 'Rumah makan kuliner khas Batak naniarsik dan mie gomak' },
@@ -13,6 +26,7 @@ const POPULAR_TAGS = [
 ];
 
 const Home = () => {
+  // State Input & Status Pencarian
   const [query, setQuery] = useState('');
   const [kecamatan, setKecamatan] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,6 +35,8 @@ const Home = () => {
   const [recentSearches, setRecentSearches] = useState([]);
   const [searchOffset, setSearchOffset] = useState(0);
   const [userCoords, setUserCoords] = useState(null);
+  
+  // Konfigurasi Banner & Judul Hero yang dapat disesuaikan Admin
   const [homeConfig, setHomeConfig] = useState({
     heroBadge: 'Platform Navigasi & Keadilan Pariwisata Danau Toba',
     heroTitle: 'Temukan Keindahan Danau Toba',
@@ -30,19 +46,19 @@ const Home = () => {
     alertBg: 'info'
   });
 
-  // Track User GPS Coordinates for nearest-first recommendations
+  // Mengambil koordinat GPS pengguna secara aman untuk mengoptimalkan urutan rute terdekat
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           setUserCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
         },
-        (err) => console.warn("Akses GPS belum diaktifkan")
+        () => console.warn("Akses GPS belum diaktifkan")
       );
     }
   }, []);
 
-  // Restore saved search results from sessionStorage on mount
+  // Memulihkan hasil pencarian sebelumnya dari sessionStorage agar tidak hilang saat berpindah halaman
   useEffect(() => {
     try {
       const savedConfig = localStorage.getItem('tobaguide_home_content_config');
@@ -64,6 +80,11 @@ const Home = () => {
     }
   }, []);
 
+  // ====================================================================================================
+  // HANDLER: handleSearch
+  // TUJUAN:
+  // Mengirim request pencarian rekomendasi ke backend dengan offset pagination dan koordinat GPS.
+  // ====================================================================================================
   const handleSearch = async (e, customQuery = null, forceNextOffset = false) => {
     if (e) e.preventDefault();
     const searchQuery = customQuery || query;
@@ -98,12 +119,12 @@ const Home = () => {
       );
       setResults(data);
 
-      // Save to sessionStorage so switching pages never loses results
+      // Simpan di sessionStorage untuk mempertahankan state
       sessionStorage.setItem('tobaroute_last_results', JSON.stringify(data));
       sessionStorage.setItem('tobaroute_last_query', searchQuery);
       sessionStorage.setItem('tobaroute_last_kecamatan', kecamatan);
 
-      // Scroll to results smoothly
+      // Scroll halus otomatis ke bagian hasil rekomendasi
       setTimeout(() => {
         const el = document.getElementById('results-section');
         if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -118,7 +139,7 @@ const Home = () => {
 
   return (
     <>
-      {/* Alert Announcement Banner if active */}
+      {/* Banner Pengumuman Administrator jika diaktifkan */}
       {homeConfig.alertActive && homeConfig.alertText && (
         <div style={{
           background: homeConfig.alertBg === 'warning' ? '#fef3c7' : homeConfig.alertBg === 'emerald' ? '#dcfce7' : '#e0f2fe',
@@ -133,7 +154,7 @@ const Home = () => {
         </div>
       )}
 
-      {/* Hero Section */}
+      {/* Bagian Hero Banner & Form Pencarian Pintar */}
       <header className="hero hero-enhanced">
         <div className="hero-background-overlay"></div>
         
@@ -151,7 +172,7 @@ const Home = () => {
             {homeConfig.heroSubtitle}
           </p>
           
-          {/* Main Search Bar */}
+          {/* Form Pencarian Utama */}
           <form className="search-form glass-panel-hero" onSubmit={handleSearch}>
             <div className="input-group">
               <Search className="input-icon" size={18} />
@@ -206,7 +227,7 @@ const Home = () => {
             </button>
           </form>
 
-          {/* Quick Suggestion Tags */}
+          {/* Tag Inspirasi Cepat */}
           <div className="hero-quick-tags">
             <span className="quick-tag-label"><Compass size={14} /> Inspirasi Cepat:</span>
             <div className="tags-wrapper">
@@ -218,7 +239,7 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Recent Search History Chips if available */}
+          {/* Riwayat Pencarian Terakhir */}
           {recentSearches.length > 0 && (
             <div className="hero-recent-history fade-in">
               <span className="recent-history-label"><Clock size={13} /> Terakhir Dicari:</span>
@@ -240,8 +261,7 @@ const Home = () => {
         </div>
       </header>
 
-
-      {/* Main Content */}
+      {/* Konten Utama Hasil Rekomendasi */}
       <main className="container main-content" id="results-section">
         {loading && (
           <div className="loading-state">
@@ -254,10 +274,10 @@ const Home = () => {
           </div>
         )}
 
-        {/* Results Section */}
+        {/* Menampilkan Hasil Rekomendasi jika ada */}
         {results && !loading && (
           <div className="results-container fade-in">
-            {/* AI Response & Route Map */}
+            {/* Narasi AI Pemandu Wisata & Peta Navigasi */}
             <section className="ai-response glass-panel">
               <div className="ai-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -290,11 +310,11 @@ const Home = () => {
                 <ReactMarkdown>{results.ai_response}</ReactMarkdown>
               </div>
               
-              {/* Route Map */}
+              {/* Komponen Peta Rute Navigasi */}
               <RouteMap destinasiUtama={results.destinasi_utama} umkmSekitar={results.rekomendasi_umkm_sekitar} />
             </section>
 
-            {/* Destinations */}
+            {/* Grid Destinasi Utama */}
             <section className="destinations-section">
               <div className="section-header">
                 <h2>Destinasi Utama</h2>
@@ -311,7 +331,7 @@ const Home = () => {
               )}
             </section>
 
-            {/* UMKM */}
+            {/* Grid Rekomendasi UMKM & Kuliner Lokal */}
             <section className="umkm-section">
               <div className="section-header">
                 <h2>Dukung UMKM Lokal Sekitar</h2>
@@ -330,7 +350,7 @@ const Home = () => {
           </div>
         )}
 
-        {/* Feature Highlights Section */}
+        {/* Tampilan Keunggulan Fitur jika belum melakukan pencarian */}
         {!results && !loading && (
           <section className="features-highlight-section fade-in">
             <div className="section-title-center">
@@ -372,16 +392,16 @@ const Home = () => {
               </div>
             </div>
 
-            {/* Stats Banner */}
+            {/* Banner Statistik Kawasan */}
             <div className="stats-banner glass-panel">
               <div className="stat-item">
-                <span className="stat-number">334+</span>
+                <span className="stat-number">491</span>
                 <span className="stat-label">Entitas Wisata & UMKM</span>
               </div>
               <div className="stat-divider"></div>
               <div className="stat-item">
                 <span className="stat-number">24</span>
-                <span className="stat-label">Kecamatan Strategis</span>
+                <span className="stat-label">Kecamatan Terdata</span>
               </div>
               <div className="stat-divider"></div>
               <div className="stat-item">
@@ -402,4 +422,3 @@ const Home = () => {
 };
 
 export default Home;
-

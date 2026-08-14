@@ -1,3 +1,13 @@
+// ====================================================================================================
+// FILE: frontend/src/admin/AdminAIMonitoring.jsx
+// TUJUAN:
+// Halaman Monitoring Kinerja Kecerdasan Buatan (AI & RAG Engine).
+// Fitur Utama:
+// 1. Pemantauan Metrik RAG: Model LLM Gemini, Embedding Cohere 1024-dim, Latensi Rata-rata.
+// 2. Prompt Test Sandbox: Tempat admin menguji respon prompt AI secara langsung di dashboard.
+// 3. Log Riwayat Inferensi & Kueri Pengguna: Memonitor kualitas dan keakuratan respon AI.
+// ====================================================================================================
+
 import React, { useState, useEffect } from 'react';
 import { Activity, Cpu, CheckCircle2, AlertTriangle, Clock, RefreshCw, Sparkles, Send, Bot, ShieldCheck } from 'lucide-react';
 import { getSystemMetrics, sendChatMessage } from '../services/api';

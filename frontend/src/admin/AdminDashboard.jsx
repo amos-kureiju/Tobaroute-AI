@@ -1,3 +1,14 @@
+// ====================================================================================================
+// FILE: frontend/src/admin/AdminDashboard.jsx
+// TUJUAN:
+// Halaman Dashboard Eksekutif Administrator TobaRoute AI.
+// Fitur Utama:
+// 1. Kartu Ringkasan Metrik (Total Destinasi, UMKM Terdata, Rasio Keadilan Data, Status Pinecone Index).
+// 2. Grafik Distribusi Kategori (Wisata Alam, Kuliner Batak, Kerajinan UMKM, Penginapan, Transportasi).
+// 3. Quick Action: Modal Tambah Cepat Entitas Baru ke PostgreSQL & Pinecone.
+// 4. Tabel Entitas Terbaru & Ekspor Laporan CSV.
+// ====================================================================================================
+
 import React, { useState, useEffect } from 'react';
 import { getDestinations, addDestinasi } from '../services/api';
 import { MapPin, MessageSquare, AlertTriangle, Download, Plus, MoreVertical, X, CheckCircle2, RefreshCw, TrendingUp, Store, Compass, Utensils, Hotel, Car, ShieldCheck, ArrowUpRight } from 'lucide-react';
@@ -9,7 +20,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // New Destination Form state
+  // Form State untuk Tambah Cepat Destinasi Baru
   const [newNama, setNewNama] = useState('');
   const [newKecamatan, setNewKecamatan] = useState('Balige');
   const [newKategori, setNewKategori] = useState('wisata');
@@ -18,7 +29,7 @@ const AdminDashboard = () => {
   const [newUlasan, setNewUlasan] = useState('15');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch real database destinations
+  // FUNGSI: Mengambil data live real-time dari database PostgreSQL
   const loadRealData = async () => {
     try {
       setLoading(true);

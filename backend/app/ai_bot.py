@@ -1,19 +1,35 @@
+# ====================================================================================================
+# FILE: backend/app/ai_bot.py
+# TUJUAN:
+# File ini berfungsi sebagai otak kecerdasan buatan (AI Engine) TobaRoute.
+# Menggunakan Google Gemini 3.1 Flash Lite yang dipadukan dengan basis pengetahuan (Knowledge Base)
+# resmi Danau Toba (UNESCO Global Geopark) untuk:
+# 1. Menghasilkan narasi rekomendasi perjalanan cerdas berbasis RAG (Retrieval-Augmented Generation).
+# 2. Melayani obrolan interaktif (Chatbot) pemandu wisata.
+# 3. Menghasilkan wawasan detail (storytelling, must-try, tips) untuk setiap kartu destinasi & UMKM.
+# ====================================================================================================
+
 import os
+import json
 from pathlib import Path
 from dotenv import load_dotenv
 from google import genai
 
-# Load environment variables from .env using absolute path
+# Membaca konfigurasi environment (.env) untuk mengambil GEMINI_API_KEY
 BASE_DIR = Path(__file__).resolve().parent.parent
 dotenv_path = BASE_DIR / ".env"
 load_dotenv(dotenv_path=dotenv_path, override=False)
 
-# Fetch the Gemini API key from the environment
+# Mengambil kunci API Gemini dari environment variable
 api_key = os.getenv("GEMINI_API_KEY")
 
-# Inisialisasi klien dengan API Key yang didapatkan dari .env
+# Inisialisasi klien resmi Google GenAI SDK
 client = genai.Client(api_key=api_key)
 
+# ====================================================================================================
+# BASIS PENGETAHUAN ENSIKLOPEDIA RESMI DANAU TOBA (UNESCO GLOBAL GEOPARK)
+# Digunakan sebagai referensi fakta geologi, sejarah kebudayaan Batak, kuliner, dan transportasi.
+# ====================================================================================================
 DANAU_TOBA_KNOWLEDGE_BASE = """
 === ENSIKLOPEDIA & PENGETAHUAN RESMI KAWASAN DANAU TOBA (UNESCO GLOBAL GEOPARK) ===
 
@@ -44,6 +60,12 @@ DANAU_TOBA_KNOWLEDGE_BASE = """
    - Pelabuhan Ro-Ro & Kapal Tradisional: Pelabuhan Ajibata ↔ Tomok/Ambarita, Pelabuhan Balige ↔ Onan Runggu, Pelabuhan Muara ↔ Sipinggan, Pelabuhan Tigaras ↔ Simanindo.
 """
 
+# ====================================================================================================
+# FUNGSI: format_fair_route_to_text
+# TUJUAN:
+# Mengonversi daftar objek destinasi dan rekomendasi UMKM dari database/Pinecone
+# menjadi teks yang rapi dan terstruktur agar dapat disuntikkan ke dalam prompt LLM.
+# ====================================================================================================
 def format_fair_route_to_text(fair_route_data: dict) -> str:
     dest_utama = fair_route_data.get("destinasi_utama", [])
     umkm_sekitar = fair_route_data.get("rekomendasi_umkm_sekitar", [])
@@ -76,6 +98,12 @@ def format_fair_route_to_text(fair_route_data: dict) -> str:
         
     return text
 
+# ====================================================================================================
+# FUNGSI: generate_tourist_response
+# TUJUAN:
+# Menghasilkan narasi rekomendasi perjalanan berstandar Senior Travel Concierge (RAG).
+# Menggabungkan pertanyaan wisatawan, basis pengetahuan, dan hasil pencarian vektor.
+# ====================================================================================================
 def generate_tourist_response(user_query: str, fair_route_data: dict) -> str:
     formatted_data = format_fair_route_to_text(fair_route_data)
 
@@ -93,7 +121,7 @@ DATA DESTINASI & UMKM TERVERIFIKASI SISTEM GEOFENCE KAMI:
 
 PANDUAN PENULISAN & GAYA BAHASA PROFESIONAL:
 1. Awali dengan sambutan hangat dan berkarakter khas Toba: "Horas! ..." lalu berikan gambaran pembuka yang memikat mengenai keistimewaan rute yang dipilih.
-2. Sajikan ulasan yang KAYA KONTEKS, EDUKATIF, dan BERKUALITAS TINGGI (jangan gunakan template kaku seperti "Kategori: ... Detail: ...", melainkan gunakan narasi yang mengalir, kaya wawasan sejarah/alam, dan terstruktur rapi dengan Markdown).
+2. Sajikan ulasan yang KAYA KONTEKS, EDUKATIF, dan BERKUALITAS TINGGI (gunakan narasi yang mengalir, kaya wawasan sejarah/alam, dan terstruktur rapi dengan Markdown).
 3. Struktur Rekomendasi yang Wajib Diterapkan:
    - **Rangkaian Destinasi Unggulan**: Jelaskan masing-masing tempat utama yang ada pada data, soroti daya tarik keindahan alam, nilai sejarah/budayanya, pengalaman terbaik yang bisa dirasakan wisatawan, serta tips waktu berkunjung ideal.
    - **Kemitraan UMKM & Gastronomi Lokal Sekitar**: Pasangkan kunjungan wisata dengan UMKM kuliner atau kerajinan tangan lokal di sekitarnya (seperti mencicipi Mie Gomak beraroma andaliman hangat, kopi Arabika Lintong, kue ombus-ombus, atau melihat sentra tenun Ulos).
@@ -114,6 +142,12 @@ PANDUAN PENULISAN & GAYA BAHASA PROFESIONAL:
         print(f"[AI Error] Gagal menghubungi Gemini API: {e}")
         return "Horas! Asisten AI TobaRoute sedang memperbarui rute. Silakan jelajahi kartu destinasi dan peta navigasi interaktif di bawah ini untuk memulai perjalanan Anda."
 
+# ====================================================================================================
+# FUNGSI: chat_with_bot
+# TUJUAN:
+# Menangani obrolan interaktif real-time (tanya-jawab) antara wisatawan dan asisten AI.
+# Menyimpan riwayat percakapan agar konteks tanya-jawab tetap berkesinambungan.
+# ====================================================================================================
 def chat_with_bot(user_message: str, history: list) -> str:
     system_instruction = f"""
 Anda adalah TobaRoute AI, Senior Travel Concierge & Duta Wisata Kawasan Danau Toba.
@@ -123,7 +157,7 @@ PANDUAN MERESPONS:
 - Sambut dengan hangat dan sopan ("Horas!").
 - Berikan jawaban yang kaya konteks, terstruktur rapi, elegan, berwawasan budaya, dan langsung menjawab esensi pertanyaan wisatawan.
 - Gunakan format Markdown yang bersih (**bold** untuk poin penting).
-- Pastikan selalu menyebutkan nama tempat dan kuliner secara autentik tanpa placeholder.
+- DILARANG menggunakan emoji atau emoticon yang berlebihan.
 
 ENSIKLOPEDIA KAWASAN:
 {DANAU_TOBA_KNOWLEDGE_BASE}
@@ -146,55 +180,60 @@ ENSIKLOPEDIA KAWASAN:
         print(f"Error in chat_with_bot: {e}")
         return "Mohon maaf, saat ini sistem AI sedang sibuk. Silakan coba beberapa saat lagi."
 
-import json
-
+# ====================================================================================================
+# FUNGSI: generate_heuristic_insight
+# TUJUAN:
+# Fallback lokal cerdas jika koneksi internet terputus atau API Gemini sedang sibuk.
+# Menghasilkan wawasan budaya otomatis berdasarkan kata kunci kategori dan nama tempat.
+# ====================================================================================================
 def generate_heuristic_insight(nama: str, kecamatan: str, kategori: str, deskripsi_singkat: str) -> dict:
-    """Fallback lokal yang kaya konteks jika Gemini API offline/terkendala kuota."""
     nama_lower = (nama or "").lower()
     kat_lower = (kategori or "").lower()
     desk_lower = (deskripsi_singkat or "").lower()
 
     if any(k in nama_lower or k in kat_lower or k in desk_lower for k in ["ulos", "tenun", "songket"]):
         return {
-            "storytelling": f"Sentra kerajinan tangan di {kecamatan} ini mempertahankan warisan luhur tradisi tenun Batak secara turun-temurun, di mana setiap lembar kain Ulos ditenun dengan ketelitian tinggi dan sarat makna berkat serta kehangatan adat.",
-            "must_try": "Melihat langsung proses merajut motif Ulos tradisional (seperti Sadum atau Ragi Hotang) serta membeli kain tenun asli langsung dari tangan pengrajin warga setempat.",
+            "storytelling": f"Sentra kerajinan tangan di {kecamatan} ini melestarikan teknik tenun tradisional Batak secara turun-temurun, di mana setiap helai kain Ulos ditenun dengan teliti dan sarat makna berkat serta doa leluhur.",
+            "must_try": "Melihat langsung proses pembuatan motif Ulos tradisional (seperti Sadum atau Ragi Hotang) serta membeli kain tenun asli langsung dari pengrajin warga setempat.",
             "travel_tips": "Disarankan berkunjung pada pagi atau siang hari saat pengrajin aktif menenun. Anda juga dapat berkonsultasi mengenai makna filosofis setiap motif ulos.",
             "highlight_tags": ["Tenun Tangan Asli", "Pemberdayaan UMKM", "Warisan Budaya Batak"]
         }
     elif any(k in nama_lower or k in desk_lower for k in ["gula", "aren", "palm sugar", "nira"]):
         return {
-            "storytelling": f"Diproduksi secara higienis dari sadapan pohon enau alami di perbukitan {kecamatan} tanpa tambahan zat kimia pengawet, menghasilkan cita rasa manis karamel legit yang beraroma harum alami khas tanah vulkanik Toba.",
+            "storytelling": f"Diproduksi secara murni dari sadapan pohon enau alami perbukitan {kecamatan} tanpa bahan kimia pengawet, menghasilkan cita rasa manis karamel legit yang harum khas tanah vulkanik Danau Toba.",
             "must_try": "Membeli gula aren cetak murni dan sirup aren alami yang sangat cocok sebagai pemanis kopi Arabika Toba atau bahan baku kue tradisional.",
-            "travel_tips": "Simpan di tempat sejuk dan kedap udara agar kualitas keaslian rasa dan aromanya tetap terjaga prima.",
-            "highlight_tags": ["100% Nira Aren Murni", "Tanpa Pengawet", "Produksi Rumahan Warga"]
+            "travel_tips": "Simpan di tempat sejuk dan kedap udara agar keaslian rasa dan aroma legitnya tetap terjaga prima.",
+            "highlight_tags": ["Nira Aren Murni", "Tanpa Pengawet", "Produksi Rumahan Warga"]
         }
     elif any(k in kat_lower or k in nama_lower for k in ["kuliner", "makan", "resto", "kopi", "cafe", "warung"]):
         return {
             "storytelling": f"Destinasi kuliner autentik di kawasan {kecamatan} yang menghidangkan kekayaan bumbu rempah tradisional khas Batak Toba (seperti andaliman, asam cikala, dan lokio) yang dimasak segar setiap hari.",
-            "must_try": "Mencicipi sajian andalan hangat yang diracik dengan bumbu rempah andaliman segar untuk pengalaman gastronomi Danau Toba yang tak terlupakan.",
+            "must_try": "Mencicipi sajian andalan hangat yang diracik dengan bumbu rempah andaliman segar untuk pengalaman gastronomi Danau Toba yang berkesan.",
             "travel_tips": "Waktu terbaik berkunjung adalah menjelang jam makan siang (11.30 - 13.30 WIB) untuk menikmati sajian yang baru matang.",
-            "highlight_tags": ["Rempah Andaliman Segar", "Kuliner Khas Autentik", "Bahan Segar Lokal"]
+            "highlight_tags": ["Rempah Andaliman", "Kuliner Tradisional", "Bahan Segar Lokal"]
         }
     elif any(k in kat_lower or k in nama_lower for k in ["penginapan", "hotel", "homestay", "resort"]):
         return {
-            "storytelling": f"Akomodasi berkonsep ramah keluarga di {kecamatan} yang menawarkan suasana menginap tenang dengan udara sejuk dan pemandangan asri bentang kaldera Danau Toba.",
+            "storytelling": f"Akomodasi berkonsep ramah keluarga di {kecamatan} yang menawarkan suasana menginap tenang dengan udara sejuk dan panorama asri bentang kaldera Danau Toba.",
             "must_try": "Menikmati secangkir kopi hangat di pagi hari sambil menyaksikan kabut dan matahari terbit di atas perairan Danau Toba.",
             "travel_tips": "Lakukan konfirmasi pemesanan terlebih dahulu terutama saat akhir pekan atau musim liburan.",
-            "highlight_tags": ["Udara Sejuk Pegunungan", "Suasana Tenang", "Akses Strategis"]
+            "highlight_tags": ["Udara Sejuk", "Suasana Tenang", "Akses Strategis"]
         }
     else:
         return {
             "storytelling": f"Destinasi unggulan di wilayah {kecamatan} yang menyuguhkan keindahan panorama alam kaldera Danau Toba (UNESCO Global Geopark) dengan suasana damai yang sangat asri.",
             "must_try": "Menikmati pemandangan bentang alam danau dari sudut pandang terbaik, berfoto di spot panorama alami, dan menikmati ketenangan alam.",
             "travel_tips": "Gunakan pakaian santai yang nyaman dan bawa jaket ringan karena embusan angin danau yang sejuk di pagi/sore hari.",
-            "highlight_tags": ["UNESCO Geopark", "Spot Foto Eksotis", "Panorama Alam Asri"]
+            "highlight_tags": ["UNESCO Geopark", "Spot Panorama", "Alam Asri"]
         }
 
+# ====================================================================================================
+# FUNGSI: generate_destination_ai_insight
+# TUJUAN:
+# Menghasilkan wawasan detail (storytelling, must-try, tips, tags) untuk kartu destinasi/UMKM
+# menggunakan model Google Gemini AI dalam format JSON murni.
+# ====================================================================================================
 def generate_destination_ai_insight(nama: str, kecamatan: str, kategori: str, deskripsi_singkat: str, nama_jalan: str = "") -> dict:
-    """
-    Menghasilkan ulasan mendalam, wawasan budaya, tips wisatawan, dan keunggulan otentik
-    berbasis Gemini AI untuk kartu destinasi/UMKM agar tidak kosong dan kaya konteks.
-    """
     prompt = f"""
 Anda adalah Kurator Budaya dan Penulis Panduan Perjalanan Resmi Kawasan Danau Toba.
 Berikan ringkasan wawasan mendalam dan panduan pengalaman wisatawan yang faktual, kaya konteks, dan alami untuk entitas berikut:
@@ -240,4 +279,3 @@ Format output HARUS murni JSON valid (tanpa markdown backtick ```json, murni raw
     except Exception as e:
         print(f"[AI Insight Error] {e}")
         return generate_heuristic_insight(nama, kecamatan, kategori, deskripsi_singkat)
-

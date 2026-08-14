@@ -1,7 +1,17 @@
+// ====================================================================================================
+// FILE: frontend/src/services/api.js
+// TUJUAN:
+// Modul sentral HTTP Client berbasis Axios untuk berkomunikasi dengan server backend FastAPI.
+// Menyediakan fungsi siap pakai untuk mengambil rekomendasi rute adil (RAG), daftar destinasi,
+// obrolan chatbot AI, manajemen CRUD admin, sinkronisasi vektor Pinecone, dan metrik sistem.
+// ====================================================================================================
+
 import axios from 'axios';
 
+// URL dasar API backend FastAPI
 const API_BASE_URL = 'http://localhost:8080/api';
 
+// Inisialisasi instance Axios dengan header standar JSON
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -9,6 +19,14 @@ const apiClient = axios.create({
   },
 });
 
+// ====================================================================================================
+// FUNGSI: getFairRecommendation
+// TUJUAN:
+// Memanggil endpoint RAG backend `/api/route/fair-recommendation` untuk mendapatkan:
+// 1. Destinasi Utama yang paling sesuai dengan query wisatawan.
+// 2. Rekomendasi UMKM/Kuliner lokal di sekitarnya (Fairness exposure).
+// 3. Narasi kurasi perjalanan dari model Gemini AI.
+// ====================================================================================================
 export const getFairRecommendation = async (query, kecamatan = '', offset = 0, userLat = null, userLon = null) => {
   try {
     const params = { query, offset };
@@ -27,6 +45,10 @@ export const getFairRecommendation = async (query, kecamatan = '', offset = 0, u
   }
 };
 
+// ====================================================================================================
+// FUNGSI: getDestinations
+// TUJUAN: Mengambil daftar seluruh POI destinasi wisata & UMKM dari database.
+// ====================================================================================================
 export const getDestinations = async (kecamatan = '', limit = 1000) => {
   try {
     const params = { limit };
@@ -41,6 +63,10 @@ export const getDestinations = async (kecamatan = '', limit = 1000) => {
   }
 };
 
+// ====================================================================================================
+// FUNGSI: sendChatMessage
+// TUJUAN: Mengirim pesan pengguna ke chatbot AI pemandu wisata dan menerima respons Markdown.
+// ====================================================================================================
 export const sendChatMessage = async (message, history = []) => {
   try {
     const response = await apiClient.post('/chat', { message, history });
@@ -51,6 +77,10 @@ export const sendChatMessage = async (message, history = []) => {
   }
 };
 
+// ====================================================================================================
+// FUNGSI ADMIN: addDestinasi
+// TUJUAN: Menambahkan destinasi/UMKM baru ke database melalui portal admin.
+// ====================================================================================================
 export const addDestinasi = async (destinasiData) => {
   try {
     const response = await apiClient.post('/admin/destinasi', destinasiData);
@@ -61,6 +91,10 @@ export const addDestinasi = async (destinasiData) => {
   }
 };
 
+// ====================================================================================================
+// FUNGSI ADMIN: deleteDestinasi
+// TUJUAN: Menghapus data destinasi dari database dan index vektor Pinecone.
+// ====================================================================================================
 export const deleteDestinasi = async (id) => {
   try {
     const response = await apiClient.delete(`/admin/destinasi/${id}`);
@@ -71,6 +105,10 @@ export const deleteDestinasi = async (id) => {
   }
 };
 
+// ====================================================================================================
+// FUNGSI ADMIN: updateDestinasi
+// TUJUAN: Memperbarui data destinasi yang sudah ada di database.
+// ====================================================================================================
 export const updateDestinasi = async (id, destinasiData) => {
   try {
     const response = await apiClient.put(`/admin/destinasi/${id}`, destinasiData);
@@ -81,6 +119,10 @@ export const updateDestinasi = async (id, destinasiData) => {
   }
 };
 
+// ====================================================================================================
+// FUNGSI ADMIN: syncPineconeVectors
+// TUJUAN: Memicu sinkronisasi manual seluruh data dari PostgreSQL ke database vektor Pinecone.
+// ====================================================================================================
 export const syncPineconeVectors = async () => {
   try {
     const response = await apiClient.post('/admin/sync-pinecone');
@@ -91,6 +133,10 @@ export const syncPineconeVectors = async () => {
   }
 };
 
+// ====================================================================================================
+// FUNGSI: getDestinationAIInsight
+// TUJUAN: Mengambil wawasan budaya, tips wisatawan, dan keunikan produk secara real-time dari Gemini AI.
+// ====================================================================================================
 export const getDestinationAIInsight = async (destinasiId) => {
   try {
     const response = await apiClient.get(`/destinasi/${destinasiId}/ai-insights`);
@@ -101,16 +147,16 @@ export const getDestinationAIInsight = async (destinasiId) => {
   }
 };
 
+// ====================================================================================================
+// FUNGSI ADMIN: getSystemMetrics
+// TUJUAN: Mengambil data statistik komprehensif untuk ditampilkan di widget dashboard admin.
+// ====================================================================================================
 export const getSystemMetrics = async () => {
   try {
     const response = await apiClient.get('/admin/metrics');
     return response.data;
   } catch (error) {
-    console.error('Error fetching admin metrics:', error);
+    console.error('Error fetching system metrics:', error);
     throw error;
   }
 };
-
-
-
-

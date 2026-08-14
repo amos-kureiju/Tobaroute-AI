@@ -1,3 +1,14 @@
+// ====================================================================================================
+// FILE: frontend/src/components/RouteMap.jsx
+// TUJUAN:
+// Komponen Peta Interaktif berbasis React Leaflet & OpenStreetMap / Google Maps Tiles.
+// Fitur Utama:
+// 1. Menampilkan rute visual berantai antara titik GPS pengguna, Destinasi Utama, dan UMKM Sekitar.
+// 2. Nearest-Neighbor TSP Optimizer: Menyusun urutan rute paling efisien secara geografis.
+// 3. Pin GPS pengguna interaktif (bisa digeser / draggable untuk mengubah titik keberangkatan).
+// 4. Selector layer peta (OpenStreetMap, Google Maps Street, dan Google Satellite).
+// ====================================================================================================
+
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -5,6 +16,7 @@ import L from 'leaflet';
 import { Navigation, Star, MapPin, Flag, ArrowRight, Store } from 'lucide-react';
 import RoutingMachine from './RoutingMachine';
 
+// Ikon Pin Penanda Destinasi Wisata Utama (Warna Biru)
 const wisataIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -14,6 +26,7 @@ const wisataIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+// Ikon Pin Penanda UMKM / Kuliner Sekitar (Warna Hijau)
 const umkmIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -23,6 +36,7 @@ const umkmIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+// Ikon Pin Penanda Lokasi Pengguna / GPS (Warna Ungu)
 const userGpsIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -32,9 +46,13 @@ const userGpsIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-const DEFAULT_START_ORIGIN = [2.3333, 99.0667]; // Pusat Balige sebagai titik awal default jika GPS tidak aktif
+// Titik tengah default Danau Toba jika GPS browser tidak diaktifkan
+const DEFAULT_START_ORIGIN = [2.3333, 99.0667]; // Balige
 
-// Component to dynamically adjust map view when waypoints change
+// ====================================================================================================
+// HELPER: MapViewController
+// TUJUAN: Otomatis menyesuaikan zoom dan batas pandang (fitBounds) Leaflet saat titik rute berubah.
+// ====================================================================================================
 const MapViewController = ({ center, waypoints }) => {
   const map = useMap();
   useEffect(() => {
@@ -48,14 +66,19 @@ const MapViewController = ({ center, waypoints }) => {
   return null;
 };
 
-// Helper for Euclidean distance squared for 2D coords
+// Jarak kuadrat Euclidean 2D untuk kalkulasi cepat
 const distSq = (p1, p2) => {
   const dLat = p1[0] - p2[0];
   const dLng = p1[1] - p2[1];
   return dLat * dLat + dLng * dLng;
 };
 
-// Sort targets sequentially using Nearest-Neighbor route optimization
+// ====================================================================================================
+// ALGORITMA: optimizeRouteSequence (Nearest-Neighbor Traveling Salesperson)
+// TUJUAN:
+// Menyusun urutan titik singgah dari lokasi start ke titik terdekat berikutnya secara berantai
+// sehingga wisatawan tidak perlu bolak-balik di jalan raya.
+// ====================================================================================================
 const optimizeRouteSequence = (startPoint, targets) => {
   if (!targets || targets.length <= 1) return targets;
   
@@ -83,6 +106,7 @@ const optimizeRouteSequence = (startPoint, targets) => {
   return sorted;
 };
 
+// Pilihan layer peta satelit dan jalan raya
 const MAP_STYLES = {
   osm: {
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -102,9 +126,8 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
   const [userLocation, setUserLocation] = useState(null);
   const [mapStyle, setMapStyle] = useState('osm');
 
-  // Automatic GPS Geolocation with LocalStorage Persistence & Toba Boundary Protection
+  // Mengambil koordinat GPS langsung dari perangkat pengguna dengan filter batas kawasan Toba
   useEffect(() => {
-    // 1. Check if user already set or saved their GPS in localStorage
     const cachedGps = localStorage.getItem('tobaroute_user_gps');
     if (cachedGps) {
       try {
@@ -115,15 +138,11 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
       } catch (e) {}
     }
 
-    // 2. Request live GPS with High Accuracy
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
-
-          // Check if coordinate is within Toba / North Sumatra tourism area
-          // If browser IP gives an out-of-province / Medan gateway (lat > 3.3) while user has cached Toba GPS, keep the cached Toba GPS
           const isInTobaRegion = (lat >= 1.9 && lat <= 3.2 && lon >= 98.0 && lon <= 99.8);
           
           if (isInTobaRegion || !cachedGps) {
@@ -140,7 +159,7 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
     }
   }, []);
 
-  // Deduplicate destinations & UMKM by unique name
+  // Filter duplikasi data berdasarkan nama unik
   const uniqueDestinasi = Array.from(
     new Map(destinasiUtama.filter(d => d.latitude && d.longitude).map(d => [d.nama.trim(), d])).values()
   );
@@ -153,25 +172,21 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
     return null;
   }
 
-  // Wrap targets with metadata and coordinates
+  // Bungkus seluruh tujuan ke dalam array target rute
   const rawTargets = [
     ...uniqueDestinasi.map(d => ({ type: 'destinasi', data: d, coords: [d.latitude, d.longitude] })),
     ...uniqueUmkm.slice(0, 2).map(u => ({ type: 'umkm', data: u, coords: [u.latitude, u.longitude] }))
   ];
 
-  // Determine starting point
   const startPoint = userLocation || (rawTargets.length > 0 ? rawTargets[0].coords : DEFAULT_START_ORIGIN);
-
-  // Apply Nearest-Neighbor route optimization so points are visited in smooth geographic sequence
   const orderedTargets = optimizeRouteSequence(startPoint, rawTargets);
-
-  // Build clean route coordinates chain
   const routeCoordinates = [startPoint, ...orderedTargets.map(t => t.coords)];
 
   const center = userLocation 
     ? userLocation 
     : (orderedTargets.length > 0 ? orderedTargets[0].coords : [2.6105, 98.8106]);
 
+  // Handler saat pin GPS pengguna digeser manual oleh user
   const handleMarkerDragEnd = (e) => {
     const latLng = e.target.getLatLng();
     const newCoords = [latLng.lat, latLng.lng];
@@ -181,7 +196,7 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
 
   return (
     <div className="route-map-container" style={{ marginTop: '1.75rem' }}>
-      {/* Route Header & Professional Sequence Panel */}
+      {/* Panel Informasi Urutan Rute Perjalanan */}
       <div className="route-controls-panel glass-panel" style={{ padding: '0.85rem 1.15rem', marginBottom: '0.75rem', borderRadius: 'var(--radius-lg)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div>
@@ -194,9 +209,8 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
           </div>
         </div>
 
-        {/* Professional Visual Route Sequence Chain */}
+        {/* Visualisasi Rantai Perjalanan */}
         <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', background: 'rgba(255,255,255,0.9)', padding: '0.6rem 0.85rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-          {/* Start Point */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: userLocation ? '#f3e8ff' : '#e0f2fe', color: userLocation ? '#6b21a8' : '#0369a1', padding: '0.25rem 0.55rem', borderRadius: '5px', fontSize: '0.8rem', fontWeight: 600 }}>
             <MapPin size={13} /> {userLocation ? 'Lokasi Anda (GPS)' : 'Keberangkatan Awal'}
           </div>
@@ -227,7 +241,7 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
         </div>
       </div>
 
-      {/* Map Container Wrapper */}
+      {/* Kontainer Peta Leaflet */}
       <div className="route-map-wrapper glass-panel" style={{ height: '420px', width: '100%', borderRadius: 'var(--radius-lg)', overflow: 'hidden', padding: '0.4rem' }}>
         <MapContainer 
           center={center} 
@@ -239,7 +253,7 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
             url={MAP_STYLES[mapStyle].url}
           />
 
-          {/* Map Style Controls */}
+          {/* Tombol Pengganti Tipe Peta */}
           <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1000, display: 'flex', gap: '5px', background: 'white', padding: '5px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>
             <button 
               onClick={() => setMapStyle('osm')}
@@ -263,7 +277,7 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
 
           <MapViewController center={center} waypoints={routeCoordinates} />
 
-          {/* User Live GPS Draggable Marker */}
+          {/* Marker Lokasi Pengguna (Bisa Digeser) */}
           {userLocation && (
             <Marker 
               position={userLocation} 
@@ -286,12 +300,12 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
             </Marker>
           )}
 
-          {/* Real Road Routing Machine (Single clean solid line following actual highways) */}
+          {/* Mesin Routing Jalan Raya OSRM */}
           {routeCoordinates.length >= 2 && (
             <RoutingMachine waypoints={routeCoordinates} />
           )}
 
-          {/* Destinasi Utama Markers */}
+          {/* Marker Seluruh Destinasi Utama */}
           {uniqueDestinasi.map((dest, idx) => (
             <Marker 
               key={`dest-${dest.id || idx}`} 
@@ -319,7 +333,7 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
             </Marker>
           ))}
 
-          {/* UMKM Markers */}
+          {/* Marker Seluruh UMKM Sekitar */}
           {uniqueUmkm.map((umkm, idx) => (
             <Marker 
               key={`umkm-${umkm.id || idx}`} 

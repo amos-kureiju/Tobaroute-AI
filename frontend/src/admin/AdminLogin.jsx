@@ -1,3 +1,13 @@
+// ====================================================================================================
+// FILE: frontend/src/admin/AdminLogin.jsx
+// TUJUAN:
+// Halaman Otentikasi Masuk (Login & Registrasi Pengelola) Administrator TobaRoute AI.
+// Mengatur:
+// 1. Form Login dengan validasi kredensial.
+// 2. Pembuatan sesi Token di localStorage (`tobaguide_admin_token`) setelah login berhasil.
+// 3. Tab Registrasi & Lupa Password Pengelola.
+// ====================================================================================================
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Compass, Lock, Mail, User, ShieldCheck, CheckCircle2, ArrowRight, AlertCircle, ArrowLeft } from 'lucide-react';
@@ -7,7 +17,7 @@ const AdminLogin = () => {
   const navigate = useNavigate();
   const [mode, setMode] = useState('login'); // 'login' | 'register' | 'forgot' | 'success' | 'forgot-sent'
   
-  // Form states
+  // Form State Kredensial
   const [nama, setNama] = useState('Budi Santoso');
   const [email, setEmail] = useState('admin.indonesia@example.com');
   const [username, setUsername] = useState('budi_admin');

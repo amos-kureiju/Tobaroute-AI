@@ -1,6 +1,13 @@
+// ====================================================================================================
+// FILE: frontend/src/components/RoutingMachine.jsx
+// TUJUAN:
+// Komponen kalkulator navigasi jalan raya (Road-Network Routing Engine) untuk peta Leaflet.
+// Mengirimkan koordinat titik singgah (Waypoints) ke Open Source Routing Machine (OSRM API)
+// untuk mendapatkan geometri jalan raya nyata (bukan garis lurus), estimasi jarak (KM), dan durasi (Menit).
+// ====================================================================================================
+
 import React, { useState, useEffect } from 'react';
 import { Polyline, useMap } from 'react-leaflet';
-import L from 'leaflet';
 
 const RoutingMachine = ({ waypoints, onRouteInfo }) => {
   const map = useMap();
@@ -21,8 +28,13 @@ const RoutingMachine = ({ waypoints, onRouteInfo }) => {
 
     let isMounted = true;
 
+    // ====================================================================================================
+    // FUNGSI: fetchRoute
+    // TUJUAN:
+    // Mengambil rute perjalanan jalan raya dari OSRM API publik dan fallback server OSM Jerman.
+    // ====================================================================================================
     const fetchRoute = async () => {
-      // OSRM coordinates: lon,lat;lon,lat
+      // OSRM menggunakan urutan format: lon,lat;lon,lat
       const waypointsParam = waypoints.map(wp => `${wp[1]},${wp[0]}`).join(';');
       const primaryUrl = `https://router.project-osrm.org/route/v1/driving/${waypointsParam}?overview=full&geometries=geojson`;
       const fallbackUrl = `https://routing.openstreetmap.de/routed-car/route/v1/driving/${waypointsParam}?overview=full&geometries=geojson`;
@@ -53,31 +65,30 @@ const RoutingMachine = ({ waypoints, onRouteInfo }) => {
 
       if (routeData && routeData.routes && routeData.routes.length > 0) {
         const route = routeData.routes[0];
-        // Convert GeoJSON [lon, lat] ke Leaflet [lat, lon]
+        // Konversi GeoJSON [lon, lat] ke koordinat Leaflet [lat, lon]
         const latLngs = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
         setRoadCoordinates(latLngs);
 
+        // Kirimkan info total jarak (km) dan estimasi waktu berkendara (menit) ke komponen induk
         if (onRouteInfo) {
+          const distanceKm = (route.distance / 1000).toFixed(1);
+          const durationMins = Math.round(route.duration / 60);
           onRouteInfo({
-            distanceKm: (route.distance / 1000).toFixed(1),
-            durationMin: Math.max(1, Math.round(route.duration / 60)),
-            waypointsCount: latLngs.length
+            distanceKm,
+            durationMins,
+            success: true
           });
         }
-
-        try {
-          const bounds = L.latLngBounds(latLngs);
-          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15, animate: true });
-        } catch (e) {
-          console.warn('fitBounds error:', e);
-        }
       } else {
-        // Fallback: jalur langsung bersih jika offline
+        // Fallback jika kedua server OSRM tidak merespons: gambar garis lurus antar titik
         setRoadCoordinates(waypoints);
-        try {
-          const bounds = L.latLngBounds(waypoints);
-          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-        } catch (e) {}
+        if (onRouteInfo) {
+          onRouteInfo({
+            distanceKm: '~',
+            durationMins: '~',
+            success: false
+          });
+        }
       }
     };
 
@@ -86,7 +97,7 @@ const RoutingMachine = ({ waypoints, onRouteInfo }) => {
     return () => {
       isMounted = false;
     };
-  }, [map, JSON.stringify(waypoints)]);
+  }, [waypoints, map]);
 
   if (!roadCoordinates || roadCoordinates.length < 2) {
     return null;
@@ -94,24 +105,24 @@ const RoutingMachine = ({ waypoints, onRouteInfo }) => {
 
   return (
     <>
-      {/* Casing / White Border Outline for clean contrast */}
+      {/* Garis bayangan luar (Glow effect) untuk kontras tinggi di atas peta satelit/jalan */}
       <Polyline
         positions={roadCoordinates}
         pathOptions={{
-          color: '#ffffff',
-          weight: 8,
-          opacity: 0.95,
+          color: '#0369a1',
+          weight: 7,
+          opacity: 0.35,
           lineCap: 'round',
           lineJoin: 'round'
         }}
       />
-      {/* Primary Navigation Blue Road Line */}
+      {/* Garis rute utama yang tajam */}
       <Polyline
         positions={roadCoordinates}
         pathOptions={{
           color: '#0284c7',
-          weight: 5,
-          opacity: 1,
+          weight: 4.5,
+          opacity: 0.95,
           lineCap: 'round',
           lineJoin: 'round'
         }}

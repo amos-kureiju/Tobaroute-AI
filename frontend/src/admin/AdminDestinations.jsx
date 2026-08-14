@@ -1,3 +1,14 @@
+// ====================================================================================================
+// FILE: frontend/src/admin/AdminDestinations.jsx
+// TUJUAN:
+// Halaman Manajemen Data Destinasi & UMKM Administrator.
+// Fitur Utama:
+// 1. Operasi CRUD Lengkap: Tambah, Edit, dan Hapus entitas destinasi wisata & UMKM.
+// 2. Pencarian & Filter Cepat (Berdasarkan Nama, Kecamatan, dan Kategori).
+// 3. Sinkronisasi Pinecone: Tombol manual untuk menyelaraskan vektor 1024-dimensi ke Pinecone.
+// 4. Live Card Preview & Pagination data.
+// ====================================================================================================
+
 import React, { useState, useEffect } from 'react';
 import { getDestinations, deleteDestinasi, addDestinasi, updateDestinasi, syncPineconeVectors } from '../services/api';
 import { Search, Plus, Edit, Trash2, MapPin, Star, Filter, CheckCircle2, AlertCircle, X, RefreshCw, Eye, Image as ImageIcon, Save, Map, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
