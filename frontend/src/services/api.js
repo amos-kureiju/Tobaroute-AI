@@ -91,6 +91,16 @@ export const syncPineconeVectors = async () => {
   }
 };
 
+export const getDestinationAIInsight = async (destinasiId) => {
+  try {
+    const response = await apiClient.get(`/destinasi/${destinasiId}/ai-insights`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching destination AI insight:', error);
+    throw error;
+  }
+};
+
 export const getSystemMetrics = async () => {
   try {
     const response = await apiClient.get('/admin/metrics');
@@ -100,5 +110,7 @@ export const getSystemMetrics = async () => {
     throw error;
   }
 };
+
+
 
 

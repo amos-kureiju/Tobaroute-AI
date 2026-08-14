@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MapPin, Star, Navigation, Info, Route, ChevronDown, ChevronUp, Store, CheckCircle, Quote, Compass } from 'lucide-react';
+import { MapPin, Star, Navigation, Info, Route, ChevronDown, ChevronUp, Store, CheckCircle, Quote, Compass, Sparkles, Lightbulb, Check, RefreshCw } from 'lucide-react';
+import { getDestinationAIInsight } from '../services/api';
 import './DestinationCard.css';
 
 // STUNNING, HIGH-DEFINITION VERIFIED UNSPLASH PHOTOS
@@ -12,8 +13,53 @@ const DEFAULT_CATEGORY_IMAGES = {
   default: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80"
 };
 
+const getLocalHeuristicInsight = (nama, kecamatan, kategori, deskripsi_singkat) => {
+  const n = (nama || '').toLowerCase();
+  const k = (kategori || '').toLowerCase();
+  const d = (deskripsi_singkat || '').toLowerCase();
+
+  if (n.includes('ulos') || k.includes('ulos') || d.includes('ulos') || n.includes('tenun') || d.includes('tenun')) {
+    return {
+      storytelling: `Sentra kerajinan tangan di ${kecamatan} ini melestarikan teknik tenun tradisional Batak secara turun-temurun, di mana setiap helai kain Ulos ditenun dengan teliti dan sarat makna berkat serta doa leluhur.`,
+      must_try: `Melihat langsung proses pembuatan motif Ulos sakral (seperti Sadum atau Ragi Hotang) serta membeli kain tenun asli langsung dari pengrajin warga setempat.`,
+      travel_tips: `Disarankan berkunjung pada pagi atau siang hari saat pengrajin aktif menenun. Anda juga dapat bertanya tentang makna filosofis setiap motif ulos.`,
+      highlight_tags: ['Tenun Tangan Asli', 'Pemberdayaan UMKM', 'Warisan Budaya Batak']
+    };
+  } else if (n.includes('gula') || n.includes('aren') || d.includes('aren') || d.includes('gula') || n.includes('palm sugar')) {
+    return {
+      storytelling: `Diproduksi secara murni dari sadapan pohon enau alami perbukitan ${kecamatan} tanpa bahan kimia pengawet, menghasilkan cita rasa manis karamel legit yang harum khas tanah vulkanik Danau Toba.`,
+      must_try: `Membeli gula aren cetak murni dan sirup aren alami yang sangat cocok sebagai pemanis kopi Arabika Toba atau bahan baku kue tradisional.`,
+      travel_tips: `Simpan di tempat sejuk dan kedap udara agar keaslian rasa dan aroma legitnya tetap terjaga prima.`,
+      highlight_tags: ['100% Nira Aren Murni', 'Tanpa Pengawet', 'Produksi Rumahan Warga']
+    };
+  } else if (k.includes('kuliner') || n.includes('makan') || n.includes('resto') || n.includes('kopi') || n.includes('warung') || n.includes('cafe')) {
+    return {
+      storytelling: `Destinasi kuliner autentik di kawasan ${kecamatan} yang menghidangkan kekayaan bumbu rempah tradisional khas Batak Toba (seperti andaliman, asam cikala, dan lokio) yang dimasak segar setiap hari.`,
+      must_try: `Mencicipi sajian andalan hangat yang diracik dengan bumbu rempah andaliman segar untuk pengalaman gastronomi Danau Toba yang berkesan.`,
+      travel_tips: `Waktu terbaik berkunjung adalah menjelang jam makan siang (11.30 - 13.30 WIB) untuk menikmati sajian yang baru matang.`,
+      highlight_tags: ['Rempah Andaliman Segar', 'Kuliner Khas Autentik', 'Bahan Segar Lokal']
+    };
+  } else if (k.includes('penginapan') || n.includes('hotel') || n.includes('homestay') || n.includes('resort')) {
+    return {
+      storytelling: `Akomodasi berkonsep ramah keluarga di ${kecamatan} yang menawarkan suasana menginap tenang dengan udara sejuk dan panorama asri bentang kaldera Danau Toba.`,
+      must_try: `Menikmati secangkir kopi hangat di pagi hari sambil menyaksikan kabut dan matahari terbit di atas perairan Danau Toba.`,
+      travel_tips: `Lakukan konfirmasi pemesanan terlebih dahulu terutama saat akhir pekan atau musim liburan.`,
+      highlight_tags: ['Udara Sejuk Pegunungan', 'Suasana Tenang', 'Akses Strategis']
+    };
+  } else {
+    return {
+      storytelling: `Destinasi unggulan di wilayah ${kecamatan} yang menyuguhkan keindahan panorama alam kaldera Danau Toba (UNESCO Global Geopark) dengan suasana damai yang sangat asri.`,
+      must_try: `Menikmati pemandangan bentang alam danau dari sudut pandang terbaik, berfoto di spot panorama alami, dan menikmati ketenangan alam.`,
+      travel_tips: `Gunakan pakaian santai yang nyaman dan bawa jaket ringan karena embusan angin danau yang sejuk di pagi/sore hari.`,
+      highlight_tags: ['UNESCO Geopark', 'Spot Foto Eksotis', 'Panorama Alam Asri']
+    };
+  }
+};
+
 const DestinationCard = ({ dest, isUmkm }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [aiInsight, setAiInsight] = useState(null);
+  const [loadingAI, setLoadingAI] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const categoryKey = (dest.kategori || '').toLowerCase();
@@ -22,6 +68,33 @@ const DestinationCard = ({ dest, isUmkm }) => {
   if (!displayImage || displayImage.includes('photo-1549317661-bd32c8ce0db2') || displayImage.includes('photo-1572252009286') || displayImage.includes('photo-1606744888344') || displayImage.includes('photo-1584100936595')) {
     displayImage = DEFAULT_CATEGORY_IMAGES[categoryKey] || DEFAULT_CATEGORY_IMAGES.default;
   }
+
+  // Load AI Insight on expand
+  useEffect(() => {
+    if (isExpanded && !aiInsight) {
+      // Set initial instant rich heuristic
+      const initialInsight = getLocalHeuristicInsight(dest.nama, dest.kecamatan, dest.kategori, dest.deskripsi_singkat);
+      setAiInsight(initialInsight);
+
+      // Fetch dynamic deep Gemini insight if dest.id exists
+      if (dest.id && dest.id !== 9999) {
+        setLoadingAI(true);
+        getDestinationAIInsight(dest.id)
+          .then((res) => {
+            if (res && res.storytelling) {
+              setAiInsight(res);
+            }
+          })
+          .catch((err) => {
+            // Keep heuristic fallback
+            console.log("Using cached AI heuristic insight");
+          })
+          .finally(() => {
+            setLoadingAI(false);
+          });
+      }
+    }
+  }, [isExpanded, dest.id]);
 
   const handleNavigateToExplore = (e) => {
     if (e) e.stopPropagation();
@@ -106,7 +179,7 @@ const DestinationCard = ({ dest, isUmkm }) => {
     // Determine if there is distinct rich textual explanation
     let distinctDesc = null;
     if (raw && !raw.startsWith('Menu Rekomendasi:') && !raw.startsWith('Fasilitas:') && !raw.startsWith('Tiket Masuk:') && !raw.startsWith('Rute:')) {
-      if (raw !== short) {
+      if (raw !== short && raw.length > 20) {
         distinctDesc = raw;
       }
     }
@@ -150,9 +223,52 @@ const DestinationCard = ({ dest, isUmkm }) => {
         <p className="card-description">{dest.deskripsi_singkat}</p>
         <p className="card-address">{formattedAddress}</p>
 
-        {/* INLINE EXPANDED DETAIL PANEL */}
+        {/* INLINE EXPANDED DETAIL PANEL (RICH AI STORYTELLING & TRAVEL INSIGHTS) */}
         {isExpanded && (
           <div className="inline-detail-panel fade-in">
+            {/* AI TRAVEL CONCIERGE INSIGHT BOX */}
+            <div className="inline-ai-insight-box">
+              <div className="ai-insight-header">
+                <span className="ai-insight-badge">
+                  <Sparkles size={13} color="#0284c7" /> Wawasan Cerdas AI Gemini
+                </span>
+                {loadingAI && <RefreshCw size={12} className="spin" color="#0284c7" />}
+              </div>
+
+              {aiInsight && (
+                <>
+                  <p className="ai-storytelling-text">
+                    {aiInsight.storytelling}
+                  </p>
+
+                  {aiInsight.must_try && (
+                    <div className="ai-highlight-row">
+                      <span className="ai-highlight-label">🎯 Pengalaman Wajib:</span>
+                      <span className="ai-highlight-val">{aiInsight.must_try}</span>
+                    </div>
+                  )}
+
+                  {aiInsight.travel_tips && (
+                    <div className="ai-highlight-row">
+                      <span className="ai-highlight-label">💡 Tips Wisatawan:</span>
+                      <span className="ai-highlight-val">{aiInsight.travel_tips}</span>
+                    </div>
+                  )}
+
+                  {aiInsight.highlight_tags && aiInsight.highlight_tags.length > 0 && (
+                    <div className="ai-tags-row">
+                      {aiInsight.highlight_tags.map((tag, idx) => (
+                        <span key={idx} className="ai-tag-chip">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* ADDITIONAL RICH DETAILS IF AVAILABLE */}
             {parsed.distinctDesc && (
               <div className="inline-section">
                 <h4 className="inline-section-title">Informasi Lengkap</h4>

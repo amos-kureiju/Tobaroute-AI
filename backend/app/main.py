@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from .database import engine, Base, get_db
-from . import crud, schemas
-from .ai_bot import generate_tourist_response, chat_with_bot
+from . import crud, schemas, models
+from .ai_bot import generate_tourist_response, chat_with_bot, generate_destination_ai_insight
 
 # Otomatis membuat tabel di PostgreSQL saat aplikasi backend dinyalakan
 Base.metadata.create_all(bind=engine)
@@ -93,6 +93,22 @@ def interactive_chat(request: schemas.ChatbotRequest):
 def read_destinasi(kecamatan: str = None, limit: int = 1000, db: Session = Depends(get_db)):
     destinasi = crud.get_destinasi(db, kecamatan=kecamatan, limit=limit)
     return [format_destinasi_response(d) for d in destinasi]
+
+# Endpoint untuk User: Mengambil Wawasan Otentik & Tips AI untuk Kartu Destinasi / UMKM
+@app.get("/api/destinasi/{destinasi_id}/ai-insights")
+def get_destinasi_ai_insight(destinasi_id: int, db: Session = Depends(get_db)):
+    d = db.query(models.Destinasi).filter(models.Destinasi.id == destinasi_id).first()
+    if not d:
+        raise HTTPException(status_code=404, detail="Destinasi tidak ditemukan")
+    
+    insight = generate_destination_ai_insight(
+        nama=d.nama,
+        kecamatan=d.kecamatan,
+        kategori=d.kategori,
+        deskripsi_singkat=d.deskripsi_singkat,
+        nama_jalan=d.nama_jalan or ""
+    )
+    return insight
 
 # Endpoint untuk Admin: Menambahkan destinasi baru ke database
 @app.post("/api/admin/destinasi", response_model=schemas.DestinasiResponse)

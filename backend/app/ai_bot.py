@@ -145,3 +145,95 @@ ENSIKLOPEDIA KAWASAN:
     except Exception as e:
         print(f"Error in chat_with_bot: {e}")
         return "Mohon maaf, saat ini sistem AI sedang sibuk. Silakan coba beberapa saat lagi."
+
+import json
+
+def generate_heuristic_insight(nama: str, kecamatan: str, kategori: str, deskripsi_singkat: str) -> dict:
+    """Fallback lokal yang kaya konteks jika Gemini API offline/terkendala kuota."""
+    nama_lower = (nama or "").lower()
+    kat_lower = (kategori or "").lower()
+    desk_lower = (deskripsi_singkat or "").lower()
+
+    if any(k in nama_lower or k in kat_lower or k in desk_lower for k in ["ulos", "tenun", "songket"]):
+        return {
+            "storytelling": f"Sentra kerajinan tangan di {kecamatan} ini mempertahankan warisan luhur tradisi tenun Batak secara turun-temurun, di mana setiap lembar kain Ulos ditenun dengan ketelitian tinggi dan sarat makna berkat serta kehangatan adat.",
+            "must_try": "Melihat langsung proses merajut motif Ulos tradisional (seperti Sadum atau Ragi Hotang) serta membeli kain tenun asli langsung dari tangan pengrajin warga setempat.",
+            "travel_tips": "Disarankan berkunjung pada pagi atau siang hari saat pengrajin aktif menenun. Anda juga dapat berkonsultasi mengenai makna filosofis setiap motif ulos.",
+            "highlight_tags": ["Tenun Tangan Asli", "Pemberdayaan UMKM", "Warisan Budaya Batak"]
+        }
+    elif any(k in nama_lower or k in desk_lower for k in ["gula", "aren", "palm sugar", "nira"]):
+        return {
+            "storytelling": f"Diproduksi secara higienis dari sadapan pohon enau alami di perbukitan {kecamatan} tanpa tambahan zat kimia pengawet, menghasilkan cita rasa manis karamel legit yang beraroma harum alami khas tanah vulkanik Toba.",
+            "must_try": "Membeli gula aren cetak murni dan sirup aren alami yang sangat cocok sebagai pemanis kopi Arabika Toba atau bahan baku kue tradisional.",
+            "travel_tips": "Simpan di tempat sejuk dan kedap udara agar kualitas keaslian rasa dan aromanya tetap terjaga prima.",
+            "highlight_tags": ["100% Nira Aren Murni", "Tanpa Pengawet", "Produksi Rumahan Warga"]
+        }
+    elif any(k in kat_lower or k in nama_lower for k in ["kuliner", "makan", "resto", "kopi", "cafe", "warung"]):
+        return {
+            "storytelling": f"Destinasi kuliner autentik di kawasan {kecamatan} yang menghidangkan kekayaan bumbu rempah tradisional khas Batak Toba (seperti andaliman, asam cikala, dan lokio) yang dimasak segar setiap hari.",
+            "must_try": "Mencicipi sajian andalan hangat yang diracik dengan bumbu rempah andaliman segar untuk pengalaman gastronomi Danau Toba yang tak terlupakan.",
+            "travel_tips": "Waktu terbaik berkunjung adalah menjelang jam makan siang (11.30 - 13.30 WIB) untuk menikmati sajian yang baru matang.",
+            "highlight_tags": ["Rempah Andaliman Segar", "Kuliner Khas Autentik", "Bahan Segar Lokal"]
+        }
+    elif any(k in kat_lower or k in nama_lower for k in ["penginapan", "hotel", "homestay", "resort"]):
+        return {
+            "storytelling": f"Akomodasi berkonsep ramah keluarga di {kecamatan} yang menawarkan suasana menginap tenang dengan udara sejuk dan pemandangan asri bentang kaldera Danau Toba.",
+            "must_try": "Menikmati secangkir kopi hangat di pagi hari sambil menyaksikan kabut dan matahari terbit di atas perairan Danau Toba.",
+            "travel_tips": "Lakukan konfirmasi pemesanan terlebih dahulu terutama saat akhir pekan atau musim liburan.",
+            "highlight_tags": ["Udara Sejuk Pegunungan", "Suasana Tenang", "Akses Strategis"]
+        }
+    else:
+        return {
+            "storytelling": f"Destinasi unggulan di wilayah {kecamatan} yang menyuguhkan keindahan panorama alam kaldera Danau Toba (UNESCO Global Geopark) dengan suasana damai yang sangat asri.",
+            "must_try": "Menikmati pemandangan bentang alam danau dari sudut pandang terbaik, berfoto di spot panorama alami, dan menikmati ketenangan alam.",
+            "travel_tips": "Gunakan pakaian santai yang nyaman dan bawa jaket ringan karena embusan angin danau yang sejuk di pagi/sore hari.",
+            "highlight_tags": ["UNESCO Geopark", "Spot Foto Eksotis", "Panorama Alam Asri"]
+        }
+
+def generate_destination_ai_insight(nama: str, kecamatan: str, kategori: str, deskripsi_singkat: str, nama_jalan: str = "") -> dict:
+    """
+    Menghasilkan ulasan mendalam, wawasan budaya, tips wisatawan, dan keunggulan otentik
+    berbasis Gemini AI untuk kartu destinasi/UMKM agar tidak kosong dan kaya konteks.
+    """
+    prompt = f"""
+Anda adalah TobaRoute AI — Senior Travel Concierge & Kurator Budaya Kawasan Danau Toba (UNESCO Global Geopark).
+Berikan detail wawasan mendalam (AI Insight) dan panduan pengalaman wisatawan yang kaya konteks dan otentik untuk tempat/UMKM berikut:
+
+Nama Tempat: {nama}
+Kecamatan: {kecamatan}, Kawasan Danau Toba
+Kategori: {kategori}
+Alamat: {nama_jalan}
+Deskripsi Singkat: {deskripsi_singkat}
+
+REFERENSI PENGETAHUAN KAWASAN:
+{DANAU_TOBA_KNOWLEDGE_BASE}
+
+Format output HARUS murni JSON valid (tanpa markdown backtick ```json, murni raw text JSON) dengan struktur berikut:
+{{
+  "storytelling": "Penjelasan mendalam 2-3 kalimat mengenai keunikan sejarah/alam/proses pembuatan atau nilai tradisi lokal tempat ini.",
+  "must_try": "1-2 hal atau aktivitas yang paling wajib dicoba/dibeli/dinikmati wisatawan di sini.",
+  "travel_tips": "Tips praktis untuk wisatawan (waktu terbaik berkunjung, tips berbelanja, atau etika setempat).",
+  "highlight_tags": ["Tag 1", "Tag 2", "Tag 3"]
+}}
+"""
+    try:
+        response = client.models.generate_content(
+            model='gemini-3.1-flash-lite',
+            contents=prompt,
+        )
+        text = response.text.strip()
+        if text.startswith("```json"):
+            text = text[7:]
+        if text.startswith("```"):
+            text = text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+        text = text.strip()
+        data = json.loads(text)
+        if isinstance(data, dict) and "storytelling" in data:
+            return data
+        return generate_heuristic_insight(nama, kecamatan, kategori, deskripsi_singkat)
+    except Exception as e:
+        print(f"[AI Insight Error] {e}")
+        return generate_heuristic_insight(nama, kecamatan, kategori, deskripsi_singkat)
+
