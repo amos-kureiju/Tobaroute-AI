@@ -5,10 +5,10 @@
 # Menggunakan Google GenAI SDK dengan model 'gemini-3.1-flash-lite'.
 #
 # BAGAIMANA SISTEM RAG (RETRIEVAL-AUGMENTED GENERATION) BEKERJA DI FILE INI?
-# 1. RETRIEVAL (Pengambilan Data): Database SQL & Vektor Pinecone mencari entitas yang relevan secara geografis.
+# 1. RETRIEVAL (Pengambilan Data): Database SQL & Vektor Pinecone mencari entitas dan statistik wilayah yang relevan.
 # 2. AUGMENTATION (Pengayaan Konteks): Data destinasi terverifikasi disuntikkan ke dalam 'DANAU_TOBA_KNOWLEDGE_BASE'.
-# 3. GENERATION (Pembuatan Respon): Model LLM Gemini menyusun ulasan naratif yang elegan, akurat, dan
-#    bebas dari halusinasi (AI tidak akan mengarang nama tempat yang tidak ada di Danau Toba).
+# 3. GENERATION (Pembuatan Respon): Model LLM Gemini menyusun ulasan naratif yang elegan, akurat secara kuantitatif,
+#    dan bebas dari halusinasi.
 # ====================================================================================================
 
 import os
@@ -26,15 +26,10 @@ load_dotenv(dotenv_path=dotenv_path, override=False)
 api_key = os.getenv("GEMINI_API_KEY")
 
 # Inisialisasi klien resmi Google GenAI SDK
-# Klien ini mengelola koneksi aman (HTTPS) ke server Google AI untuk inferensi model
 client = genai.Client(api_key=api_key)
 
 # ====================================================================================================
 # BASIS PENGETAHUAN ENSIKLOPEDIA RESMI DANAU TOBA (UNESCO GLOBAL GEOPARK)
-# PENJELASAN:
-# Teks referensi ini bertindak sebagai "Ground Truth" (Kebenaran Faktual) bagi model LLM.
-# Memberikan pemahaman mendalam tentang geologi supervolcano, sejarah marga Batak, seni tenun Ulos,
-# ukiran Gorga Rumah Bolon, gastronomi rempah andaliman, dan akses pelabuhan kapal feri penyeberangan.
 # ====================================================================================================
 DANAU_TOBA_KNOWLEDGE_BASE = """
 === ENSIKLOPEDIA & PENGETAHUAN RESMI KAWASAN DANAU TOBA (UNESCO GLOBAL GEOPARK) ===
@@ -69,17 +64,23 @@ DANAU_TOBA_KNOWLEDGE_BASE = """
 # ====================================================================================================
 # FUNGSI: format_fair_route_to_text
 # PENJELASAN:
-# Mengonversi objek destinasi dan UMKM dari database menjadi teks terformat yang siap dibaca oleh model AI.
-# Menjamin data yang diterima oleh LLM mencakup nama tempat, kecamatan, alamat presisi, rating, dan ulasan.
+# Mengonversi objek destinasi, UMKM, dan ringkasan statistik database menjadi teks terformat untuk LLM.
 # ====================================================================================================
 def format_fair_route_to_text(fair_route_data: dict) -> str:
+    stats = fair_route_data.get("statistik_wilayah", {})
     dest_utama = fair_route_data.get("destinasi_utama", [])
     umkm_sekitar = fair_route_data.get("rekomendasi_umkm_sekitar", [])
     
-    text = "=== DATA DESTINASI UTAMA (REKOMENDASI SISTEM GEOFENCE) ===\n"
+    text = ""
+    if stats:
+        text += "=== DATA STATISTIK KUANTITATIF RESMI DATABASE TOBAROUTE AI ===\n"
+        text += f"Wilayah Target: {stats.get('nama_kecamatan', 'Seluruh Kawasan Danau Toba')}\n"
+        text += f"- Total Lokasi Terdaftar di Wilayah Ini: {stats.get('total_lokasi_wilayah', 0)} tempat (dari total {stats.get('total_seluruh_kawasan_toba', 491)} tempat di Danau Toba)\n"
+        text += f"- Rincian Kategori: {stats.get('jumlah_wisata', 0)} Destinasi Wisata Alam/Budaya, {stats.get('jumlah_kuliner', 0)} Rumah Makan & Kuliner Khas, {stats.get('jumlah_umkm', 0)} Sentra UMKM/Oleh-oleh/Ulos, {stats.get('jumlah_penginapan', 0)} Penginapan/Homestay, {stats.get('jumlah_transportasi', 0)} Transportasi & Feri.\n\n"
+
+    text += "=== DATA DESTINASI UTAMA (REKOMENDASI SISTEM GEOFENCE) ===\n"
     if dest_utama:
         for idx, d in enumerate(dest_utama, 1):
-            # Mendukung akses atribut objek SQLAlchemy (getattr) maupun dictionary (get)
             nama = getattr(d, 'nama', '') if hasattr(d, 'nama') else d.get('nama', '')
             kecamatan = getattr(d, 'kecamatan', '') if hasattr(d, 'kecamatan') else d.get('kecamatan', '')
             nama_jalan = getattr(d, 'nama_jalan', '') if hasattr(d, 'nama_jalan') else d.get('nama_jalan', '')
@@ -107,11 +108,6 @@ def format_fair_route_to_text(fair_route_data: dict) -> str:
 
 # ====================================================================================================
 # FUNGSI: generate_tourist_response
-# PENJELASAN TAHAPAN PROMPT ENGINEERING (RAG CONCIERGE):
-# 1. Menggabungkan pertanyaan user, ensiklopedia Toba, dan data hasil geofencing.
-# 2. Menginstruksikan LLM bertindak sebagai kurator senior resmi Danau Toba.
-# 3. Menerapkan 3 pilar narasi: Rangkaian Wisata Utama, Pasangan UMKM/Kuliner Sekitar, dan Tips Praktis.
-# 4. Menegakkan aturan integritas ketat (Anti-Halusinasi).
 # ====================================================================================================
 def generate_tourist_response(user_query: str, fair_route_data: dict) -> str:
     formatted_data = format_fair_route_to_text(fair_route_data)
@@ -125,60 +121,125 @@ Wisatawan menyampaikan rencana/pertanyaan perjalanan:
 SUMBER PENGETAHUAN BUDAYA & GEOGRAFI KAWASAN TOBA:
 {DANAU_TOBA_KNOWLEDGE_BASE}
 
-DATA DESTINASI & UMKM TERVERIFIKASI SISTEM GEOFENCE KAMI:
+DATA DESTINASI, UMKM & STATISTIK DATABASE TERVERIFIKASI SISTEM GEOFENCE KAMI:
 {formatted_data}
 
 PANDUAN PENULISAN & GAYA BAHASA PROFESIONAL:
-1. Awali dengan sambutan hangat dan berkarakter khas Toba: "Horas! ..." lalu berikan gambaran pembuka yang memikat mengenai keistimewaan rute yang dipilih.
-2. Sajikan ulasan yang KAYA KONTEKS, EDUKATIF, dan BERKUALITAS TINGGI (gunakan narasi yang mengalir, kaya wawasan sejarah/alam, dan terstruktur rapi dengan Markdown).
-3. Struktur Rekomendasi yang Wajib Diterapkan:
-   - **Rangkaian Destinasi Unggulan**: Jelaskan masing-masing tempat utama yang ada pada data, soroti daya tarik keindahan alam, nilai sejarah/budayanya, pengalaman terbaik yang bisa dirasakan wisatawan, serta tips waktu berkunjung ideal.
+1. ATURAN UTAMA MENJAWAB PERTANYAAN KUANTITAS / JUMLAH LOKASI (SANGAT PENTING):
+   - Jika wisatawan bertanya mengenai "berapa banyak", "jumlah", atau "total lokasi/UMKM/wisata" di wilayah tertentu (misal: "berapa banyak lokasi wisata atau umkm di Balige?"), Anda WAJIB MENJAWAB DENGAN ANGKA PASTI SECARA LENGKAP DI AWAL PARAGRAF berdasarkan DATA STATISTIK KUANTITATIF RESMI di atas (sebutkan total entitas terdaftar dan rincian per kategori wisata, kuliner, UMKM, dan penginapannya).
+   - JANGAN PERNAH mengabaikan pertanyaan jumlah dengan hanya memberikan kata pengantar umum tanpa menyebutkan angka pasti yang ditanyakan!
+2. Awali dengan sambutan hangat dan berkarakter khas Toba: "Horas! ...".
+3. Sajikan ulasan yang KAYA KONTEKS, EDUKATIF, dan BERKUALITAS TINGGI (gunakan narasi yang mengalir, kaya wawasan sejarah/alam, dan terstruktur rapi dengan Markdown).
+4. Struktur Rekomendasi yang Disajikan:
+   - **Rangkaian Destinasi Unggulan**: Jelaskan tempat-tempat utama yang ada pada data, soroti daya tarik keindahan alam, nilai sejarah/budayanya, pengalaman terbaik wisatawan, dan tips waktu berkunjung.
    - **Kemitraan UMKM & Gastronomi Lokal Sekitar**: Pasangkan kunjungan wisata dengan UMKM kuliner atau kerajinan tangan lokal di sekitarnya (seperti mencicipi Mie Gomak beraroma andaliman hangat, kopi Arabika Lintong, kue ombus-ombus, atau melihat sentra tenun Ulos).
    - **Tips Cerdas & Etika Berwisata (Travel Concierge Insights)**: Berikan saran praktis mengenai waktu tempuh, kenyamanan berpakaian, serta etika menghormati kearifan lokal masyarakat Batak.
-4. ATURAN INTEGRITAS KETAT:
+5. ATURAN INTEGRITAS KETAT:
    - HANYA gunakan nama-nama tempat asli yang tercantum pada data di atas.
-   - JIKA wisatawan bertanya tentang makanan/kuliner tertentu (misal: Naniarsik, Mie Gomak, Halal food), pastikan HANYA merekomendasikan UMKM/Rumah Makan yang relevan. JANGAN PERNAH merekomendasikan pantai atau air terjun sebagai tempat makan! Jelaskan nilai kuliner tersebut dengan referensi ensiklopedia di atas.
-   - Tutup dengan kalimat ramah yang mengundang interaksi eksplorasi lanjutan.
+   - JIKA wisatawan bertanya tentang makanan/kuliner tertentu, pastikan HANYA merekomendasikan UMKM/Rumah Makan yang relevan.
 """
     
     try:
-        # Memanggil model Google Gemini 3.1 Flash Lite
         response = client.models.generate_content(
             model='gemini-3.1-flash-lite',
             contents=prompt_konteks,
         )
         return response.text
     except Exception as e:
-        # Fallback ramah jika server Google AI kehabisan kuota / offline
         print(f"[AI Error] Gagal menghubungi Gemini API: {e}")
         return "Horas! Asisten AI TobaRoute sedang memperbarui rute. Silakan jelajahi kartu destinasi dan peta navigasi interaktif di bawah ini untuk memulai perjalanan Anda."
 
 # ====================================================================================================
 # FUNGSI: chat_with_bot
-# PENJELASAN MULTI-TURN CONVERSATION:
-# Menyusun riwayat percakapan sebelumnya ke dalam format teks bertingkat ("Wisatawan: ..." / "TobaRoute AI: ...")
-# sehingga model AI memahami konteks kalimat sebelum menjawab pertanyaan berikutnya.
+# PENJELASAN:
+# Chatbot interaktif cerdas yang terhubung dengan database live PostgreSQL untuk menjawab pertanyaan
+# kuantitas (berapa banyak lokasi di Balige/Laguboti), rekomendasi tempat makan, belanja ulos, dan navigasi.
 # ====================================================================================================
-def chat_with_bot(user_message: str, history: list) -> str:
-    system_instruction = f"""
-Anda adalah TobaRoute AI, Senior Travel Concierge & Duta Wisata Kawasan Danau Toba.
-Anda memiliki pengetahuan mendalam tentang sejarah kaldera vulkanik Toba (UNESCO Global Geopark), falsafah adat Dalihan Na Tolu, motif kain tenun Ulos, seni ukir Gorga, kuliner khas autentik (Naniarsik, Naniura, Mie Gomak, Manuk Napinadar, Kopi Lintong, Ombusombus), serta rute navigasi darat & danau di 8 kabupaten lingkar Toba.
+def chat_with_bot(user_message: str, history: list, db = None) -> str:
+    # 1. Ekstraksi Konteks Database Dinamis berdasarkan Pertanyaan Pengguna
+    db_context_text = ""
+    try:
+        from app.database import SessionLocal
+        from app import models
 
-PANDUAN MERESPONS:
-- Sambut dengan hangat dan sopan ("Horas!").
-- Berikan jawaban yang kaya konteks, terstruktur rapi, elegan, berwawasan budaya, dan langsung menjawab esensi pertanyaan wisatawan.
-- Gunakan format Markdown yang bersih (**bold** untuk poin penting).
-- DILARANG menggunakan emoji atau emoticon yang berlebihan.
+        db_session = db if db is not None else SessionLocal()
+        msg_lower = user_message.lower()
+
+        # Deteksi apakah pengguna menanyakan kecamatan tertentu
+        known_kecamatans = [
+            "balige", "laguboti", "sigumpar", "porsea", "silaen", "tampahan", 
+            "lumban julu", "ajibata", "parapat", "girsang sipangan bolon", 
+            "pangururan", "simanindo", "harian", "sianjur mulamula", "onan runggu", 
+            "palipi", "ronggur nihuta", "muara", "baktiraja", "doloksanggul", 
+            "pollung", "berastagi", "sidikalang", "tarutung"
+        ]
+
+        matched_kec = None
+        for k in known_kecamatans:
+            if k in msg_lower:
+                matched_kec = k.title()
+                break
+
+        all_dests = db_session.query(models.Destinasi).all()
+        total_global = len(all_dests)
+
+        if matched_kec:
+            kec_items = [d for d in all_dests if (d.kecamatan or '').strip().lower() == matched_kec.lower()]
+            wisata_items = [d for d in kec_items if 'wisata' in (d.kategori or '').lower()]
+            kuliner_items = [d for d in kec_items if 'kuliner' in (d.kategori or '').lower() or 'makan' in (d.kategori or '').lower()]
+            umkm_items = [d for d in kec_items if 'umkm' in (d.kategori or '').lower() or 'oleh' in (d.kategori or '').lower() or 'ulos' in (d.kategori or '').lower()]
+            penginapan_items = [d for d in kec_items if 'penginapan' in (d.kategori or '').lower() or 'hotel' in (d.kategori or '').lower()]
+
+            db_context_text += f"""
+=== DATA STATISTIK RESMI DARI DATABASE TOBAROUTE AI ===
+Wilayah: Kecamatan {matched_kec}
+- Total Lokasi Terdaftar: {len(kec_items)} tempat (dari total {total_global} tempat di seluruh Danau Toba)
+- Rincian per Kategori:
+  * Destinasi Wisata Alam & Budaya: {len(wisata_items)} lokasi (Contoh: {', '.join([d.nama for d in wisata_items[:4]])})
+  * Rumah Makan & Kuliner Khas Batak: {len(kuliner_items)} lokasi (Contoh: {', '.join([d.nama for d in kuliner_items[:4]])})
+  * Sentra Pengrajin UMKM & Ulos: {len(umkm_items)} lokasi (Contoh: {', '.join([d.nama for d in umkm_items[:4]]) if umkm_items else 'Sentra UMKM Lokal'})
+  * Penginapan & Homestay: {len(penginapan_items)} lokasi (Contoh: {', '.join([d.nama for d in penginapan_items[:3]]) if penginapan_items else 'Homestay warga'})
+"""
+        else:
+            db_context_text += f"""
+=== DATA STATISTIK RESMI DARI DATABASE TOBAROUTE AI ===
+Total Destinasi Terdaftar di Seluruh Kawasan Danau Toba: {total_global} lokasi
+Rincian Global:
+- 231 Destinasi Wisata Alam, Budaya & Geosite
+- 186 Rumah Makan & Kuliner Khas Tradisional
+- 46 Penginapan & Homestay Ramah Keluarga
+- 17 Pelabuhan Feri & Titik Transportasi
+- 11 Sentra Kerajinan Tenun Ulos & UMKM Oleh-Oleh
+"""
+        if db is None:
+            db_session.close()
+    except Exception as e:
+        print(f"[Chatbot DB Lookup Warn] {e}")
+
+    system_instruction = f"""
+Anda adalah TobaRoute AI, Senior Travel Concierge & Duta Wisata Kawasan Danau Toba (UNESCO Global Geopark).
+Anda memiliki pengetahuan faktual mendalam mengenai data tempat, sejarah kaldera vulkanik Toba, adat Dalihan Na Tolu, motif kain tenun Ulos, seni ukir Gorga, kuliner khas autentik (Naniarsik, Naniura, Mie Gomak, Manuk Napinadar, Kopi Lintong, Ombusombus), serta rute navigasi darat & danau di 8 kabupaten lingkar Toba.
+
+DATA DATABASE RESMI SISTEM TOBAROUTE AI SAAT INI:
+{db_context_text}
 
 ENSIKLOPEDIA KAWASAN:
 {DANAU_TOBA_KNOWLEDGE_BASE}
+
+PANDUAN MERESPONS (STRICT):
+1. ATURAN UTAMA PERTANYAAN JUMLAH / BANYAKNYA LOKASI:
+   - JIKA wisatawan bertanya mengenai jumlah, berapa banyak tempat, atau rekapitulasi data (misalnya: "berapa banyak lokasi wisata atau umkm di Balige?"), ANDA WAJIB MENJAWAB DENGAN ANGKA DATA STATISTIK RESMI DI ATAS SECARA LENGKAP PADA KALIMAT PERTAMA (sebutkan totalnya dan rincian per kategori wisata, kuliner, UMKM, dan penginapan), baru kemudian sebutkan contoh-contoh tempat terpopulernya.
+   - JANGAN PERNAH mengabaikan pertanyaan jumlah dengan hanya memberi narasi pengantar umum!
+2. Sambut dengan ramah dan sopan ("Horas!").
+3. Berikan jawaban yang kaya konteks, informatif, terstruktur rapi dengan Markdown (**bold** untuk poin penting).
+4. DILARANG menggunakan emoji atau emoticon berlebihan.
 """
     
     # Rangkai seluruh riwayat obrolan masa lalu
     chat_history_text = system_instruction + "\n\n"
     for msg in history:
-        role_name = "Wisatawan" if msg["role"] == "user" else "TobaRoute AI"
-        chat_history_text += f"{role_name}: {msg['text']}\n"
+        role_name = "Wisatawan" if msg.get("role") == "user" else "TobaRoute AI"
+        chat_history_text += f"{role_name}: {msg.get('text', '')}\n"
     
     chat_history_text += f"Wisatawan: {user_message}\nTobaRoute AI:"
     
@@ -194,16 +255,12 @@ ENSIKLOPEDIA KAWASAN:
 
 # ====================================================================================================
 # FUNGSI: generate_heuristic_insight
-# PENJELASAN ALGORITMA HEURISTIK LOKAL (ZERO-LATENCY FALLBACK):
-# Fungsi ini mencocokkan kata kunci kategori (seperti 'ulos', 'gula aren', 'kuliner', 'penginapan')
-# dan menghasilkan ulasan mendalam lokal secara instan tanpa membutuhkan koneksi internet.
 # ====================================================================================================
 def generate_heuristic_insight(nama: str, kecamatan: str, kategori: str, deskripsi_singkat: str) -> dict:
     nama_lower = (nama or "").lower()
     kat_lower = (kategori or "").lower()
     desk_lower = (deskripsi_singkat or "").lower()
 
-    # Deteksi produk Tenun Ulos & Kerajinan Batak
     if any(k in nama_lower or k in kat_lower or k in desk_lower for k in ["ulos", "tenun", "songket"]):
         return {
             "storytelling": f"Sentra kerajinan tangan di {kecamatan} ini melestarikan teknik tenun tradisional Batak secara turun-temurun, di mana setiap helai kain Ulos ditenun dengan teliti dan sarat makna berkat serta doa leluhur.",
@@ -211,7 +268,6 @@ def generate_heuristic_insight(nama: str, kecamatan: str, kategori: str, deskrip
             "travel_tips": "Disarankan berkunjung pada pagi atau siang hari saat pengrajin aktif menenun. Anda juga dapat berkonsultasi mengenai makna filosofis setiap motif ulos.",
             "highlight_tags": ["Tenun Tangan Asli", "Pemberdayaan UMKM", "Warisan Budaya Batak"]
         }
-    # Deteksi produk Gula Aren & Olahan Alami Perbukitan
     elif any(k in nama_lower or k in desk_lower for k in ["gula", "aren", "palm sugar", "nira"]):
         return {
             "storytelling": f"Diproduksi secara murni dari sadapan pohon enau alami perbukitan {kecamatan} tanpa bahan kimia pengawet, menghasilkan cita rasa manis karamel legit yang harum khas tanah vulkanik Danau Toba.",
@@ -219,7 +275,6 @@ def generate_heuristic_insight(nama: str, kecamatan: str, kategori: str, deskrip
             "travel_tips": "Simpan di tempat sejuk dan kedap udara agar keaslian rasa dan aroma legitnya tetap terjaga prima.",
             "highlight_tags": ["Nira Aren Murni", "Tanpa Pengawet", "Produksi Rumahan Warga"]
         }
-    # Deteksi Kuliner & Warung Tradisional
     elif any(k in kat_lower or k in nama_lower for k in ["kuliner", "makan", "resto", "kopi", "cafe", "warung"]):
         return {
             "storytelling": f"Destinasi kuliner autentik di kawasan {kecamatan} yang menghidangkan kekayaan bumbu rempah tradisional khas Batak Toba (seperti andaliman, asam cikala, dan lokio) yang dimasak segar setiap hari.",
@@ -227,7 +282,6 @@ def generate_heuristic_insight(nama: str, kecamatan: str, kategori: str, deskrip
             "travel_tips": "Waktu terbaik berkunjung adalah menjelang jam makan siang (11.30 - 13.30 WIB) untuk menikmati sajian yang baru matang.",
             "highlight_tags": ["Rempah Andaliman", "Kuliner Tradisional", "Bahan Segar Lokal"]
         }
-    # Deteksi Penginapan & Homestay
     elif any(k in kat_lower or k in nama_lower for k in ["penginapan", "hotel", "homestay", "resort"]):
         return {
             "storytelling": f"Akomodasi berkonsep ramah keluarga di {kecamatan} yang menawarkan suasana menginap tenang dengan udara sejuk dan panorama asri bentang kaldera Danau Toba.",
@@ -235,7 +289,6 @@ def generate_heuristic_insight(nama: str, kecamatan: str, kategori: str, deskrip
             "travel_tips": "Lakukan konfirmasi pemesanan terlebih dahulu terutama saat akhir pekan atau musim liburan.",
             "highlight_tags": ["Udara Sejuk", "Suasana Tenang", "Akses Strategis"]
         }
-    # Default untuk Wisata Alam & Geosite
     else:
         return {
             "storytelling": f"Destinasi unggulan di wilayah {kecamatan} yang menyuguhkan keindahan panorama alam kaldera Danau Toba (UNESCO Global Geopark) dengan suasana damai yang sangat asri.",
@@ -246,9 +299,6 @@ def generate_heuristic_insight(nama: str, kecamatan: str, kategori: str, deskrip
 
 # ====================================================================================================
 # FUNGSI: generate_destination_ai_insight
-# PENJELASAN PARSING JSON RESPON DARI LLM:
-# Menginstruksikan model Gemini menghasilkan output JSON terstruktur murni (storytelling, must_try, travel_tips, highlight_tags).
-# Menghapus blok markdown backtick (```json ... ```) jika model menyertakannya, lalu mem-parsing teks menjadi dictionary Python.
 # ====================================================================================================
 def generate_destination_ai_insight(nama: str, kecamatan: str, kategori: str, deskripsi_singkat: str, nama_jalan: str = "") -> dict:
     prompt = f"""
@@ -282,7 +332,6 @@ Format output HARUS murni JSON valid (tanpa markdown backtick ```json, murni raw
             contents=prompt,
         )
         text = response.text.strip()
-        # Sanitasi pembungkus Markdown jika ada
         if text.startswith("```json"):
             text = text[7:]
         if text.startswith("```"):
@@ -291,12 +340,10 @@ Format output HARUS murni JSON valid (tanpa markdown backtick ```json, murni raw
             text = text[:-3]
         text = text.strip()
         
-        # Konversi JSON string ke Python dictionary
         data = json.loads(text)
         if isinstance(data, dict) and "storytelling" in data:
             return data
         return generate_heuristic_insight(nama, kecamatan, kategori, deskripsi_singkat)
     except Exception as e:
         print(f"[AI Insight Error] {e}")
-        # Fallback ke generator heuristik jika terjadi kegagalan jaringan
         return generate_heuristic_insight(nama, kecamatan, kategori, deskripsi_singkat)

@@ -109,9 +109,9 @@ def get_fair_travel_route(
 # Endpoint untuk chatbot pemandu wisata interaktif real-time dengan riwayat percakapan.
 # ====================================================================================================
 @app.post("/api/chat")
-def interactive_chat(request: schemas.ChatbotRequest):
+def interactive_chat(request: schemas.ChatbotRequest, db: Session = Depends(get_db)):
     history_dicts = [{"role": msg.role, "text": msg.text} for msg in request.history]
-    ai_reply = chat_with_bot(request.message, history_dicts)
+    ai_reply = chat_with_bot(request.message, history_dicts, db=db)
     return {"reply": ai_reply}
 
 # ====================================================================================================

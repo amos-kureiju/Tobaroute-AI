@@ -521,8 +521,37 @@ def get_fair_route_with_rag(
     else:
         umkm_sekitar = []
 
-    # Mengembalikan hasil rute yang adil untuk destinasi utama dan UMKM lokal sekitar
+    # TAHAP 4: Perhitungan Statistik Kuantitatif Wilayah (Untuk Jawaban Pertanyaan Jumlah & Rekapitulasi)
+    stats_target = {
+        "total_seluruh_kawasan_toba": len(all_dests),
+        "nama_kecamatan": target_kecamatan_clean if target_kecamatan_clean else "Seluruh Kawasan Danau Toba",
+        "total_lokasi_wilayah": 0,
+        "jumlah_wisata": 0,
+        "jumlah_kuliner": 0,
+        "jumlah_umkm": 0,
+        "jumlah_penginapan": 0,
+        "jumlah_transportasi": 0
+    }
+
+    if target_kecamatan_clean:
+        kec_dests = [d for d in all_dests if (d.kecamatan or '').strip().lower() == target_kecamatan_clean.lower()]
+        stats_target["total_lokasi_wilayah"] = len(kec_dests)
+        stats_target["jumlah_wisata"] = sum(1 for d in kec_dests if 'wisata' in (d.kategori or '').lower())
+        stats_target["jumlah_kuliner"] = sum(1 for d in kec_dests if 'kuliner' in (d.kategori or '').lower() or 'makan' in (d.kategori or '').lower())
+        stats_target["jumlah_umkm"] = sum(1 for d in kec_dests if 'umkm' in (d.kategori or '').lower() or 'oleh' in (d.kategori or '').lower() or 'ulos' in (d.kategori or '').lower())
+        stats_target["jumlah_penginapan"] = sum(1 for d in kec_dests if 'penginapan' in (d.kategori or '').lower() or 'hotel' in (d.kategori or '').lower())
+        stats_target["jumlah_transportasi"] = sum(1 for d in kec_dests if 'transportasi' in (d.kategori or '').lower())
+    else:
+        stats_target["total_lokasi_wilayah"] = len(all_dests)
+        stats_target["jumlah_wisata"] = sum(1 for d in all_dests if 'wisata' in (d.kategori or '').lower())
+        stats_target["jumlah_kuliner"] = sum(1 for d in all_dests if 'kuliner' in (d.kategori or '').lower())
+        stats_target["jumlah_umkm"] = sum(1 for d in all_dests if 'umkm' in (d.kategori or '').lower() or 'oleh' in (d.kategori or '').lower())
+        stats_target["jumlah_penginapan"] = sum(1 for d in all_dests if 'penginapan' in (d.kategori or '').lower())
+        stats_target["jumlah_transportasi"] = sum(1 for d in all_dests if 'transportasi' in (d.kategori or '').lower())
+
+    # Mengembalikan hasil rute yang adil untuk destinasi utama, UMKM lokal, dan data statistik resmi
     return {
         "destinasi_utama": destinasi_utama,
-        "rekomendasi_umkm_sekitar": umkm_sekitar
+        "rekomendasi_umkm_sekitar": umkm_sekitar,
+        "statistik_wilayah": stats_target
     }
