@@ -1,20 +1,31 @@
+// ====================================================================================================
+// FILE: frontend/src/admin/AdminContent.jsx
+// TUJUAN & PENJELASAN:
+// Halaman Manajemen Konten Publik (Content Management System / CMS) untuk Halaman Beranda.
+// Fitur:
+// 1. Pengaturan Teks Hero Banner (Badge Judul, Headline Utama, dan Sub-judul).
+// 2. Banner Pengumuman Siaga / Peringatan Cuaca & Transportasi (Emergency/Informational Alert).
+// 3. Kustomisasi Tag Inspirasi Cepat (Pill Tags).
+// 4. Live Preview Interaktif & Penyimpanan State ke localStorage ('tobaguide_home_content_config').
+// ====================================================================================================
+
 import React, { useState, useEffect } from 'react';
 import { Save, Image, RefreshCw, Eye, CheckCircle2, Sparkles, Tag, AlertTriangle, Layers, Layout, HelpCircle } from 'lucide-react';
 import './Admin.css';
 
 const AdminContent = () => {
-  // Config States
+  // State Form Konfigurasi Konten Beranda
   const [heroBadge, setHeroBadge] = useState('Platform Navigasi & Keadilan Pariwisata Danau Toba');
   const [heroTitle, setHeroTitle] = useState('Temukan Keindahan Danau Toba');
   const [heroSubtitle, setHeroSubtitle] = useState('Sistem rekomendasi berbasis kecerdasan data yang merancang rute perjalanan presisi, destinasi populer, serta memajukan ekonomi pelaku UMKM lokal.');
   const [tagsInput, setTagsInput] = useState('Wisata Alam Balige, Kuliner Khas Batak, Sentra UMKM Ulos, Transportasi Feri & Angkot');
   
-  // Banner Announcement Config
+  // State Konfigurasi Banner Pengumuman
   const [alertActive, setAlertActive] = useState(false);
   const [alertText, setAlertText] = useState('Info: Penyeberangan Kapal Feri Pelabuhan Ajibata - Tomok beroperasi normal setiap 1 jam.');
   const [alertBg, setAlertBg] = useState('info'); // 'info' | 'warning' | 'emerald'
 
-  // Saved Feedback
+  // State Notifikasi Berhasil Simpan
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {

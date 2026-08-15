@@ -1,3 +1,14 @@
+// ====================================================================================================
+// FILE: frontend/src/admin/AdminSettings.jsx
+// TUJUAN & PENJELASAN:
+// Halaman Pengaturan Konfigurasi Sistem, Akun Administrator, dan Sinkronisasi Data Vektor.
+// Fitur:
+// 1. Tab Konfigurasi AI & Vektor: Parameter bobot keadilan data (Fairness Boost), model Gemini, dan Pinecone index.
+// 2. Tab Manajemen Akun: Pengaturan profil admin, email, dan perubahan kata sandi.
+// 3. Tab Sinkronisasi Manual: Trigger tombol 'Sinkronkan Database Vektor' ke server Pinecone.
+// 4. Tab Mode Pemeliharaan & GPS Tracking.
+// ====================================================================================================
+
 import React, { useState } from 'react';
 import { Settings, Cpu, ShieldCheck, Database, RefreshCw, CheckCircle2, AlertCircle, Save, Lock, User, Key, Layers, Globe } from 'lucide-react';
 import { syncPineconeVectors } from '../services/api';
@@ -6,14 +17,14 @@ import './Admin.css';
 const AdminSettings = () => {
   const [activeTab, setActiveTab] = useState('system'); // 'system' | 'account' | 'sync' | 'platform'
   
-  // System Config State
+  // State Konfigurasi Sistem & Model AI
   const [embeddingModel, setEmbeddingModel] = useState('Cohere (embed-multilingual-v3.0)');
   const [pineconeIndex, setPineconeIndex] = useState('tobaguide-index');
   const [vectorDim, setVectorDim] = useState('1024');
   const [fairnessBoost, setFairnessBoost] = useState('1.25');
   const [geminiModel, setGeminiModel] = useState('gemini-3.1-flash-lite');
 
-  // Account State
+  // State Profil Akun Admin
   const [adminName, setAdminName] = useState('Budi Santoso');
   const [adminEmail, setAdminEmail] = useState('admin.indonesia@example.com');
   const [adminRole, setAdminRole] = useState('Superuser (Akses Penuh)');

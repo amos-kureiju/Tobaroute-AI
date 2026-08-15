@@ -1,7 +1,13 @@
-"""
-RAG Evaluator Tool for TobaRoute AI
-Del AI Hackathon 2026 - Quantitative Model Evaluation
-"""
+# ====================================================================================================
+# FILE: backend/app/rag_evaluator.py
+# TUJUAN & PENJELASAN METODOLOGI RISET:
+# Modul Evaluasi Kuantitatif Performa Sistem RAG (Retrieval-Augmented Generation) TobaRoute AI.
+#
+# METRIK RISET YANG DIUKUR:
+# 1. RETRIEVAL ACCURACY (%): Kemampuan sistem menemukan entitas yang tepat sesuai intensi query wisatawan.
+# 2. TOURISM FAIRNESS EXPOSURE (%): Rasio keterpaparan pelaku UMKM lokal / "Hidden Gems" (ulasan < 15)
+#    dibandingkan dengan destinasi komersial besar yang sudah terkenal.
+# ====================================================================================================
 
 import os
 import json
@@ -9,7 +15,7 @@ import time
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment
+# Membaca environment file
 BASE_DIR = Path(__file__).resolve().parent.parent
 dotenv_path = BASE_DIR / ".env"
 load_dotenv(dotenv_path=dotenv_path, override=False)
@@ -20,7 +26,10 @@ sys.path.append(str(BASE_DIR))
 from app.database import SessionLocal
 from app import models
 
-# Benchmark dataset pertanyaan evaluasi
+# ====================================================================================================
+# BENCHMARK DATASET PERTANYAAN EVALUASI
+# Kumpulan kueri skenario nyata dari wisatawan yang mencakup multi-kategori dan multi-wilayah.
+# ====================================================================================================
 TEST_QUERIES = [
     {
         "id": 1,
@@ -48,6 +57,15 @@ TEST_QUERIES = [
     }
 ]
 
+# ====================================================================================================
+# FUNGSI: evaluate_retrieval_and_generation
+# PENJELASAN ALUR PENGUJIAN:
+# 1. Membuka sesi database PostgreSQL untuk membaca seluruh data entitas.
+# 2. Menguji setiap pertanyaan benchmark:
+#    - Memeriksa apakah data yang terambil relevan dengan kategori dan kecamatan yang diharapkan.
+#    - Menghitung persentase UMKM ulasan sedikit (< 15 ulasan) yang berhasil terangkat.
+# 3. Menghitung rata-rata akurasi dan menyimpannya ke file 'rag_evaluation_results.json'.
+# ====================================================================================================
 def evaluate_retrieval_and_generation():
     print("==================================================")
     print("  TOBAROUTE AI - RAG QUANTITATIVE EVALUATION TOOL ")
@@ -68,7 +86,7 @@ def evaluate_retrieval_and_generation():
         for test in TEST_QUERIES:
             print(f"\n--- [Test #{test['id']}] Query: '{test['query']}' ---")
             
-            # Simple keyword / attribute matching verification (Retrieval Test)
+            # Pengujian Retrieval: Verifikasi pencocokan kata kunci dan atribut wilayah
             relevant_items = [
                 d for d in destinasis 
                 if (test['expected_kategori'] in d.kategori or test['expected_kecamatan'].lower() in d.kecamatan.lower() or test['expected_kecamatan'].lower() in d.nama_jalan.lower())
@@ -77,17 +95,17 @@ def evaluate_retrieval_and_generation():
             hit_count = len(relevant_items)
             if hit_count > 0:
                 retrieval_matches += 1
-                print(f" [RETRIEVAL PASS] Ditemukan {hit_count} entitas relevan di KB.")
+                print(f" [RETRIEVAL PASS] Ditemukan {hit_count} entitas relevan di Knowledge Base.")
             else:
                 print(f" [RETRIEVAL WARN] Tidak ada entitas spesifik yang cocok langsung.")
 
-            # Evaluasi Fairness UMKM (Tempat dengan ulasan < 15)
+            # Evaluasi Keadilan Data (Fairness Metric): Menghitung proporsi UMKM dengan ulasan < 15
             hidden_gems = [d for d in relevant_items if d.jumlah_ulasan < 15]
             fairness_ratio = (len(hidden_gems) / hit_count * 100) if hit_count > 0 else 0
             fairness_scores.append(fairness_ratio)
-            print(f" [FAIRNESS METRIC] Proposi Hidden Gems/UMKM lokal: {fairness_ratio:.1f}% ({len(hidden_gems)}/{hit_count})")
+            print(f" [FAIRNESS METRIC] Proporsi Hidden Gems/UMKM lokal: {fairness_ratio:.1f}% ({len(hidden_gems)}/{hit_count})")
 
-        # Ringkasan Skor Kuantitatif
+        # Perhitungan Ringkasan Skor Kuantitatif
         retrieval_accuracy = (retrieval_matches / total_queries) * 100
         avg_fairness = sum(fairness_scores) / len(fairness_scores) if fairness_scores else 0
 
@@ -103,7 +121,7 @@ def evaluate_retrieval_and_generation():
         print("==================================================")
         print(json.dumps(eval_summary, indent=2))
         
-        # Simpan hasil ke file log evaluasi
+        # Menyimpan output evaluasi ke file JSON terstruktur untuk laporan riset
         eval_path = BASE_DIR / "rag_evaluation_results.json"
         with open(eval_path, "w", encoding="utf-8") as f:
             json.dump(eval_summary, f, indent=2)
