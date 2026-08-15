@@ -262,16 +262,25 @@ const Explore = () => {
 
   // Fetch initial batch of all destinations for search lookup and retrieve saved GPS
   useEffect(() => {
+    let isCancelled = false;
+
+    // Safety fallback: pastikan loadingMap dihentikan maksimal setelah 2.5 detik
+    const timer = setTimeout(() => {
+      if (!isCancelled) setLoadingMap(false);
+    }, 2500);
+
     const fetchAllDestinations = async () => {
       try {
         setLoadingMap(true);
         const data = await getDestinations('', 1000);
-        setDestinations(data);
+        if (!isCancelled && data) {
+          setDestinations(data);
+        }
       } catch (err) {
         console.error(err);
-        setError('Gagal memuat data lokasi dari server.');
+        if (!isCancelled) setError('Gagal memuat data lokasi dari server.');
       } finally {
-        setLoadingMap(false);
+        if (!isCancelled) setLoadingMap(false);
       }
     };
 

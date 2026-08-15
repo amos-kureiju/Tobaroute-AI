@@ -8,12 +8,13 @@
 
 import axios from 'axios';
 
-// URL dasar API backend FastAPI
-const API_BASE_URL = 'http://localhost:8080/api';
+// URL dasar API backend FastAPI (Port default backend: 8000)
+const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
-// Inisialisasi instance Axios dengan header standar JSON
+// Inisialisasi instance Axios dengan header standar JSON dan timeout 12 detik
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 12000,
   headers: {
     'Content-Type': 'application/json',
   },
