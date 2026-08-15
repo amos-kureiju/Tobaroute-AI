@@ -1,12 +1,13 @@
 // ====================================================================================================
 // FILE: frontend/src/components/RouteMap.jsx
-// TUJUAN:
-// Komponen Peta Interaktif berbasis React Leaflet & OpenStreetMap / Google Maps Tiles.
-// Fitur Utama:
-// 1. Menampilkan rute visual berantai antara titik GPS pengguna, Destinasi Utama, dan UMKM Sekitar.
-// 2. Nearest-Neighbor TSP Optimizer: Menyusun urutan rute paling efisien secara geografis.
-// 3. Pin GPS pengguna interaktif (bisa digeser / draggable untuk mengubah titik keberangkatan).
-// 4. Selector layer peta (OpenStreetMap, Google Maps Street, dan Google Satellite).
+// TUJUAN & PENJELASAN ARSITEKTUR GIS:
+// Komponen Peta Navigasi Interaktif Kawasan Danau Toba berbasis React-Leaflet & OpenStreetMap / Google Maps.
+// Fitur & Algoritma:
+// 1. NEAREST-NEIGHBOR TSP OPTIMIZER: Menyusun rute rantai perjalanan berurutan secara geografis
+//    dari titik GPS pengguna -> Destinasi Utama 1 -> UMKM Sekitar -> Destinasi Utama 2.
+// 2. GEOLOCATION POSITIONING: Mendeteksi GPS perangkat browser dengan pembatasan koordinat lingkar Toba.
+// 3. DRAGGABLE GPS PIN: Pengguna dapat menggeser pin GPS ungu untuk mengubah titik awal keberangkatan secara instan.
+// 4. MULTI-LAYER MAP SELECTOR: Memungkinkan penggantian layer peta (OpenStreetMap, Google Maps, dan Satelit).
 // ====================================================================================================
 
 import React, { useState, useEffect } from 'react';
@@ -16,7 +17,12 @@ import L from 'leaflet';
 import { Navigation, Star, MapPin, Flag, ArrowRight, Store } from 'lucide-react';
 import RoutingMachine from './RoutingMachine';
 
-// Ikon Pin Penanda Destinasi Wisata Utama (Warna Biru)
+// ====================================================================================================
+// DEFINISI IKON PIN LEAFLET KUSTOM (RETINA 2X)
+// Dibuat dengan anchor point di bagian bawah tengah ([12, 41]) agar ujung jarum tepat menunjuk koordinat.
+// ====================================================================================================
+
+// Ikon Biru: Destinasi Wisata Utama
 const wisataIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -26,7 +32,7 @@ const wisataIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-// Ikon Pin Penanda UMKM / Kuliner Sekitar (Warna Hijau)
+// Ikon Hijau: Rekomendasi Pelaku UMKM Lokal
 const umkmIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -36,7 +42,7 @@ const umkmIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-// Ikon Pin Penanda Lokasi Pengguna / GPS (Warna Ungu)
+// Ikon Ungu: Posisi GPS Langsung Wisatawan (Ukuran lebih besar dan dapat digeser)
 const userGpsIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -46,12 +52,15 @@ const userGpsIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-// Titik tengah default Danau Toba jika GPS browser tidak diaktifkan
-const DEFAULT_START_ORIGIN = [2.3333, 99.0667]; // Balige
+// Koordinat Default Pusat Kawasan Danau Toba (Balige) jika wisatawan menolak izin GPS browser
+const DEFAULT_START_ORIGIN = [2.3333, 99.0667];
 
 // ====================================================================================================
-// HELPER: MapViewController
-// TUJUAN: Otomatis menyesuaikan zoom dan batas pandang (fitBounds) Leaflet saat titik rute berubah.
+// KOMPONEN HELPER: MapViewController
+// PENJELASAN:
+// Leaflet MapContainer tidak otomatis memperbarui batas pandangnya saat props React berubah.
+// Komponen anak ini menggunakan hook 'useMap()' untuk memanggil 'map.fitBounds(bounds)' dengan padding
+// sehingga seluruh titik rute muat dan terlihat sempurna di layar pengguna.
 // ====================================================================================================
 const MapViewController = ({ center, waypoints }) => {
   const map = useMap();
@@ -66,7 +75,14 @@ const MapViewController = ({ center, waypoints }) => {
   return null;
 };
 
-// Jarak kuadrat Euclidean 2D untuk kalkulasi cepat
+// ====================================================================================================
+// FUNGSI MATEMATIKA: distSq (JARAK KUADRAT EUCLIDEAN 2D)
+// PENJELASAN OPTIMASI:
+// Rumus: (x1 - x2)^2 + (y1 - y2)^2
+// Mengapa tidak menggunakan akar kuadrat Math.sqrt()?
+// Karena fungsi akar kuadrat sangat lambat pada CPU. Untuk membandingkan jarak "mana yang lebih dekat",
+// perbandingan kuadrat jarak (a^2 < b^2) menghasilkan kesimpulan yang identik dengan (a < b).
+// ====================================================================================================
 const distSq = (p1, p2) => {
   const dLat = p1[0] - p2[0];
   const dLng = p1[1] - p2[1];
@@ -74,10 +90,13 @@ const distSq = (p1, p2) => {
 };
 
 // ====================================================================================================
-// ALGORITMA: optimizeRouteSequence (Nearest-Neighbor Traveling Salesperson)
-// TUJUAN:
-// Menyusun urutan titik singgah dari lokasi start ke titik terdekat berikutnya secara berantai
-// sehingga wisatawan tidak perlu bolak-balik di jalan raya.
+// ALGORITMA: optimizeRouteSequence (GREEDY NEAREST-NEIGHBOR TSP)
+// PENJELASAN:
+// Menyelesaikan masalah rute pedagang keliling (Traveling Salesperson Problem / TSP) secara efisien:
+// 1. Mulai dari titik awal keberangkatan (startPoint / GPS pengguna).
+// 2. Cari titik terdekat berikutnya di antara sisa target yang belum dikunjungi.
+// 3. Masukkan titik tersebut ke urutan rute dan jadikan sebagai titik acuan baru.
+// 4. Ulangi sampai semua destinasi dan UMKM terhubung dalam satu jalur yang tidak bolak-balik.
 // ====================================================================================================
 const optimizeRouteSequence = (startPoint, targets) => {
   if (!targets || targets.length <= 1) return targets;
@@ -106,7 +125,7 @@ const optimizeRouteSequence = (startPoint, targets) => {
   return sorted;
 };
 
-// Pilihan layer peta satelit dan jalan raya
+// Konfigurasi layer ubin (TileLayer) peta
 const MAP_STYLES = {
   osm: {
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -126,7 +145,14 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
   const [userLocation, setUserLocation] = useState(null);
   const [mapStyle, setMapStyle] = useState('osm');
 
-  // Mengambil koordinat GPS langsung dari perangkat pengguna dengan filter batas kawasan Toba
+  // ====================================================================================================
+  // EFFECT: Pelacakan Lokasi GPS Wisatawan dengan Proteksi Batas Geografis Toba
+  // PENJELASAN:
+  // 1. Memeriksa apakah ada koordinat tersimpan di localStorage dari sesi sebelumnya.
+  // 2. Meminta izin GPS browser (navigator.geolocation.getCurrentPosition).
+  // 3. Validasi batas geografis (Latitude 1.9 - 3.2, Longitude 98.0 - 99.8) untuk memastikan
+  //    koordinat berada di Sumatera Utara / Danau Toba.
+  // ====================================================================================================
   useEffect(() => {
     const cachedGps = localStorage.getItem('tobaroute_user_gps');
     if (cachedGps) {
@@ -159,7 +185,7 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
     }
   }, []);
 
-  // Filter duplikasi data berdasarkan nama unik
+  // Filter duplikasi data berdasarkan nama unik agar peta tidak menumpuk marker yang sama
   const uniqueDestinasi = Array.from(
     new Map(destinasiUtama.filter(d => d.latitude && d.longitude).map(d => [d.nama.trim(), d])).values()
   );
@@ -168,6 +194,7 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
     new Map(umkmSekitar.filter(u => u.latitude && u.longitude).map(u => [u.nama.trim(), u])).values()
   );
 
+  // Jika tidak ada data koordinat sama sekali, jangan render peta
   if (uniqueDestinasi.length === 0 && uniqueUmkm.length === 0) {
     return null;
   }
@@ -178,6 +205,7 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
     ...uniqueUmkm.slice(0, 2).map(u => ({ type: 'umkm', data: u, coords: [u.latitude, u.longitude] }))
   ];
 
+  // Tentukan titik start dan lakukan optimasi urutan rute
   const startPoint = userLocation || (rawTargets.length > 0 ? rawTargets[0].coords : DEFAULT_START_ORIGIN);
   const orderedTargets = optimizeRouteSequence(startPoint, rawTargets);
   const routeCoordinates = [startPoint, ...orderedTargets.map(t => t.coords)];
@@ -186,7 +214,12 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
     ? userLocation 
     : (orderedTargets.length > 0 ? orderedTargets[0].coords : [2.6105, 98.8106]);
 
-  // Handler saat pin GPS pengguna digeser manual oleh user
+  // ====================================================================================================
+  // HANDLER: handleMarkerDragEnd
+  // PENJELASAN:
+  // Dipanggil saat pengguna selesai menggeser pin GPS ungu di peta.
+  // Otomatis memperbarui state 'userLocation' dan menghitung ulang seluruh geometri jalan raya secara real-time.
+  // ====================================================================================================
   const handleMarkerDragEnd = (e) => {
     const latLng = e.target.getLatLng();
     const newCoords = [latLng.lat, latLng.lng];
@@ -209,7 +242,7 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
           </div>
         </div>
 
-        {/* Visualisasi Rantai Perjalanan */}
+        {/* Visualisasi Rantai Perjalanan Berurutan */}
         <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', background: 'rgba(255,255,255,0.9)', padding: '0.6rem 0.85rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: userLocation ? '#f3e8ff' : '#e0f2fe', color: userLocation ? '#6b21a8' : '#0369a1', padding: '0.25rem 0.55rem', borderRadius: '5px', fontSize: '0.8rem', fontWeight: 600 }}>
             <MapPin size={13} /> {userLocation ? 'Lokasi Anda (GPS)' : 'Keberangkatan Awal'}
@@ -253,7 +286,7 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
             url={MAP_STYLES[mapStyle].url}
           />
 
-          {/* Tombol Pengganti Tipe Peta */}
+          {/* Tombol Pengganti Layer Peta */}
           <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1000, display: 'flex', gap: '5px', background: 'white', padding: '5px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>
             <button 
               onClick={() => setMapStyle('osm')}
@@ -300,7 +333,7 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
             </Marker>
           )}
 
-          {/* Mesin Routing Jalan Raya OSRM */}
+          {/* Mesin Perutean Jalan Raya Nyata (OSRM Engine) */}
           {routeCoordinates.length >= 2 && (
             <RoutingMachine waypoints={routeCoordinates} />
           )}

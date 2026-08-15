@@ -1,10 +1,26 @@
+// ====================================================================================================
+// FILE: frontend/src/components/DestinationCard.jsx
+// TUJUAN & PENJELASAN KOMPONEN:
+// Komponen Kartu Destinasi & Rekomendasi UMKM Interaktif.
+// Berfungsi menampilkan:
+// 1. Gambar thumbnail resolusi tinggi dengan penanganan error gambar (Image Fallback).
+// 2. Badge penanda khusus untuk pelaku UMKM lokal (Recommended UMKM).
+// 3. Nama tempat, wilayah kecamatan, dan rating bintang.
+// 4. Panel Accordion "Detail": Menampilkan wawasan budaya, tips wisatawan, menu rekomendasi,
+//    jam operasional, tarif tiket, fasilitas, dan alamat presisi tanpa menutupi layar (No backdrop blocking).
+// 5. Tombol "Lihat Rute Peta": Menghubungkan kartu langsung ke peta navigasi di halaman Jelajah.
+// ====================================================================================================
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MapPin, Star, Navigation, Info, Route, ChevronUp, CheckCircle, Quote, Compass, BookOpen, Clock, Tag, Utensils, RefreshCw } from 'lucide-react';
 import { getDestinationAIInsight } from '../services/api';
 import './DestinationCard.css';
 
-// STUNNING, HIGH-DEFINITION VERIFIED UNSPLASH PHOTOS
+// ====================================================================================================
+// GAMBAR DEFAULT BERDASARKAN KATEGORI (UNSPLASH HD)
+// Digunakan sebagai fallback otomatis jika URL gambar dari database kosong atau rusak (broken link).
+// ====================================================================================================
 const DEFAULT_CATEGORY_IMAGES = {
   kuliner: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80",
   umkm: "https://images.unsplash.com/photo-1607344645866-009c320c5ab8?auto=format&fit=crop&w=800&q=80",
@@ -13,6 +29,12 @@ const DEFAULT_CATEGORY_IMAGES = {
   default: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80"
 };
 
+// ====================================================================================================
+// FUNGSI: getLocalHeuristicInsight (FALLBACK WAWASAN CEPAT)
+// PENJELASAN:
+// Menghasilkan wawasan budaya dan tips wisatawan secara instan (0 ms latency) saat kartu diperluas,
+// sehingga pengguna langsung melihat informasi lengkap tanpa harus menunggu request AI selesai.
+// ====================================================================================================
 const getLocalHeuristicInsight = (nama, kecamatan, kategori, deskripsi_singkat) => {
   const n = (nama || '').toLowerCase();
   const k = (kategori || '').toLowerCase();
@@ -57,19 +79,30 @@ const getLocalHeuristicInsight = (nama, kecamatan, kategori, deskripsi_singkat) 
 };
 
 const DestinationCard = ({ dest, isUmkm }) => {
+  // State untuk membuka/menutup accordion detail
   const [isExpanded, setIsExpanded] = useState(false);
+  // State untuk menyimpan wawasan budaya dan tips dari AI
   const [aiInsight, setAiInsight] = useState(null);
+  // State indikator saat request AI sedang berlangsung di background
   const [loadingAI, setLoadingAI] = useState(false);
+  
   const navigate = useNavigate();
   const location = useLocation();
   const categoryKey = (dest.kategori || '').toLowerCase();
 
+  // Memilih gambar: jika URL gambar kosong atau broken, gunakan gambar kategori default yang estetik
   let displayImage = dest.gambar_url;
   if (!displayImage || displayImage.includes('photo-1549317661-bd32c8ce0db2') || displayImage.includes('photo-1572252009286') || displayImage.includes('photo-1606744888344') || displayImage.includes('photo-1584100936595')) {
     displayImage = DEFAULT_CATEGORY_IMAGES[categoryKey] || DEFAULT_CATEGORY_IMAGES.default;
   }
 
-  // Load Insight on expand
+  // ====================================================================================================
+  // EFFECT: Pengambilan Wawasan AI saat Kartu Dibuka (Expand)
+  // PENJELASAN:
+  // 1. Mengisi langsung 'aiInsight' dengan generator heuristik lokal agar UI langsung penuh informatif.
+  // 2. Jika destinasi memiliki ID database, sistem memanggil API Gemini secara asinkron di latar belakang
+  //    untuk memperbarui narasi dengan detail paling mutakhir.
+  // ====================================================================================================
   useEffect(() => {
     if (isExpanded && !aiInsight) {
       const initialInsight = getLocalHeuristicInsight(dest.nama, dest.kecamatan, dest.kategori, dest.deskripsi_singkat);
@@ -84,7 +117,7 @@ const DestinationCard = ({ dest, isUmkm }) => {
             }
           })
           .catch(() => {
-            // Keep heuristic fallback
+            // Tetap menggunakan wawasan heuristik jika API offline
           })
           .finally(() => {
             setLoadingAI(false);
@@ -93,6 +126,12 @@ const DestinationCard = ({ dest, isUmkm }) => {
     }
   }, [isExpanded, dest.id]);
 
+  // ====================================================================================================
+  // HANDLER: handleNavigateToExplore
+  // PENJELASAN:
+  // Jika pengguna sudah berada di halaman '/explore', kirimkan custom event untuk memfokuskan peta.
+  // Jika sedang di Beranda ('/'), arahkan (navigate) ke halaman '/explore' sambil membawa state target lokasi.
+  // ====================================================================================================
   const handleNavigateToExplore = (e) => {
     if (e) e.stopPropagation();
 
@@ -104,6 +143,7 @@ const DestinationCard = ({ dest, isUmkm }) => {
     }
   };
 
+  // HELPER: Membersihkan format Plus Code agar tampilan alamat tetap rapi dan ringkas
   const cleanAddressText = (rawAddress, kecamatan) => {
     if (!rawAddress) return `Kecamatan ${kecamatan}, Kawasan Danau Toba`;
     let cleaned = rawAddress.replace(/^[A-Z0-9]{4}\+[A-Z0-9]{2,4},\s*/i, '').trim();
@@ -112,11 +152,21 @@ const DestinationCard = ({ dest, isUmkm }) => {
     return cleaned;
   };
 
+  // ====================================================================================================
+  // FUNGSI: parseDetails (REGEX TEXT PARSER)
+  // PENJELASAN:
+  // Membedah teks 'deskripsi_lengkap' yang tersimpan di database untuk mengekstrak bagian:
+  // - Menu Rekomendasi (contoh: "Menu Rekomendasi: Naniarsik Ikan Mas")
+  // - Jam Buka (contoh: "Jam Operasional: 08:00 - 20:00 WIB")
+  // - Estimasi Biaya / HTM (contoh: "Estimasi Biaya: Rp 15.000")
+  // - Fasilitas (contoh: "Fasilitas: Parkir Luas, Toilet, Spot Foto")
+  // - Ulasan Pengunjung
+  // ====================================================================================================
   const parseDetails = (fullText, shortText) => {
     const raw = (fullText || '').trim();
     const short = (shortText || '').trim();
 
-    // Extract Menu Rekomendasi
+    // 1. Ekstraksi Menu Rekomendasi dengan Regular Expression
     let menu = null;
     const menuMatch = raw.match(/Menu Rekomendasi:\s*([^.]+)/i) || raw.match(/Menu:\s*([^.]+)/i);
     if (menuMatch && menuMatch[1]) {
@@ -126,7 +176,7 @@ const DestinationCard = ({ dest, isUmkm }) => {
       }
     }
 
-    // Extract Jam Operasional
+    // 2. Ekstraksi Jam Operasional
     let hours = null;
     const hoursMatch = raw.match(/Jam Operasional:\s*([^.]+)/i) || raw.match(/Jam Buka:\s*([^.]+)/i) || raw.match(/WAKTU OPERASIONAL:\s*([^.]+)/i);
     if (hoursMatch && hoursMatch[1]) {
@@ -136,7 +186,7 @@ const DestinationCard = ({ dest, isUmkm }) => {
       }
     }
 
-    // Extract Estimasi Biaya / HTM / Tarif
+    // 3. Ekstraksi Estimasi Biaya / HTM Tiket
     let price = null;
     const priceMatch = raw.match(/Estimasi (?:Biaya|Harga|Tarif):\s*([^.]+)/i) || raw.match(/(?:Tiket Masuk|HTM|Tarif|Estimasi Biaya):\s*([^.]+)/i);
     if (priceMatch && priceMatch[1]) {
@@ -146,7 +196,7 @@ const DestinationCard = ({ dest, isUmkm }) => {
       }
     }
 
-    // Extract Facilities
+    // 4. Ekstraksi Fasilitas Penunjang menjadi Array Chip
     let facilities = [];
     const facMatch = raw.match(/Fasilitas(?:\s*Umum|\s*Penunjang)?:\s*([^.]+)/i);
     if (facMatch && facMatch[1]) {
@@ -156,7 +206,7 @@ const DestinationCard = ({ dest, isUmkm }) => {
         .filter(f => f && f !== '-' && !['nan', 'none', 'null', 'tidak ada', 'nil'].includes(f.toLowerCase()));
     }
 
-    // Extract Reviews
+    // 5. Ekstraksi Ulasan Pengunjung
     let review = null;
     const revMatch = raw.match(/Ulasan(?:\s*Awal)?:\s*"([^"]+)"/i) || raw.match(/Ulasan(?:\s*Awal)?:\s*([^.]+)/i);
     if (revMatch && revMatch[1]) {
@@ -166,13 +216,14 @@ const DestinationCard = ({ dest, isUmkm }) => {
       }
     }
 
-    // Check-in / Check-out for hotel
+    // 6. Ekstraksi Check-in / Check-out untuk Kategori Hotel / Penginapan
     let checkInOut = null;
     const checkMatch = raw.match(/Check-in:\s*([^,]+),\s*Check-out:\s*([^.]+)/i);
     if (checkMatch && checkMatch[1] && checkMatch[2]) {
       checkInOut = `Check-in: ${checkMatch[1].trim()} | Check-out: ${checkMatch[2].trim()}`;
     }
 
+    // Menentukan apakah ada deskripsi naratif panjang yang berbeda dari deskripsi singkat
     let distinctDesc = null;
     if (raw && !raw.startsWith('Menu Rekomendasi:') && !raw.startsWith('Fasilitas:') && !raw.startsWith('Tiket Masuk:') && !raw.startsWith('Rute:')) {
       if (raw !== short && raw.length > 20) {
@@ -188,23 +239,28 @@ const DestinationCard = ({ dest, isUmkm }) => {
 
   return (
     <div className={`card destination-card ${isUmkm ? 'umkm-card' : ''} ${isExpanded ? 'is-card-expanded' : ''}`}>
+      {/* Gambar Thumbnail Kartu */}
       <div className="card-image-wrapper">
         <img 
           src={displayImage} 
           alt={dest.nama} 
           className="card-image"
           onError={(e) => {
+            // Fallback jika URL gambar rusak saat dimuat browser
             e.target.src = DEFAULT_CATEGORY_IMAGES[categoryKey] || DEFAULT_CATEGORY_IMAGES.default;
           }} 
         />
+        {/* Badge Pengenal UMKM Lokal */}
         {isUmkm && <span className="badge-umkm">Recommended UMKM</span>}
       </div>
 
+      {/* Badan Konten Kartu */}
       <div className="card-content">
         <div className="card-header">
           <h3 className="card-title">{dest.nama}</h3>
         </div>
 
+        {/* Metadata: Kecamatan & Rating */}
         <div className="card-meta">
           <span className="meta-item">
             <Navigation size={14} />
@@ -219,10 +275,10 @@ const DestinationCard = ({ dest, isUmkm }) => {
         <p className="card-description">{dest.deskripsi_singkat}</p>
         <p className="card-address">{formattedAddress}</p>
 
-        {/* INLINE EXPANDED DETAIL PANEL (CLEAN & EDITORIAL CONCISE FORMAT) */}
+        {/* PANEL ACCORDION DETAIL YANG KAYA KONTEKS */}
         {isExpanded && (
           <div className="inline-detail-panel fade-in">
-            {/* DESTINATION INSIGHTS BOX */}
+            {/* KOTAK WAWASAN & TIPS BUDAYA */}
             <div className="inline-ai-insight-box">
               <div className="ai-insight-header">
                 <span className="ai-insight-badge">
@@ -264,7 +320,7 @@ const DestinationCard = ({ dest, isUmkm }) => {
               )}
             </div>
 
-            {/* ADDITIONAL INFORMATION */}
+            {/* INFORMASI TAMBAHAN (JIKA TERSEDIA) */}
             {parsed.distinctDesc && (
               <div className="inline-section">
                 <h4 className="inline-section-title">Informasi Lengkap</h4>
@@ -340,7 +396,7 @@ const DestinationCard = ({ dest, isUmkm }) => {
           </div>
         )}
 
-        {/* Card Action Buttons */}
+        {/* Tombol Aksi Bawah Kartu */}
         <div className="card-actions">
           <button 
             type="button" 

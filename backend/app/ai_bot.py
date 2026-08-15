@@ -1,12 +1,14 @@
 # ====================================================================================================
 # FILE: backend/app/ai_bot.py
-# TUJUAN:
-# File ini berfungsi sebagai otak kecerdasan buatan (AI Engine) TobaRoute.
-# Menggunakan Google Gemini 3.1 Flash Lite yang dipadukan dengan basis pengetahuan (Knowledge Base)
-# resmi Danau Toba (UNESCO Global Geopark) untuk:
-# 1. Menghasilkan narasi rekomendasi perjalanan cerdas berbasis RAG (Retrieval-Augmented Generation).
-# 2. Melayani obrolan interaktif (Chatbot) pemandu wisata.
-# 3. Menghasilkan wawasan detail (storytelling, must-try, tips) untuk setiap kartu destinasi & UMKM.
+# TUJUAN & PENJELASAN ARSITEKTUR:
+# File ini berfungsi sebagai modul kecerdasan buatan (AI Engine) TobaRoute.
+# Menggunakan Google GenAI SDK dengan model 'gemini-3.1-flash-lite'.
+#
+# BAGAIMANA SISTEM RAG (RETRIEVAL-AUGMENTED GENERATION) BEKERJA DI FILE INI?
+# 1. RETRIEVAL (Pengambilan Data): Database SQL & Vektor Pinecone mencari entitas yang relevan secara geografis.
+# 2. AUGMENTATION (Pengayaan Konteks): Data destinasi terverifikasi disuntikkan ke dalam 'DANAU_TOBA_KNOWLEDGE_BASE'.
+# 3. GENERATION (Pembuatan Respon): Model LLM Gemini menyusun ulasan naratif yang elegan, akurat, dan
+#    bebas dari halusinasi (AI tidak akan mengarang nama tempat yang tidak ada di Danau Toba).
 # ====================================================================================================
 
 import os
@@ -24,11 +26,15 @@ load_dotenv(dotenv_path=dotenv_path, override=False)
 api_key = os.getenv("GEMINI_API_KEY")
 
 # Inisialisasi klien resmi Google GenAI SDK
+# Klien ini mengelola koneksi aman (HTTPS) ke server Google AI untuk inferensi model
 client = genai.Client(api_key=api_key)
 
 # ====================================================================================================
 # BASIS PENGETAHUAN ENSIKLOPEDIA RESMI DANAU TOBA (UNESCO GLOBAL GEOPARK)
-# Digunakan sebagai referensi fakta geologi, sejarah kebudayaan Batak, kuliner, dan transportasi.
+# PENJELASAN:
+# Teks referensi ini bertindak sebagai "Ground Truth" (Kebenaran Faktual) bagi model LLM.
+# Memberikan pemahaman mendalam tentang geologi supervolcano, sejarah marga Batak, seni tenun Ulos,
+# ukiran Gorga Rumah Bolon, gastronomi rempah andaliman, dan akses pelabuhan kapal feri penyeberangan.
 # ====================================================================================================
 DANAU_TOBA_KNOWLEDGE_BASE = """
 === ENSIKLOPEDIA & PENGETAHUAN RESMI KAWASAN DANAU TOBA (UNESCO GLOBAL GEOPARK) ===
@@ -62,9 +68,9 @@ DANAU_TOBA_KNOWLEDGE_BASE = """
 
 # ====================================================================================================
 # FUNGSI: format_fair_route_to_text
-# TUJUAN:
-# Mengonversi daftar objek destinasi dan rekomendasi UMKM dari database/Pinecone
-# menjadi teks yang rapi dan terstruktur agar dapat disuntikkan ke dalam prompt LLM.
+# PENJELASAN:
+# Mengonversi objek destinasi dan UMKM dari database menjadi teks terformat yang siap dibaca oleh model AI.
+# Menjamin data yang diterima oleh LLM mencakup nama tempat, kecamatan, alamat presisi, rating, dan ulasan.
 # ====================================================================================================
 def format_fair_route_to_text(fair_route_data: dict) -> str:
     dest_utama = fair_route_data.get("destinasi_utama", [])
@@ -73,6 +79,7 @@ def format_fair_route_to_text(fair_route_data: dict) -> str:
     text = "=== DATA DESTINASI UTAMA (REKOMENDASI SISTEM GEOFENCE) ===\n"
     if dest_utama:
         for idx, d in enumerate(dest_utama, 1):
+            # Mendukung akses atribut objek SQLAlchemy (getattr) maupun dictionary (get)
             nama = getattr(d, 'nama', '') if hasattr(d, 'nama') else d.get('nama', '')
             kecamatan = getattr(d, 'kecamatan', '') if hasattr(d, 'kecamatan') else d.get('kecamatan', '')
             nama_jalan = getattr(d, 'nama_jalan', '') if hasattr(d, 'nama_jalan') else d.get('nama_jalan', '')
@@ -100,9 +107,11 @@ def format_fair_route_to_text(fair_route_data: dict) -> str:
 
 # ====================================================================================================
 # FUNGSI: generate_tourist_response
-# TUJUAN:
-# Menghasilkan narasi rekomendasi perjalanan berstandar Senior Travel Concierge (RAG).
-# Menggabungkan pertanyaan wisatawan, basis pengetahuan, dan hasil pencarian vektor.
+# PENJELASAN TAHAPAN PROMPT ENGINEERING (RAG CONCIERGE):
+# 1. Menggabungkan pertanyaan user, ensiklopedia Toba, dan data hasil geofencing.
+# 2. Menginstruksikan LLM bertindak sebagai kurator senior resmi Danau Toba.
+# 3. Menerapkan 3 pilar narasi: Rangkaian Wisata Utama, Pasangan UMKM/Kuliner Sekitar, dan Tips Praktis.
+# 4. Menegakkan aturan integritas ketat (Anti-Halusinasi).
 # ====================================================================================================
 def generate_tourist_response(user_query: str, fair_route_data: dict) -> str:
     formatted_data = format_fair_route_to_text(fair_route_data)
@@ -133,20 +142,22 @@ PANDUAN PENULISAN & GAYA BAHASA PROFESIONAL:
 """
     
     try:
+        # Memanggil model Google Gemini 3.1 Flash Lite
         response = client.models.generate_content(
             model='gemini-3.1-flash-lite',
             contents=prompt_konteks,
         )
         return response.text
     except Exception as e:
+        # Fallback ramah jika server Google AI kehabisan kuota / offline
         print(f"[AI Error] Gagal menghubungi Gemini API: {e}")
         return "Horas! Asisten AI TobaRoute sedang memperbarui rute. Silakan jelajahi kartu destinasi dan peta navigasi interaktif di bawah ini untuk memulai perjalanan Anda."
 
 # ====================================================================================================
 # FUNGSI: chat_with_bot
-# TUJUAN:
-# Menangani obrolan interaktif real-time (tanya-jawab) antara wisatawan dan asisten AI.
-# Menyimpan riwayat percakapan agar konteks tanya-jawab tetap berkesinambungan.
+# PENJELASAN MULTI-TURN CONVERSATION:
+# Menyusun riwayat percakapan sebelumnya ke dalam format teks bertingkat ("Wisatawan: ..." / "TobaRoute AI: ...")
+# sehingga model AI memahami konteks kalimat sebelum menjawab pertanyaan berikutnya.
 # ====================================================================================================
 def chat_with_bot(user_message: str, history: list) -> str:
     system_instruction = f"""
@@ -163,6 +174,7 @@ ENSIKLOPEDIA KAWASAN:
 {DANAU_TOBA_KNOWLEDGE_BASE}
 """
     
+    # Rangkai seluruh riwayat obrolan masa lalu
     chat_history_text = system_instruction + "\n\n"
     for msg in history:
         role_name = "Wisatawan" if msg["role"] == "user" else "TobaRoute AI"
@@ -182,15 +194,16 @@ ENSIKLOPEDIA KAWASAN:
 
 # ====================================================================================================
 # FUNGSI: generate_heuristic_insight
-# TUJUAN:
-# Fallback lokal cerdas jika koneksi internet terputus atau API Gemini sedang sibuk.
-# Menghasilkan wawasan budaya otomatis berdasarkan kata kunci kategori dan nama tempat.
+# PENJELASAN ALGORITMA HEURISTIK LOKAL (ZERO-LATENCY FALLBACK):
+# Fungsi ini mencocokkan kata kunci kategori (seperti 'ulos', 'gula aren', 'kuliner', 'penginapan')
+# dan menghasilkan ulasan mendalam lokal secara instan tanpa membutuhkan koneksi internet.
 # ====================================================================================================
 def generate_heuristic_insight(nama: str, kecamatan: str, kategori: str, deskripsi_singkat: str) -> dict:
     nama_lower = (nama or "").lower()
     kat_lower = (kategori or "").lower()
     desk_lower = (deskripsi_singkat or "").lower()
 
+    # Deteksi produk Tenun Ulos & Kerajinan Batak
     if any(k in nama_lower or k in kat_lower or k in desk_lower for k in ["ulos", "tenun", "songket"]):
         return {
             "storytelling": f"Sentra kerajinan tangan di {kecamatan} ini melestarikan teknik tenun tradisional Batak secara turun-temurun, di mana setiap helai kain Ulos ditenun dengan teliti dan sarat makna berkat serta doa leluhur.",
@@ -198,6 +211,7 @@ def generate_heuristic_insight(nama: str, kecamatan: str, kategori: str, deskrip
             "travel_tips": "Disarankan berkunjung pada pagi atau siang hari saat pengrajin aktif menenun. Anda juga dapat berkonsultasi mengenai makna filosofis setiap motif ulos.",
             "highlight_tags": ["Tenun Tangan Asli", "Pemberdayaan UMKM", "Warisan Budaya Batak"]
         }
+    # Deteksi produk Gula Aren & Olahan Alami Perbukitan
     elif any(k in nama_lower or k in desk_lower for k in ["gula", "aren", "palm sugar", "nira"]):
         return {
             "storytelling": f"Diproduksi secara murni dari sadapan pohon enau alami perbukitan {kecamatan} tanpa bahan kimia pengawet, menghasilkan cita rasa manis karamel legit yang harum khas tanah vulkanik Danau Toba.",
@@ -205,6 +219,7 @@ def generate_heuristic_insight(nama: str, kecamatan: str, kategori: str, deskrip
             "travel_tips": "Simpan di tempat sejuk dan kedap udara agar keaslian rasa dan aroma legitnya tetap terjaga prima.",
             "highlight_tags": ["Nira Aren Murni", "Tanpa Pengawet", "Produksi Rumahan Warga"]
         }
+    # Deteksi Kuliner & Warung Tradisional
     elif any(k in kat_lower or k in nama_lower for k in ["kuliner", "makan", "resto", "kopi", "cafe", "warung"]):
         return {
             "storytelling": f"Destinasi kuliner autentik di kawasan {kecamatan} yang menghidangkan kekayaan bumbu rempah tradisional khas Batak Toba (seperti andaliman, asam cikala, dan lokio) yang dimasak segar setiap hari.",
@@ -212,6 +227,7 @@ def generate_heuristic_insight(nama: str, kecamatan: str, kategori: str, deskrip
             "travel_tips": "Waktu terbaik berkunjung adalah menjelang jam makan siang (11.30 - 13.30 WIB) untuk menikmati sajian yang baru matang.",
             "highlight_tags": ["Rempah Andaliman", "Kuliner Tradisional", "Bahan Segar Lokal"]
         }
+    # Deteksi Penginapan & Homestay
     elif any(k in kat_lower or k in nama_lower for k in ["penginapan", "hotel", "homestay", "resort"]):
         return {
             "storytelling": f"Akomodasi berkonsep ramah keluarga di {kecamatan} yang menawarkan suasana menginap tenang dengan udara sejuk dan panorama asri bentang kaldera Danau Toba.",
@@ -219,6 +235,7 @@ def generate_heuristic_insight(nama: str, kecamatan: str, kategori: str, deskrip
             "travel_tips": "Lakukan konfirmasi pemesanan terlebih dahulu terutama saat akhir pekan atau musim liburan.",
             "highlight_tags": ["Udara Sejuk", "Suasana Tenang", "Akses Strategis"]
         }
+    # Default untuk Wisata Alam & Geosite
     else:
         return {
             "storytelling": f"Destinasi unggulan di wilayah {kecamatan} yang menyuguhkan keindahan panorama alam kaldera Danau Toba (UNESCO Global Geopark) dengan suasana damai yang sangat asri.",
@@ -229,9 +246,9 @@ def generate_heuristic_insight(nama: str, kecamatan: str, kategori: str, deskrip
 
 # ====================================================================================================
 # FUNGSI: generate_destination_ai_insight
-# TUJUAN:
-# Menghasilkan wawasan detail (storytelling, must-try, tips, tags) untuk kartu destinasi/UMKM
-# menggunakan model Google Gemini AI dalam format JSON murni.
+# PENJELASAN PARSING JSON RESPON DARI LLM:
+# Menginstruksikan model Gemini menghasilkan output JSON terstruktur murni (storytelling, must_try, travel_tips, highlight_tags).
+# Menghapus blok markdown backtick (```json ... ```) jika model menyertakannya, lalu mem-parsing teks menjadi dictionary Python.
 # ====================================================================================================
 def generate_destination_ai_insight(nama: str, kecamatan: str, kategori: str, deskripsi_singkat: str, nama_jalan: str = "") -> dict:
     prompt = f"""
@@ -265,6 +282,7 @@ Format output HARUS murni JSON valid (tanpa markdown backtick ```json, murni raw
             contents=prompt,
         )
         text = response.text.strip()
+        # Sanitasi pembungkus Markdown jika ada
         if text.startswith("```json"):
             text = text[7:]
         if text.startswith("```"):
@@ -272,10 +290,13 @@ Format output HARUS murni JSON valid (tanpa markdown backtick ```json, murni raw
         if text.endswith("```"):
             text = text[:-3]
         text = text.strip()
+        
+        # Konversi JSON string ke Python dictionary
         data = json.loads(text)
         if isinstance(data, dict) and "storytelling" in data:
             return data
         return generate_heuristic_insight(nama, kecamatan, kategori, deskripsi_singkat)
     except Exception as e:
         print(f"[AI Insight Error] {e}")
+        # Fallback ke generator heuristik jika terjadi kegagalan jaringan
         return generate_heuristic_insight(nama, kecamatan, kategori, deskripsi_singkat)
