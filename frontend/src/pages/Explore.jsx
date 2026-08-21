@@ -42,32 +42,40 @@ const formatDescription = (desc) => {
 };
 
 // Verified Crisp SVG Marker Icons (Zero Broken Image Risk)
-const createExplorePin = (category = '', isSelected = false) => {
+// Verified Crisp SVG Marker Icons with Optional Route Sequence Numbering
+const createExplorePin = (category = '', isSelected = false, orderNumber = null) => {
   const cat = String(category).toLowerCase();
   let primaryColor = '#0284c7';
   let accentLight = '#38bdf8';
-  let iconSvg = '<circle cx="16" cy="15" r="5" fill="#0284c7"/>';
+  let iconSvg = orderNumber 
+    ? `<text x="16" y="19" text-anchor="middle" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="900" fill="#0284c7">${orderNumber}</text>`
+    : '<circle cx="16" cy="15" r="5" fill="#0284c7"/>';
 
   if (cat.includes('kuliner') || cat.includes('makan') || cat.includes('resto') || cat.includes('cafe')) {
     primaryColor = '#ea580c';
     accentLight = '#fb923c';
-    iconSvg = '<path d="M12 11v7M14 11v7M13 11v7M18 11v3a2 2 0 0 1-2 2v3" stroke="#ea580c" stroke-width="1.8" stroke-linecap="round" fill="none"/>';
+    if (!orderNumber) iconSvg = '<path d="M12 11v7M14 11v7M13 11v7M18 11v3a2 2 0 0 1-2 2v3" stroke="#ea580c" stroke-width="1.8" stroke-linecap="round" fill="none"/>';
+    else iconSvg = `<text x="16" y="19" text-anchor="middle" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="900" fill="#ea580c">${orderNumber}</text>`;
   } else if (cat.includes('umkm') || cat.includes('oleh') || cat.includes('ulos') || cat.includes('toko') || cat.includes('pasar')) {
     primaryColor = '#16a34a';
     accentLight = '#4ade80';
-    iconSvg = '<path d="M11 13h10v6H11z M13 13a3 3 0 0 1 6 0" stroke="#16a34a" stroke-width="1.6" fill="none"/>';
+    if (!orderNumber) iconSvg = '<path d="M11 13h10v6H11z M13 13a3 3 0 0 1 6 0" stroke="#16a34a" stroke-width="1.6" fill="none"/>';
+    else iconSvg = `<text x="16" y="19" text-anchor="middle" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="900" fill="#16a34a">${orderNumber}</text>`;
   } else if (cat.includes('penginapan') || cat.includes('hotel') || cat.includes('homestay')) {
     primaryColor = '#d97706';
     accentLight = '#fbbf24';
-    iconSvg = '<path d="M10 18v-5h12v5 M10 15h12 M12 11h2v2h-2z" stroke="#d97706" stroke-width="1.6" fill="none"/>';
+    if (!orderNumber) iconSvg = '<path d="M10 18v-5h12v5 M10 15h12 M12 11h2v2h-2z" stroke="#d97706" stroke-width="1.6" fill="none"/>';
+    else iconSvg = `<text x="16" y="19" text-anchor="middle" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="900" fill="#d97706">${orderNumber}</text>`;
   } else if (cat.includes('transportasi') || cat.includes('mobil') || cat.includes('kapal')) {
     primaryColor = '#475569';
     accentLight = '#94a3b8';
-    iconSvg = '<path d="M11 12h10l-1 6H12z M13 18v2 M19 18v2" stroke="#475569" stroke-width="1.6" fill="none"/>';
+    if (!orderNumber) iconSvg = '<path d="M11 12h10l-1 6H12z M13 18v2 M19 18v2" stroke="#475569" stroke-width="1.6" fill="none"/>';
+    else iconSvg = `<text x="16" y="19" text-anchor="middle" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="900" fill="#475569">${orderNumber}</text>`;
   } else {
     primaryColor = '#0284c7';
     accentLight = '#38bdf8';
-    iconSvg = '<path d="M16 10l5 9H11z" fill="#0284c7"/>';
+    if (!orderNumber) iconSvg = '<path d="M16 10l5 9H11z" fill="#0284c7"/>';
+    else iconSvg = `<text x="16" y="19" text-anchor="middle" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="900" fill="#0284c7">${orderNumber}</text>`;
   }
 
   const borderStroke = isSelected ? '#fbbf24' : '#ffffff';
@@ -84,7 +92,7 @@ const createExplorePin = (category = '', isSelected = false) => {
       cursor: pointer;
       filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25));
       transition: transform 0.2s ease;
-      ${isSelected ? 'transform: scale(1.18);' : ''}
+      ${isSelected ? 'transform: scale(1.22);' : ''}
     ">
       <svg viewBox="0 0 32 42" width="32" height="42" style="overflow: visible;">
         <defs>
@@ -190,8 +198,8 @@ const userGpsIcon = L.divIcon({
   popupAnchor: [0, -22]
 });
 
-const getMarkerIconByCategory = (category = '') => {
-  return createExplorePin(category, false);
+const getMarkerIconByCategory = (category = '', isSelected = false, orderNumber = null) => {
+  return createExplorePin(category, isSelected, orderNumber);
 };
 
 // Helper component to trigger map flyTo dynamically
@@ -597,17 +605,36 @@ const Explore = () => {
         }
       }
 
-      // Jika rekomendasi tempat ditemukan dari backend, tampilkan di peta dan arahkan navigasi ke destinasi utama
+      // Jika rekomendasi tempat ditemukan dari backend, tampilkan di peta dan susun rute jalan raya berurutan
       if (recommendedPlaces.length > 0) {
         setDisplayedMarkers(recommendedPlaces);
         setActiveCategoryFilter('all');
-        highlightLocationOnMap(recommendedPlaces[0]);
+        setActiveTarget(recommendedPlaces[0]);
+
+        const validCoords = recommendedPlaces
+          .filter(p => p.latitude && p.longitude)
+          .map(p => [parseFloat(p.latitude), parseFloat(p.longitude)]);
+
+        if (validCoords.length >= 2) {
+          const waypoints = userLocation ? [userLocation, ...validCoords] : validCoords;
+          setRouteWaypoints(waypoints);
+          setMapCenter(validCoords[0]);
+          setMapZoom(14);
+        } else if (validCoords.length === 1) {
+          highlightLocationOnMap(recommendedPlaces[0]);
+        }
       } else if (effectiveKecamatan && (lowerQ.includes('wisata') || lowerQ.includes('makan') || lowerQ.includes('kuliner') || lowerQ.includes('umkm') || lowerQ.includes('hotel'))) {
         const fallbackKec = destinations.filter(d => (d.kecamatan || '').toLowerCase() === effectiveKecamatan || (d.kecamatan || '').toLowerCase().includes(effectiveKecamatan));
         if (fallbackKec.length > 0) {
-          setDisplayedMarkers(fallbackKec.slice(0, 8));
+          setDisplayedMarkers(fallbackKec.slice(0, 6));
           recommendedPlaces = fallbackKec.slice(0, 4);
-          highlightLocationOnMap(fallbackKec[0]);
+          setActiveTarget(fallbackKec[0]);
+          const validCoords = fallbackKec.slice(0, 4)
+            .filter(p => p.latitude && p.longitude)
+            .map(p => [parseFloat(p.latitude), parseFloat(p.longitude)]);
+          if (validCoords.length >= 2) {
+            setRouteWaypoints(userLocation ? [userLocation, ...validCoords] : validCoords);
+          }
         }
       }
 
@@ -621,13 +648,33 @@ const Explore = () => {
       ]);
     } catch (err) {
       console.error("Explore Search Error:", err);
-      // Fallback ramah jika terjadi timeout jaringan
+      // Fallback cerdas berbasis data lokal jika server backend belum aktif
+      let localMatches = [];
+      if (destinations && destinations.length > 0) {
+        const keywords = queryText.toLowerCase().split(/\s+/).filter(k => k.length >= 3);
+        localMatches = destinations.filter(d => {
+          const text = `${d.nama} ${d.deskripsi_singkat || ''} ${d.kategori || ''} ${d.kecamatan || ''}`.toLowerCase();
+          return keywords.some(k => text.includes(k));
+        }).slice(0, 6);
+      }
+
+      let fallbackText = '';
+      if (localMatches.length > 0) {
+        setDisplayedMarkers(localMatches);
+        setActiveCategoryFilter('all');
+        highlightLocationOnMap(localMatches[0]);
+        const listText = localMatches.map(p => `- **${p.nama}** (${p.kecamatan || 'Kawasan Toba'}): ${p.deskripsi_singkat || p.kategori}`).join('\n');
+        fallbackText = `Horas! Berikut adalah destinasi & kuliner yang cocok dengan pencarian **"${queryText}"**:\n\n${listText}\n\n*Pin lokasi di peta interaktif telah disesuaikan.*`;
+      } else {
+        fallbackText = `Horas! Mohon pastikan server backend FastAPI Anda telah berjalan di port 8080 (jalankan perintah: \`uvicorn app.main:app --port 8080 --reload\` di folder backend atau jalankan file \`run_tobaguide.bat\`).`;
+      }
+
       setChatMessages([
         ...updatedMessages,
         {
           role: 'model',
-          text: 'Horas! Asisten TobaRoute AI sedang memperbarui koneksi ke server. Silakan ajukan pertanyaan kembali atau pilih pin lokasi di peta interaktif.',
-          recommendedPlaces: []
+          text: fallbackText,
+          recommendedPlaces: localMatches
         }
       ]);
     } finally {
@@ -977,7 +1024,8 @@ const Explore = () => {
             if (activeTarget && (activeTarget.id === dest.id || activeTarget.nama.trim().toLowerCase() === dest.nama.trim().toLowerCase())) {
               return null;
             }
-            const icon = getMarkerIconByCategory(dest.kategori);
+            const orderNum = filteredVisibleMarkers.length <= 8 ? idx + 1 : null;
+            const icon = getMarkerIconByCategory(dest.kategori, false, orderNum);
 
             return (
               <Marker 

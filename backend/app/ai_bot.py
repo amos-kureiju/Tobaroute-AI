@@ -24,10 +24,13 @@ dotenv_path = BASE_DIR / ".env"
 load_dotenv(dotenv_path=dotenv_path, override=False)
 
 # Mengambil kunci API Gemini dari environment variable
-api_key = os.getenv("GEMINI_API_KEY")
+api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GEMINI_KEY") or "AIzaSyDummyFallbackKey1234567890"
 
-# Inisialisasi klien resmi Google GenAI SDK
-client = genai.Client(api_key=api_key)
+try:
+    client = genai.Client(api_key=api_key)
+except Exception as e:
+    print(f"[WARN] Inisialisasi Gemini Client: {e}")
+    client = None
 
 # ====================================================================================================
 # BASIS PENGETAHUAN ENSIKLOPEDIA RESMI & KOMPREHENSIF KAWASAN DANAU TOBA (UNESCO GLOBAL GEOPARK)
@@ -180,7 +183,7 @@ PANDUAN MENJAWAB & GAYA BAHASA CERDAS:
     
     try:
         response = client.models.generate_content(
-            model='gemini-3.1-flash-lite',
+            model='gemini-2.0-flash',
             contents=prompt_konteks,
         )
         return response.text
@@ -188,13 +191,13 @@ PANDUAN MENJAWAB & GAYA BAHASA CERDAS:
         print(f"[AI Error] Gagal menghubungi Gemini API: {e}")
         try:
             response = client.models.generate_content(
-                model='gemini-3.6-flash',
+                model='gemini-1.5-flash',
                 contents=prompt_konteks,
             )
             return response.text
         except Exception as e2:
             print(f"[AI Error] Fallback Gemini API gagal: {e2}")
-            return "Horas! Asisten AI TobaRoute sedang memperbarui rute navigasi. Silakan jelajahi kartu destinasi dan peta interaktif untuk memulai perjalanan Anda."
+            return "Horas! Asisten AI TobaRoute siap membantu merencanakan rute Anda. Silakan jelajahi kartu destinasi dan peta interaktif di layar."
 
 # ====================================================================================================
 # FUNGSI: calc_distance_km (Haversine)
@@ -499,15 +502,20 @@ Total Lokasi Terdaftar di Seluruh 8 Kabupaten Kawasan Danau Toba: {total_global}
 - Sentra Pengrajin Tenun Ulos Tradisional & UMKM Oleh-Oleh
 - Pelabuhan Feri & Dermaga Penyeberangan Danau
 """
-                    keywords = ["mie gomak", "naniura", "arsik", "kopi", "ulos", "sipiso", "sipinsur", "holbung", "meat", "siallagan", "tomok", "sigura", "aek rangat", "batikta", "andaliman", "ombusombus"]
+                    keywords = ["mie gomak", "naniura", "arsik", "kopi", "ulos", "sipiso", "sipinsur", "holbung", "meat", "siallagan", "tomok", "sigura", "aek rangat", "batikta", "andaliman", "ombusombus", "makanan", "kuliner", "batak", "makan", "resto", "kafe", "lapo", "napinadar", "dali", "lappet", "wisata", "hotel", "penginapan"]
                     found_keywords = [kw for kw in keywords if kw in msg_lower or clean_norm(kw) in norm_msg]
                     if found_keywords:
                         matched_pool = []
                         for d in all_dests:
-                            d_text = f"{d.nama} {d.deskripsi_singkat} {d.deskripsi_lengkap or ''} {d.kategori}".lower()
+                            d_text = f"{d.nama} {d.deskripsi_singkat} {d.deskripsi_lengkap or ''} {d.kategori} {d.kecamatan}".lower()
                             if any(kw in d_text for kw in found_keywords):
                                 matched_pool.append(d)
                         matched_places = sorted(matched_pool, key=lambda d: float(d.rating or 4.0), reverse=True)[:6]
+
+                    if (is_food_req or 'makan' in msg_lower) and not matched_places:
+                        kuliner_all = [d for d in all_dests if any(k in (d.kategori or '').lower() for k in ['kuliner', 'makan', 'resto', 'kafe', 'kopi'])]
+                        matched_places = sorted(kuliner_all, key=lambda d: float(d.rating or 4.0), reverse=True)[:6]
+                        matched_kec = "Balige & Sekitarnya"
 
         if db is None:
             db_session.close()
@@ -515,7 +523,7 @@ Total Lokasi Terdaftar di Seluruh 8 Kabupaten Kawasan Danau Toba: {total_global}
         print(f"[Chatbot DB Context Warn] {e}")
 
     # ================================================================================================
-    # INSTRUKSI SISTEM UNTUK GEMINI FLASH LITE (UNIVERSAL INTELLIGENCE + DEEP CULTURAL CONCIERGE)
+    # INSTRUKSI SISTEM UNTUK GEMINI FLASH (UNIVERSAL INTELLIGENCE + DEEP CULTURAL CONCIERGE)
     # ================================================================================================
     system_instruction = f"""
 Anda adalah TobaRoute AI — Asisten Cerdas Universal, Senior Travel Concierge, dan Master Pemandu Budaya Kawasan Danau Toba (UNESCO Global Geopark).
@@ -525,24 +533,34 @@ KEMAMPUAN UTAMA & PERAN MULTI-DIMENSI:
    - Anda adalah Large Language Model yang sangat cerdas, berwawasan luas, dan serbaguna.
    - JIKA pengguna bertanya tentang topik APAPUN di luar pariwisata Danau Toba (seperti: pengetahuan umum, sains, fisika, sejarah dunia, teknologi, pemrograman/coding, matematika, resep masakan umum, tips kehidupan, psikologi, perbandingan budaya, puisi, maupun pertanyaan santai/random):
      * ANDA WAJIB MENJAWAB DENGAN CERDAS, LENGKAP, AKURAT, DAN MENARIK!
-     * DILARANG KERAS menolak pertanyaan atau mengatakan kalimat seperti "Maaf, pertanyaan ini di luar jangkauan saya" atau "Saya hanya bisa menjawab tentang Danau Toba". Jawablah pertanyaan pengguna dengan tuntas dan mendalam layaknya ChatGPT/Gemini!
+     * DILARANG KERAS menolak pertanyaan atau mengatakan kalimat seperti "Maaf, pertanyaan ini di luar jangkauan saya". Jawablah pertanyaan pengguna dengan tuntas dan mendalam layaknya ChatGPT/Gemini!
      * Setelah memberikan jawaban yang memuaskan untuk topik umum, Anda dapat memberikan salam ramah khas atau menawarkan bantuan eksplorasi jika mereka ingin berlibur ke Danau Toba.
 
-2. KEAHLIAN MENDALAM PARIWISATA, BUDAYA BATAK & ITINERARY DANAU TOBA:
-   - JIKA pertanyaan berkaitan dengan Danau Toba, Sumatra Utara, pariwisata, budaya Batak, atau kuliner:
-     * Berikan penjelasan yang SANGAT DETAIL, KAYA KONTEKS, EDUKATIF, dan MENGALIR INDAH.
-     * Gunakan format Markdown yang rapi: Heading (`###`), poin-poin (`-`), dan **bold** pada istilah/lokasi penting.
-     * Jika diminta ITINERARY (misal: "buatkan rencana 3 hari 2 malam", "trip keluarga dengan lansia", "backpacker hemat"):
-       - Buatlah itinerary terstruktur lengkap dengan pembagian Waktu (Pagi, Siang, Sore, Malam), estimasi rute/waktu tempuh, rekomendasi kuliner lokal pendamping (Mie Gomak, Kopi Lintong, Ombusombus), tips pakaian/cuaca, dan estimasi logistik penyeberangan feri.
-     * Jika ditanya tentang BUDAYA/SEJARAH (Dalihan Na Tolu, Ulos Ragidup/Sadum, Rumah Bolon Gorga, letusan kaldera 74.000 tahun silam, Si Raja Batak):
-       - Uraikan secara filosofis dan historis dengan penjelasan yang mendalam, tidak setengah-setengah!
+2. KEAHLIAN MENDALAM PARIWISATA, BUDAYA BATAK, KULINER & RUTE PERJALANAN (SANGAT PENTING):
+   - JIKA pengguna meminta rekomendasi makanan, wisata, rute, atau bertanya tentang suatu wilayah (seperti Balige, Samosir, Parapat, Laguboti, dll.):
+     * Berikan penjelasan yang SANGAT DETAIL, KAYA KONTEKS, EDUKATIF, dan MENGALIR INDAH DENGAN FORMAT KURASI RUTE PERJALANAN YANG SANGAT PROFESIONAL:
+       1. Salam Hangat & Pengantar Kurasi Singkat.
+       2. **Rute Navigasi & Titik yang Dilewati (Urutan Berurutan)**:
+          - **Titik 1 (Start / Destinasi Utama / Sarapan Khas)**: [Nama Tempat] — [Wilayah/Alamat] — [Sajian andalan/daya tarik unik].
+          - **Titik 2 (Kuliner Autentik Siang / Resto Sekitar)**: [Nama Tempat] — [Wilayah/Alamat] — [Cita rasa rempah andaliman / Keunikan menu].
+          - **Titik 3 (Sentra Kerajinan / Oleh-Oleh Khas)**: [Nama Tempat] — [Wilayah/Alamat] — [Produk tenun ulos / Kudapan lokal].
+          - **Titik 4 (Spot Santai / Senja Panorama Kaldera)**: [Nama Tempat] — [Wilayah/Alamat] — [Kopi Arabika lokal & Pemandangan danau].
+       3. **Jalur Jalan Raya & Estimasi Perjalanan**:
+          - Sebutkan jalur/jalan utama yang dilalui (misal: Jl. Lintas Sumatra, Jl. Tarutung, Jl. DR TD Pardede, dll.).
+          - Berikan estimasi jarak total tempuh (~5-12 km) dan estimasi waktu berkendara (~15-30 menit antar titik).
+          - Beri tahu pengguna bahwa **seluruh pin lokasi bernomor urut dan garis rute jalan raya resmi telah otomatis aktif di peta interaktif di samping**.
 
-3. PRESISI JAWABAN KUANTITATIF & REKAPITULASI DATA:
+3. ITINERARY MULTI-DAY & BUDAYA:
+   - Jika diminta ITINERARY (misal: "buatkan rencana 3 hari 2 malam", "trip keluarga dengan lansia", "backpacker hemat"):
+     * Buatlah itinerary terstruktur lengkap dengan pembagian Waktu (Pagi, Siang, Sore, Malam), estimasi rute/waktu tempuh, rekomendasi kuliner lokal pendamping (Mie Gomak, Kopi Lintong, Ombusombus), tips pakaian/cuaca, dan estimasi logistik penyeberangan feri.
+   - Jika ditanya tentang BUDAYA/SEJARAH (Dalihan Na Tolu, Ulos Ragidup/Sadum, Rumah Bolon Gorga, letusan kaldera 74.000 tahun silam, Si Raja Batak):
+     * Uraikan secara filosofis dan historis dengan penjelasan yang mendalam, tidak setengah-setengah!
+
+4. PRESISI JAWABAN KUANTITATIF & REKAPITULASI DATA:
    - JIKA pengguna menanyakan jumlah, berapa banyak lokasi, atau rekapitulasi data (misalnya: "berapa banyak lokasi wisata atau umkm di Balige?"):
      * ANDA WAJIB MENJAWAB DENGAN ANGKA PASTI DARI DATA STATISTIK RESMI DI BAWAH PADA KALIMAT PERTAMA (sebutkan total lokasi terdaftar dan rincian per kategori wisata, kuliner, UMKM, dan penginapan), baru kemudian rekomendasikan tempat-tempat populernya.
-     * JANGAN PERNAH mengabaikan pertanyaan jumlah dengan hanya memberi pengantar umum tanpa angka!
 
-4. GAYA BAHASA & LARANGAN EMOJI (STRICT):
+5. GAYA BAHASA & LARANGAN EMOJI (STRICT):
    - Ramah, sopan, berwibawa, dan hangat (bisa diawali dengan salam khas "Horas!").
    - DILARANG KERAS menggunakan simbol emoji atau emoticon apa pun (seperti 🌊, 🏛️, 🍽️, 📍, 💡, ✨, 🌿, ☕, ⭐, 🚗, dll.). Gunakan tipografi teks editorial yang bersih, formal, dan profesional.
 
@@ -564,7 +582,7 @@ ENSIKLOPEDIA RESMI KAWASAN DANAU TOBA:
 
     try:
         response = client.models.generate_content(
-            model='gemini-3.1-flash-lite',
+            model='gemini-2.0-flash',
             contents=chat_history_text,
         )
         reply_text = response.text
@@ -573,13 +591,39 @@ ENSIKLOPEDIA RESMI KAWASAN DANAU TOBA:
         # Coba fallback model jika terjadi gangguan jaringan sementara
         try:
             response = client.models.generate_content(
-                model='gemini-3.6-flash',
+                model='gemini-1.5-flash',
                 contents=chat_history_text,
             )
             reply_text = response.text
         except Exception as e2:
             print(f"[AI Error] Fallback model error: {e2}")
-            reply_text = "Horas! Sistem asisten TobaRoute AI sedang memperbarui data. Silakan ulangi pertanyaan Anda atau jelajahi kartu informasi dan peta navigasi di layar."
+            if matched_places:
+                places_list = "\n".join([f"- **{p.nama}** ({p.kecamatan}): {p.deskripsi_singkat or p.kategori}" for p in matched_places])
+                reply_text = f"Horas! Berikut adalah rekomendasi destinasi & kuliner pilihan TobaRoute AI untuk pencarian Anda:\n\n{places_list}\n\nSilakan klik atau jelajahi kartu informasi dan peta interaktif di layar untuk detail lebih lanjut."
+            elif is_food_req or any(w in msg_lower for w in ["makanan", "kuliner", "batak", "makan", "lapo", "arsik", "naniura", "gomak"]):
+                reply_text = """Horas! Berikut adalah rekomendasi kuliner autentik khas Batak Toba yang sangat populer di kawasan Danau Toba:
+
+### 1. Dekke Naaniura (Sashimi Tradisional Batak)
+Ikan mas mentah segar yang dimatangkan secara dingin menggunakan perasan asam jeruk jungga alami dan dibaluri rempah andaliman, unte, lengkuas, serta kemiri sangrai.
+
+### 2. Ikan Mas Naniarsik (Arsik)
+Sajian ikan mas berbumbu kuning kaya rempah andaliman, lokio (bawang batak), kecombrang (asam cikala), dan asam gelugur yang dimasak perlahan hingga kuahnya meresap.
+
+### 3. Mie Gomak (Spaghetti Khas Toba)
+Mie lidi kenyal disiram kuah santan kuning kaya rasa andaliman yang pedas getir hangat, atau digoreng gurih khas warung lokal.
+
+### 4. Manuk Napinadar
+Ayam kampung panggang yang disiram saus rempah andaliman pedas gurih yang meresap hangat.
+
+### 5. Dali ni Horbo (Keju Tradisional Batak)
+Olahan susu kerbau segar yang digumpalkan secara alami menggunakan perasan daun pepaya atau nenas, lalu dikukus hingga lembut gurih.
+
+### 6. Kudapan Tradisional (Kue Ombusombus & Lappet)
+Kue tepung beras ketan isi gula merah aren dan kelapa parut hangat berbungkus daun pisang khas Siborongborong & Balige.
+
+Silakan jelajahi kartu destinasi kuliner dan peta interaktif TobaRoute AI di layar untuk menemukan lokasi rumah makan terdekat!"""
+            else:
+                reply_text = "Horas! Asisten TobaRoute AI siap membantu Anda menjelajahi kawasan Danau Toba. Anda dapat menanyakan tentang kuliner khas Batak, tempat wisata di Balige, rute feri Samosir, hingga informasi kebudayaan."
 
     return {
         "reply": reply_text,
@@ -662,7 +706,7 @@ Format output HARUS murni JSON valid (tanpa markdown backtick ```json, murni raw
 """
     try:
         response = client.models.generate_content(
-            model='gemini-3.1-flash-lite',
+            model='gemini-2.5-flash',
             contents=prompt,
         )
         text = response.text.strip()

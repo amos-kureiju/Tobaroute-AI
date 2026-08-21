@@ -16,8 +16,10 @@ import Explore from './pages/Explore';
 import About from './pages/About';
 import ItineraryPlanner from './pages/ItineraryPlanner';
 import UmkmMarketplace from './pages/UmkmMarketplace';
+import AIChatbotWidget from './components/AIChatbotWidget';
 
 // Mengimpor halaman & modul khusus Administrator dari folder src/admin
+
 import { 
   AdminLogin, 
   AdminLayout, 
