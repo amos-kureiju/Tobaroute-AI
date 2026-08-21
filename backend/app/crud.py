@@ -118,16 +118,19 @@ def get_pinecone_index():
 # Mengapa Multilingual? Model ini sangat memahami sinonim bahasa Indonesia, istilah lokal Batak (seperti "naniarsik",
 # "ulos", "andaliman", "pantai sejuk"), serta bahasa Inggris sekaligus.
 def get_cohere_embedding(query_user: str):
+    if not settings.COHERE_API_KEY:
+        return None
     try:
         from cohere import Client
-        co = Client(api_key=settings.COHERE_API_KEY)
+        co = Client(api_key=settings.COHERE_API_KEY, timeout=8.0)
         res = co.embed(texts=[query_user], model="embed-multilingual-v3.0", input_type="search_query")
         # Mengambil array float berdimensi 1024 pada teks pertama
-        return res.embeddings[0]
+        if res and res.embeddings:
+            return res.embeddings[0]
+        return None
     except Exception as e:
-        print(f"[RAG] Cohere Embedding gagal: {e}")
-        # Fallback dummy array jika API key bermasalah
-        return [0.1] * 1024
+        print(f"[RAG] Cohere Embedding gagal/timeout: {e}")
+        return None
 
 # FUNGSI: sync_single_destinasi_vector
 # PENJELASAN:
@@ -142,6 +145,8 @@ def sync_single_destinasi_vector(d):
         f"Deskripsi: {d.deskripsi_singkat} {d.deskripsi_lengkap or ''} | Jalan: {d.nama_jalan or ''}"
     )
     vec = get_cohere_embedding(semantik_text)
+    if not vec:
+        return
     index.upsert(vectors=[{
         "id": str(d.id),
         "values": vec,
@@ -186,7 +191,7 @@ def cari_destinasi_semantik(query_user: str, top_k: int = 20):
     query_vector = None
     if settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("sk-proj-placeholder"):
         try:
-            client = OpenAI(api_key=settings.OPENAI_API_KEY)
+            client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=5.0)
             response = client.embeddings.create(
                 input=[query_user],
                 model="text-embedding-3-small"
@@ -198,8 +203,11 @@ def cari_destinasi_semantik(query_user: str, top_k: int = 20):
     else:
         query_vector = get_cohere_embedding(query_user)
 
+    if not query_vector:
+        return []
+
     index = get_pinecone_index()
-    if index and query_vector:
+    if index:
         try:
             results = index.query(vector=query_vector, top_k=top_k, include_metadata=True)
             return [match.id for match in results.matches]

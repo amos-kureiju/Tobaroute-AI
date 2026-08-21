@@ -37,23 +37,53 @@ app.add_middleware(
 # HELPER: format_destinasi_response
 # TUJUAN: Menyeragamkan format objek destinasi sebelum dikirimkan ke frontend (termasuk Plus Code).
 # ====================================================================================================
+import math
+
+def clean_float(val, default=0.0):
+    if val is None:
+        return default
+    try:
+        f = float(val)
+        if math.isnan(f) or math.isinf(f):
+            return default
+        return f
+    except Exception:
+        return default
+
+def clean_str(val, default=""):
+    if val is None:
+        return default
+    s = str(val).strip()
+    if s.lower() in ["nan", "none", "null"]:
+        return default
+    return s
+
 def format_destinasi_response(d):
-    plus = schemas.generate_plus_code(d.latitude, d.longitude)
+    lat = clean_float(getattr(d, 'latitude', None), 2.3387)
+    lon = clean_float(getattr(d, 'longitude', None), 99.0625)
+    rating = clean_float(getattr(d, 'rating', None), 4.7)
+    
+    raw_reviews = getattr(d, 'jumlah_ulasan', 0)
+    reviews = int(clean_float(raw_reviews, 15))
+
+    nama_jalan = clean_str(getattr(d, 'nama_jalan', ''))
+    plus = schemas.generate_plus_code(lat, lon)
     plus_short = f"{plus[:4]}+{plus[4:8]}" if len(plus) >= 8 else plus
-    full_addr = f"{plus_short}, {d.nama_jalan}"
+    full_addr = f"{plus_short}, {nama_jalan}" if nama_jalan else plus_short
+
     return {
-        "id": d.id,
-        "nama": d.nama,
-        "kategori": d.kategori,
-        "kecamatan": d.kecamatan,
-        "gambar_url": d.gambar_url,
-        "deskripsi_singkat": d.deskripsi_singkat,
-        "deskripsi_lengkap": d.deskripsi_lengkap,
-        "nama_jalan": d.nama_jalan,
-        "latitude": d.latitude,
-        "longitude": d.longitude,
-        "rating": d.rating,
-        "jumlah_ulasan": d.jumlah_ulasan,
+        "id": int(getattr(d, 'id', 0)),
+        "nama": clean_str(getattr(d, 'nama', 'Destinasi')),
+        "kategori": clean_str(getattr(d, 'kategori', 'wisata')),
+        "kecamatan": clean_str(getattr(d, 'kecamatan', 'Toba')),
+        "gambar_url": getattr(d, 'gambar_url', None) or None,
+        "deskripsi_singkat": clean_str(getattr(d, 'deskripsi_singkat', 'Destinasi unggulan kawasan Danau Toba.')),
+        "deskripsi_lengkap": clean_str(getattr(d, 'deskripsi_lengkap', '')),
+        "nama_jalan": nama_jalan,
+        "latitude": lat,
+        "longitude": lon,
+        "rating": rating,
+        "jumlah_ulasan": reviews,
         "plus_code": plus_short,
         "full_address": full_addr
     }
@@ -111,8 +141,20 @@ def get_fair_travel_route(
 @app.post("/api/chat")
 def interactive_chat(request: schemas.ChatbotRequest, db: Session = Depends(get_db)):
     history_dicts = [{"role": msg.role, "text": msg.text} for msg in request.history]
-    ai_reply = chat_with_bot(request.message, history_dicts, db=db)
-    return {"reply": ai_reply}
+    bot_result = chat_with_bot(request.message, history_dicts, db=db)
+    
+    if isinstance(bot_result, dict):
+        reply_text = bot_result.get("reply", "")
+        raw_places = bot_result.get("recommended_places", [])
+        formatted_places = [format_destinasi_response(p) for p in raw_places] if raw_places else []
+        target_kec = bot_result.get("target_kecamatan")
+        return {
+            "reply": reply_text,
+            "recommended_places": formatted_places,
+            "target_kecamatan": target_kec
+        }
+    else:
+        return {"reply": str(bot_result), "recommended_places": [], "target_kecamatan": None}
 
 # ====================================================================================================
 # ENDPOINT: GET /api/destinasi

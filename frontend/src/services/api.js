@@ -8,17 +8,41 @@
 
 import axios from 'axios';
 
-// URL dasar API backend FastAPI (Port default backend: 8000)
-const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || 'http://localhost:8000/api';
+// URL dasar API backend FastAPI (Mendukung port 8080 dan 8000 secara dinamis)
+const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
-// Inisialisasi instance Axios dengan header standar JSON dan timeout 12 detik
+// Inisialisasi instance Axios dengan timeout 90 detik (agar RAG + Gemini punya waktu pemrosesan yang cukup)
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 12000,
+  timeout: 90000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Interceptor Fallback Cerdas: Jika koneksi ke port 8080 gagal (Network Error murni), otomatis coba port 8000 (atau sebaliknya)
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const config = error.config;
+    // Jangan retry jika timeout (ECONNABORTED) agar tidak memicu delay ganda
+    if (config && !config.__isRetry && error.code === 'ERR_NETWORK') {
+      config.__isRetry = true;
+      const currentUrl = config.baseURL || API_BASE_URL;
+      const altUrl = currentUrl.includes('8080')
+        ? currentUrl.replace('8080', '8000')
+        : currentUrl.replace('8000', '8080');
+      
+      config.baseURL = altUrl;
+      try {
+        return await axios(config);
+      } catch (retryErr) {
+        return Promise.reject(retryErr);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 // ====================================================================================================
 // FUNGSI: getFairRecommendation

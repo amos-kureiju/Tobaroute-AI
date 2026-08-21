@@ -14,6 +14,8 @@ import { Compass, WifiOff } from 'lucide-react';
 import Home from './pages/Home';
 import Explore from './pages/Explore';
 import About from './pages/About';
+import ItineraryPlanner from './pages/ItineraryPlanner';
+import UmkmMarketplace from './pages/UmkmMarketplace';
 
 // Mengimpor halaman & modul khusus Administrator dari folder src/admin
 import { 
@@ -105,10 +107,22 @@ const MainLayout = ({ children }) => {
               Beranda
             </NavLink>
             <NavLink 
+              to="/planner" 
+              className={({ isActive }) => (isActive ? 'active' : '')}
+            >
+              Itinerary AI
+            </NavLink>
+            <NavLink 
+              to="/umkm" 
+              className={({ isActive }) => (isActive ? 'active' : '')}
+            >
+              Sentra UMKM
+            </NavLink>
+            <NavLink 
               to="/explore" 
               className={({ isActive }) => (isActive ? 'active' : '')}
             >
-              Jelajah
+              Jelajah GIS
             </NavLink>
             <NavLink 
               to="/about" 
@@ -130,6 +144,8 @@ const MainLayout = ({ children }) => {
         <div className="container footer-content" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', alignItems: 'center', textAlign: 'center' }}>
           <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', justifyContent: 'center', fontSize: '0.88rem' }}>
             <NavLink to="/" style={{ color: '#64748b', textDecoration: 'none' }}>Beranda</NavLink>
+            <NavLink to="/planner" style={{ color: '#64748b', textDecoration: 'none' }}>Studio Itinerary</NavLink>
+            <NavLink to="/umkm" style={{ color: '#64748b', textDecoration: 'none' }}>Sentra UMKM</NavLink>
             <NavLink to="/explore" style={{ color: '#64748b', textDecoration: 'none' }}>Peta Jelajah</NavLink>
             <NavLink to="/about" style={{ color: '#64748b', textDecoration: 'none' }}>Tentang & Riset</NavLink>
           </div>
@@ -152,6 +168,8 @@ function App() {
       <Routes>
         {/* RUTE HALAMAN PUBLIK */}
         <Route path="/" element={<MainLayout><Home /></MainLayout>} />
+        <Route path="/planner" element={<MainLayout><ItineraryPlanner /></MainLayout>} />
+        <Route path="/umkm" element={<MainLayout><UmkmMarketplace /></MainLayout>} />
         <Route path="/explore" element={<MainLayout><Explore /></MainLayout>} />
         <Route path="/about" element={<MainLayout><About /></MainLayout>} />
 

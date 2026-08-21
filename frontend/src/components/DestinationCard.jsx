@@ -1,26 +1,23 @@
 // ====================================================================================================
 // FILE: frontend/src/components/DestinationCard.jsx
 // TUJUAN & PENJELASAN KOMPONEN:
-// Komponen Kartu Destinasi & Rekomendasi UMKM Interaktif.
-// Berfungsi menampilkan:
-// 1. Gambar thumbnail resolusi tinggi dengan penanganan error gambar (Image Fallback).
-// 2. Badge penanda khusus untuk pelaku UMKM lokal (Recommended UMKM).
-// 3. Nama tempat, wilayah kecamatan, dan rating bintang.
-// 4. Panel Accordion "Detail": Menampilkan wawasan budaya, tips wisatawan, menu rekomendasi,
-//    jam operasional, tarif tiket, fasilitas, dan alamat presisi tanpa menutupi layar (No backdrop blocking).
-// 5. Tombol "Lihat Rute Peta": Menghubungkan kartu langsung ke peta navigasi di halaman Jelajah.
+// Komponen Kartu Destinasi & Rekomendasi UMKM Interaktif (Versi Ringkas & Modern).
+// Menampilkan:
+// 1. Thumbnail resolusi tinggi dengan fallback kategori.
+// 2. Badge khusus UMKM Lokal & Kategori.
+// 3. Nama tempat, kecamatan, dan rating bintang.
+// 4. Deskripsi singkat 2-baris yang rapi (tidak memanjang ke bawah).
+// 5. Panel "Detail" yang padat, terstruktur, dan bebas dari pengulangan teks yang panjang.
+// 6. Tombol "Lihat Rute Peta" untuk menghubungkan langsung ke GIS navigation.
 // ====================================================================================================
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MapPin, Star, Navigation, Info, Route, ChevronUp, CheckCircle, Quote, Compass, BookOpen, Clock, Tag, Utensils, RefreshCw } from 'lucide-react';
+import { MapPin, Star, Navigation, Info, Route, ChevronUp, CheckCircle, Quote, Compass, BookOpen, Clock, Tag, Utensils, RefreshCw, Sparkles } from 'lucide-react';
 import { getDestinationAIInsight } from '../services/api';
 import './DestinationCard.css';
 
-// ====================================================================================================
-// GAMBAR DEFAULT BERDASARKAN KATEGORI (UNSPLASH HD)
-// Digunakan sebagai fallback otomatis jika URL gambar dari database kosong atau rusak (broken link).
-// ====================================================================================================
+// Gambar default kategori jika gambar kosong
 const DEFAULT_CATEGORY_IMAGES = {
   kuliner: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80",
   umkm: "https://images.unsplash.com/photo-1607344645866-009c320c5ab8?auto=format&fit=crop&w=800&q=80",
@@ -29,12 +26,7 @@ const DEFAULT_CATEGORY_IMAGES = {
   default: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80"
 };
 
-// ====================================================================================================
-// FUNGSI: getLocalHeuristicInsight (FALLBACK WAWASAN CEPAT)
-// PENJELASAN:
-// Menghasilkan wawasan budaya dan tips wisatawan secara instan (0 ms latency) saat kartu diperluas,
-// sehingga pengguna langsung melihat informasi lengkap tanpa harus menunggu request AI selesai.
-// ====================================================================================================
+// Fallback wawasan ringkas instan (0 ms latency)
 const getLocalHeuristicInsight = (nama, kecamatan, kategori, deskripsi_singkat) => {
   const n = (nama || '').toLowerCase();
   const k = (kategori || '').toLowerCase();
@@ -42,67 +34,56 @@ const getLocalHeuristicInsight = (nama, kecamatan, kategori, deskripsi_singkat) 
 
   if (n.includes('ulos') || k.includes('ulos') || d.includes('ulos') || n.includes('tenun') || d.includes('tenun')) {
     return {
-      storytelling: `Sentra kerajinan tangan di ${kecamatan} ini melestarikan teknik tenun tradisional Batak secara turun-temurun, di mana setiap helai kain Ulos ditenun dengan teliti dan sarat makna berkat serta doa leluhur.`,
-      must_try: `Melihat langsung proses pembuatan motif Ulos tradisional (seperti Sadum atau Ragi Hotang) serta membeli kain tenun asli langsung dari pengrajin warga setempat.`,
-      travel_tips: `Disarankan berkunjung pada pagi atau siang hari saat pengrajin aktif menenun. Anda juga dapat berkonsultasi mengenai makna filosofis setiap motif ulos.`,
-      highlight_tags: ['Tenun Tangan Asli', 'Pemberdayaan UMKM', 'Warisan Budaya Batak']
+      storytelling: `Sentra kerajinan tangan di ${kecamatan} yang melestarikan teknik tenun Ulos tradisional Batak sarat makna doa leluhur.`,
+      must_try: `Melihat proses tenun motif Sadum / Ragi Hotang dan membeli kain asli dari pengrajin warga.`,
+      travel_tips: `Kunjungi pada pagi atau siang hari saat pengrajin aktif menenun.`,
+      highlight_tags: ['Tenun Asli', 'UMKM Lokal', 'Budaya Batak']
     };
-  } else if (n.includes('gula') || n.includes('aren') || d.includes('aren') || d.includes('gula') || n.includes('palm sugar')) {
+  } else if (n.includes('gula') || n.includes('aren') || d.includes('aren') || d.includes('gula')) {
     return {
-      storytelling: `Diproduksi secara murni dari sadapan pohon enau alami perbukitan ${kecamatan} tanpa bahan kimia pengawet, menghasilkan cita rasa manis karamel legit yang harum khas tanah vulkanik Danau Toba.`,
-      must_try: `Membeli gula aren cetak murni dan sirup aren alami yang sangat cocok sebagai pemanis kopi Arabika Toba atau bahan baku kue tradisional.`,
-      travel_tips: `Simpan di tempat sejuk dan kedap udara agar keaslian rasa dan aroma legitnya tetap terjaga prima.`,
-      highlight_tags: ['Nira Aren Murni', 'Tanpa Pengawet', 'Produksi Rumahan Warga']
+      storytelling: `Diproduksi murni dari sadapan pohon enau alami ${kecamatan} tanpa bahan pengawet kimia.`,
+      must_try: `Membeli gula aren cetak dan sirup aren alami untuk pemanis kopi Arabika Toba.`,
+      travel_tips: `Simpan di tempat sejuk dan kedap udara agar keaslian aroma terjaga.`,
+      highlight_tags: ['Nira Murni', 'Produksi Warga', 'Tanpa Pengawet']
     };
   } else if (k.includes('kuliner') || n.includes('makan') || n.includes('resto') || n.includes('kopi') || n.includes('warung') || n.includes('cafe')) {
     return {
-      storytelling: `Destinasi kuliner autentik di kawasan ${kecamatan} yang menghidangkan kekayaan bumbu rempah tradisional khas Batak Toba (seperti andaliman, asam cikala, dan lokio) yang dimasak segar setiap hari.`,
-      must_try: `Mencicipi sajian andalan hangat yang diracik dengan bumbu rempah andaliman segar untuk pengalaman gastronomi Danau Toba yang berkesan.`,
-      travel_tips: `Waktu terbaik berkunjung adalah menjelang jam makan siang (11.30 - 13.30 WIB) untuk menikmati sajian yang baru matang.`,
-      highlight_tags: ['Rempah Andaliman', 'Kuliner Tradisional', 'Bahan Segar Lokal']
+      storytelling: `Kuliner autentik di ${kecamatan} yang menghidangkan kekayaan bumbu rempah tradisional khas Batak Toba.`,
+      must_try: `Mencicipi sajian andalan dengan bumbu rempah andaliman segar.`,
+      travel_tips: `Waktu terbaik berkunjung adalah jam makan siang (11.30 - 13.30 WIB).`,
+      highlight_tags: ['Rempah Andaliman', 'Kuliner Khas', 'Bahan Segar']
     };
   } else if (k.includes('penginapan') || n.includes('hotel') || n.includes('homestay') || n.includes('resort')) {
     return {
-      storytelling: `Akomodasi berkonsep ramah keluarga di ${kecamatan} yang menawarkan suasana menginap tenang dengan udara sejuk dan panorama asri bentang kaldera Danau Toba.`,
-      must_try: `Menikmati secangkir kopi hangat di pagi hari sambil menyaksikan kabut dan matahari terbit di atas perairan Danau Toba.`,
-      travel_tips: `Lakukan konfirmasi pemesanan terlebih dahulu terutama saat akhir pekan atau musim liburan.`,
-      highlight_tags: ['Udara Sejuk', 'Suasana Tenang', 'Akses Strategis']
+      storytelling: `Akomodasi ramah keluarga di ${kecamatan} dengan suasana tenang dan panorama asri Danau Toba.`,
+      must_try: `Menikmati kopi hangat di pagi hari dengan pemandangan danau kaldera.`,
+      travel_tips: `Lakukan reservasi terlebih dahulu terutama saat akhir pekan atau musim libur.`,
+      highlight_tags: ['Suasana Tenang', 'Pemandangan Danau', 'Akses Strategis']
     };
   } else {
     return {
-      storytelling: `Destinasi unggulan di wilayah ${kecamatan} yang menyuguhkan keindahan panorama alam kaldera Danau Toba (UNESCO Global Geopark) dengan suasana damai yang sangat asri.`,
-      must_try: `Menikmati pemandangan bentang alam danau dari sudut pandang terbaik, berfoto di spot panorama alami, dan menikmati ketenangan alam.`,
-      travel_tips: `Gunakan pakaian santai yang nyaman dan bawa jaket ringan karena embusan angin danau yang sejuk di pagi/sore hari.`,
-      highlight_tags: ['UNESCO Geopark', 'Spot Panorama', 'Alam Asri']
+      storytelling: `Destinasi alam unggulan di wilayah ${kecamatan} dengan panorama bentang alam kaldera Danau Toba.`,
+      must_try: `Menikmati pemandangan bentang danau dari sudut terbaik dan berfoto di spot alami.`,
+      travel_tips: `Gunakan pakaian santai yang nyaman dan bawa jaket ringan karena udara sejuk.`,
+      highlight_tags: ['UNESCO Geopark', 'Panorama Alam', 'Spot Foto']
     };
   }
 };
 
 const DestinationCard = ({ dest, isUmkm }) => {
-  // State untuk membuka/menutup accordion detail
   const [isExpanded, setIsExpanded] = useState(false);
-  // State untuk menyimpan wawasan budaya dan tips dari AI
   const [aiInsight, setAiInsight] = useState(null);
-  // State indikator saat request AI sedang berlangsung di background
   const [loadingAI, setLoadingAI] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
   const categoryKey = (dest.kategori || '').toLowerCase();
 
-  // Memilih gambar: jika URL gambar kosong atau broken, gunakan gambar kategori default yang estetik
   let displayImage = dest.gambar_url;
   if (!displayImage || displayImage.includes('photo-1549317661-bd32c8ce0db2') || displayImage.includes('photo-1572252009286') || displayImage.includes('photo-1606744888344') || displayImage.includes('photo-1584100936595')) {
     displayImage = DEFAULT_CATEGORY_IMAGES[categoryKey] || DEFAULT_CATEGORY_IMAGES.default;
   }
 
-  // ====================================================================================================
-  // EFFECT: Pengambilan Wawasan AI saat Kartu Dibuka (Expand)
-  // PENJELASAN:
-  // 1. Mengisi langsung 'aiInsight' dengan generator heuristik lokal agar UI langsung penuh informatif.
-  // 2. Jika destinasi memiliki ID database, sistem memanggil API Gemini secara asinkron di latar belakang
-  //    untuk memperbarui narasi dengan detail paling mutakhir.
-  // ====================================================================================================
   useEffect(() => {
     if (isExpanded && !aiInsight) {
       const initialInsight = getLocalHeuristicInsight(dest.nama, dest.kecamatan, dest.kategori, dest.deskripsi_singkat);
@@ -116,9 +97,7 @@ const DestinationCard = ({ dest, isUmkm }) => {
               setAiInsight(res);
             }
           })
-          .catch(() => {
-            // Tetap menggunakan wawasan heuristik jika API offline
-          })
+          .catch(() => {})
           .finally(() => {
             setLoadingAI(false);
           });
@@ -126,12 +105,6 @@ const DestinationCard = ({ dest, isUmkm }) => {
     }
   }, [isExpanded, dest.id]);
 
-  // ====================================================================================================
-  // HANDLER: handleNavigateToExplore
-  // PENJELASAN:
-  // Jika pengguna sudah berada di halaman '/explore', kirimkan custom event untuk memfokuskan peta.
-  // Jika sedang di Beranda ('/'), arahkan (navigate) ke halaman '/explore' sambil membawa state target lokasi.
-  // ====================================================================================================
   const handleNavigateToExplore = (e) => {
     if (e) e.stopPropagation();
 
@@ -143,98 +116,53 @@ const DestinationCard = ({ dest, isUmkm }) => {
     }
   };
 
-  // HELPER: Membersihkan format Plus Code agar tampilan alamat tetap rapi dan ringkas
+  // Helper pembersih alamat presisi agar ringkas
   const cleanAddressText = (rawAddress, kecamatan) => {
     if (!rawAddress) return `Kecamatan ${kecamatan}, Kawasan Danau Toba`;
     let cleaned = rawAddress.replace(/^[A-Z0-9]{4}\+[A-Z0-9]{2,4},\s*/i, '').trim();
     cleaned = cleaned.replace(/,\s*Kawasan Danau Toba/gi, '').trim();
+    // Hilangkan pengulangan kode pos / negara panjang jika sudah jelas
+    cleaned = cleaned.replace(/\s*\([A-Z0-9+]+\s+.*?\)/gi, '').trim();
     if (!cleaned) cleaned = `Kecamatan ${kecamatan}`;
     return cleaned;
   };
 
-  // ====================================================================================================
-  // FUNGSI: parseDetails (REGEX TEXT PARSER)
-  // PENJELASAN:
-  // Membedah teks 'deskripsi_lengkap' yang tersimpan di database untuk mengekstrak bagian:
-  // - Menu Rekomendasi (contoh: "Menu Rekomendasi: Naniarsik Ikan Mas")
-  // - Jam Buka (contoh: "Jam Operasional: 08:00 - 20:00 WIB")
-  // - Estimasi Biaya / HTM (contoh: "Estimasi Biaya: Rp 15.000")
-  // - Fasilitas (contoh: "Fasilitas: Parkir Luas, Toilet, Spot Foto")
-  // - Ulasan Pengunjung
-  // ====================================================================================================
-  const parseDetails = (fullText, shortText) => {
+  // Ekstraksi info singkat (menu, jam, harga, fasilitas)
+  const parseQuickInfo = (fullText) => {
     const raw = (fullText || '').trim();
-    const short = (shortText || '').trim();
-
-    // 1. Ekstraksi Menu Rekomendasi dengan Regular Expression
     let menu = null;
-    const menuMatch = raw.match(/Menu Rekomendasi:\s*([^.]+)/i) || raw.match(/Menu:\s*([^.]+)/i);
-    if (menuMatch && menuMatch[1]) {
-      const val = menuMatch[1].trim();
-      if (val !== '-' && !['nan', 'none', 'null'].includes(val.toLowerCase())) {
-        menu = val;
-      }
-    }
-
-    // 2. Ekstraksi Jam Operasional
     let hours = null;
-    const hoursMatch = raw.match(/Jam Operasional:\s*([^.]+)/i) || raw.match(/Jam Buka:\s*([^.]+)/i) || raw.match(/WAKTU OPERASIONAL:\s*([^.]+)/i);
-    if (hoursMatch && hoursMatch[1]) {
-      const val = hoursMatch[1].trim();
-      if (val !== '-' && !['nan', 'none', 'null'].includes(val.toLowerCase())) {
-        hours = val;
-      }
-    }
-
-    // 3. Ekstraksi Estimasi Biaya / HTM Tiket
     let price = null;
-    const priceMatch = raw.match(/Estimasi (?:Biaya|Harga|Tarif):\s*([^.]+)/i) || raw.match(/(?:Tiket Masuk|HTM|Tarif|Estimasi Biaya):\s*([^.]+)/i);
-    if (priceMatch && priceMatch[1]) {
-      const val = priceMatch[1].trim();
-      if (val !== '-' && !['nan', 'none', 'null'].includes(val.toLowerCase())) {
-        price = val;
-      }
+    let facilities = [];
+
+    const menuMatch = raw.match(/Menu(?: Rekomendasi)?:\s*([^.]+)/i);
+    if (menuMatch && menuMatch[1] && !['-', 'nan', 'none', 'null'].includes(menuMatch[1].trim().toLowerCase())) {
+      menu = menuMatch[1].trim();
     }
 
-    // 4. Ekstraksi Fasilitas Penunjang menjadi Array Chip
-    let facilities = [];
-    const facMatch = raw.match(/Fasilitas(?:\s*Umum|\s*Penunjang)?:\s*([^.]+)/i);
+    const hoursMatch = raw.match(/Jam (?:Operasional|Buka):\s*([^.]+)/i);
+    if (hoursMatch && hoursMatch[1] && !['-', 'nan', 'none', 'null'].includes(hoursMatch[1].trim().toLowerCase())) {
+      hours = hoursMatch[1].trim();
+    }
+
+    const priceMatch = raw.match(/(?:Estimasi Biaya|HTM|Tiket Masuk|Tarif):\s*([^.]+)/i);
+    if (priceMatch && priceMatch[1] && !['-', 'nan', 'none', 'null'].includes(priceMatch[1].trim().toLowerCase())) {
+      price = priceMatch[1].trim();
+    }
+
+    const facMatch = raw.match(/Fasilitas(?:\s*Umum)?:\s*([^.]+)/i);
     if (facMatch && facMatch[1]) {
       facilities = facMatch[1]
         .split(/[,/]/)
         .map(f => f.trim())
-        .filter(f => f && f !== '-' && !['nan', 'none', 'null', 'tidak ada', 'nil'].includes(f.toLowerCase()));
+        .filter(f => f && f !== '-' && !['nan', 'none', 'null', 'tidak ada'].includes(f.toLowerCase()))
+        .slice(0, 4); // Maksimal 4 chip fasilitas agar rapi
     }
 
-    // 5. Ekstraksi Ulasan Pengunjung
-    let review = null;
-    const revMatch = raw.match(/Ulasan(?:\s*Awal)?:\s*"([^"]+)"/i) || raw.match(/Ulasan(?:\s*Awal)?:\s*([^.]+)/i);
-    if (revMatch && revMatch[1]) {
-      const val = revMatch[1].trim();
-      if (val !== '-' && !['nan', 'none', 'null'].includes(val.toLowerCase())) {
-        review = val;
-      }
-    }
-
-    // 6. Ekstraksi Check-in / Check-out untuk Kategori Hotel / Penginapan
-    let checkInOut = null;
-    const checkMatch = raw.match(/Check-in:\s*([^,]+),\s*Check-out:\s*([^.]+)/i);
-    if (checkMatch && checkMatch[1] && checkMatch[2]) {
-      checkInOut = `Check-in: ${checkMatch[1].trim()} | Check-out: ${checkMatch[2].trim()}`;
-    }
-
-    // Menentukan apakah ada deskripsi naratif panjang yang berbeda dari deskripsi singkat
-    let distinctDesc = null;
-    if (raw && !raw.startsWith('Menu Rekomendasi:') && !raw.startsWith('Fasilitas:') && !raw.startsWith('Tiket Masuk:') && !raw.startsWith('Rute:')) {
-      if (raw !== short && raw.length > 20) {
-        distinctDesc = raw;
-      }
-    }
-
-    return { distinctDesc, menu, hours, price, facilities, review, checkInOut };
+    return { menu, hours, price, facilities };
   };
 
-  const parsed = parseDetails(dest.deskripsi_lengkap, dest.deskripsi_singkat);
+  const quickInfo = parseQuickInfo(dest.deskripsi_lengkap);
   const formattedAddress = cleanAddressText(dest.nama_jalan, dest.kecamatan);
 
   return (
@@ -246,152 +174,101 @@ const DestinationCard = ({ dest, isUmkm }) => {
           alt={dest.nama} 
           className="card-image"
           onError={(e) => {
-            // Fallback jika URL gambar rusak saat dimuat browser
             e.target.src = DEFAULT_CATEGORY_IMAGES[categoryKey] || DEFAULT_CATEGORY_IMAGES.default;
           }} 
         />
-        {/* Badge Pengenal UMKM Lokal */}
-        {isUmkm && <span className="badge-umkm">Recommended UMKM</span>}
+        {/* Badge Kategori & UMKM */}
+        {isUmkm ? (
+          <span className="badge-umkm">Recommended UMKM</span>
+        ) : (
+          <span className="badge-category">{dest.kategori || 'Wisata'}</span>
+        )}
       </div>
 
       {/* Badan Konten Kartu */}
       <div className="card-content">
         <div className="card-header">
-          <h3 className="card-title">{dest.nama}</h3>
+          <h3 className="card-title" title={dest.nama}>{dest.nama}</h3>
         </div>
 
         {/* Metadata: Kecamatan & Rating */}
         <div className="card-meta">
           <span className="meta-item">
-            <Navigation size={14} />
+            <Navigation size={13} color="#0284c7" />
             {dest.kecamatan}
           </span>
           <span className="meta-item rating">
-            <Star size={14} fill="#fbbf24" color="#fbbf24" />
-            {dest.rating} ({dest.jumlah_ulasan})
+            <Star size={13} fill="#f59e0b" color="#f59e0b" />
+            {dest.rating || 4.5} ({dest.jumlah_ulasan || 12})
           </span>
         </div>
 
-        <p className="card-description">{dest.deskripsi_singkat}</p>
-        <p className="card-address">{formattedAddress}</p>
+        {/* Deskripsi Singkat 2-Baris Rapi */}
+        <p className="card-description">{dest.deskripsi_singkat || 'Destinasi rekomendasi di Kawasan Danau Toba.'}</p>
 
-        {/* PANEL ACCORDION DETAIL YANG KAYA KONTEKS */}
+        {/* PANEL DETAIL RINGKAS & TERSTRUKTUR (ACCORDION) */}
         {isExpanded && (
           <div className="inline-detail-panel fade-in">
-            {/* KOTAK WAWASAN & TIPS BUDAYA */}
-            <div className="inline-ai-insight-box">
-              <div className="ai-insight-header">
-                <span className="ai-insight-badge">
-                  <BookOpen size={13} color="#0369a1" /> Ringkasan & Wawasan Destinasi
-                </span>
-                {loadingAI && <RefreshCw size={12} className="spin" color="#0284c7" />}
-              </div>
+            {/* Wawasan Singkat 1-2 Kalimat */}
+            {aiInsight && (
+              <div className="compact-insight-box">
+                <p className="compact-story-text">
+                  {aiInsight.storytelling}
+                </p>
 
-              {aiInsight && (
-                <>
-                  <p className="ai-storytelling-text">
-                    {aiInsight.storytelling}
-                  </p>
-
-                  {aiInsight.must_try && (
-                    <div className="ai-highlight-row">
-                      <span className="ai-highlight-label">Pengalaman Utama:</span>
-                      <span className="ai-highlight-val">{aiInsight.must_try}</span>
+                {/* Grid 2-Kolom: Pengalaman & Tips */}
+                <div className="compact-grid-highlights">
+                  {(quickInfo.menu || aiInsight.must_try) && (
+                    <div className="compact-highlight-item">
+                      <span className="highlight-tag-label">
+                        <Utensils size={12} color="#0284c7" /> {quickInfo.menu ? 'Menu Pilihan' : 'Aktivitas Utama'}
+                      </span>
+                      <span className="highlight-tag-desc">
+                        {quickInfo.menu || aiInsight.must_try}
+                      </span>
                     </div>
                   )}
 
-                  {aiInsight.travel_tips && (
-                    <div className="ai-highlight-row">
-                      <span className="ai-highlight-label">Tips Pengunjung:</span>
-                      <span className="ai-highlight-val">{aiInsight.travel_tips}</span>
-                    </div>
-                  )}
-
-                  {aiInsight.highlight_tags && aiInsight.highlight_tags.length > 0 && (
-                    <div className="ai-tags-row">
-                      {aiInsight.highlight_tags.map((tag, idx) => (
-                        <span key={idx} className="ai-tag-chip">
-                          {tag.replace(/^#/, '')}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* INFORMASI TAMBAHAN (JIKA TERSEDIA) */}
-            {parsed.distinctDesc && (
-              <div className="inline-section">
-                <h4 className="inline-section-title">Informasi Lengkap</h4>
-                <p className="inline-text">{parsed.distinctDesc}</p>
-              </div>
-            )}
-
-            {parsed.menu && (
-              <div className="inline-section">
-                <h4 className="inline-section-title">Menu Rekomendasi</h4>
-                <div className="inline-menu-badge">
-                  <Utensils size={13} /> <span>{parsed.menu}</span>
-                </div>
-              </div>
-            )}
-
-            {(parsed.hours || parsed.price || parsed.checkInOut) && (
-              <div className="inline-section">
-                <h4 className="inline-section-title">Jadwal & Tarif</h4>
-                <div className="inline-info-grid">
-                  {parsed.hours && (
-                    <div className="inline-info-item">
-                      <span className="info-label">Operasional:</span>
-                      <span className="info-value">{parsed.hours}</span>
-                    </div>
-                  )}
-                  {parsed.price && (
-                    <div className="inline-info-item">
-                      <span className="info-label">Estimasi Biaya:</span>
-                      <span className="info-value">{parsed.price}</span>
-                    </div>
-                  )}
-                  {parsed.checkInOut && (
-                    <div className="inline-info-item">
-                      <span className="info-label">Waktu Menginap:</span>
-                      <span className="info-value">{parsed.checkInOut}</span>
+                  {(quickInfo.hours || aiInsight.travel_tips) && (
+                    <div className="compact-highlight-item">
+                      <span className="highlight-tag-label">
+                        <Clock size={12} color="#16a34a" /> {quickInfo.hours ? 'Jam Buka' : 'Tips Kunjungan'}
+                      </span>
+                      <span className="highlight-tag-desc">
+                        {quickInfo.hours || aiInsight.travel_tips}
+                      </span>
                     </div>
                   )}
                 </div>
+
+                {/* Tag Pills Singkat */}
+                {aiInsight.highlight_tags && aiInsight.highlight_tags.length > 0 && (
+                  <div className="compact-tags-row">
+                    {aiInsight.highlight_tags.slice(0, 3).map((tag, idx) => (
+                      <span key={idx} className="compact-tag-chip">
+                        {tag.replace(/^#/, '')}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
-            {parsed.facilities.length > 0 && (
-              <div className="inline-section">
-                <h4 className="inline-section-title">Fasilitas Tersedia</h4>
-                <div className="inline-facilities-chips">
-                  {parsed.facilities.map((fac, idx) => (
-                    <span key={idx} className="inline-chip">
-                      <CheckCircle size={12} color="#10b981" /> {fac}
-                    </span>
-                  ))}
-                </div>
+            {/* Fasilitas Singkat (Jika Ada) */}
+            {quickInfo.facilities && quickInfo.facilities.length > 0 && (
+              <div className="compact-facilities-row">
+                {quickInfo.facilities.map((fac, idx) => (
+                  <span key={idx} className="compact-fac-chip">
+                    <CheckCircle size={11} color="#10b981" /> {fac}
+                  </span>
+                ))}
               </div>
             )}
 
-            {parsed.review && (
-              <div className="inline-section">
-                <h4 className="inline-section-title">Ulasan Pengunjung</h4>
-                <div className="inline-quote-card">
-                  <Quote size={14} color="#0284c7" />
-                  <p>"{parsed.review}"</p>
-                </div>
-              </div>
-            )}
-
-            <div className="inline-section">
-              <h4 className="inline-section-title">Alamat Presisi</h4>
-              <div className="inline-address-box">
-                <MapPin size={14} color="#ef4444" />
-                <span>{formattedAddress}, Kawasan Danau Toba</span>
-              </div>
+            {/* Alamat Ringkas 1 Baris */}
+            <div className="compact-address-row">
+              <MapPin size={13} color="#ef4444" style={{ flexShrink: 0 }} />
+              <span className="compact-address-text">{formattedAddress}</span>
             </div>
           </div>
         )}
@@ -404,9 +281,9 @@ const DestinationCard = ({ dest, isUmkm }) => {
             onClick={() => setIsExpanded(!isExpanded)}
           >
             {isExpanded ? (
-              <>Sembunyikan <ChevronUp size={14} /></>
+              <>Tutup <ChevronUp size={13} /></>
             ) : (
-              <><Info size={14} /> Detail</>
+              <><Info size={13} /> Ringkasan</>
             )}
           </button>
 
@@ -415,7 +292,7 @@ const DestinationCard = ({ dest, isUmkm }) => {
             className="btn-card-action btn-route" 
             onClick={handleNavigateToExplore}
           >
-            <Route size={14} /> Lihat Rute Peta
+            <Route size={13} /> Rute Peta
           </button>
         </div>
       </div>
