@@ -340,7 +340,7 @@ const About = () => {
               Tim LamportTRIO
             </h2>
             <p style={{ fontSize: '0.95rem', color: '#64748b', maxWidth: '640px', margin: '0 auto' }}>
-              Institut Teknologi Del
+              Pengembang Platform TobaRoute AI & Riset Geopark
             </p>
           </div>
 

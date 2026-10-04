@@ -17,9 +17,15 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { getDestinations, getFairRecommendation, sendChatMessage } from '../services/api';
-import { Map, AlertCircle, Navigation, Star, Send, Bot, User, Compass, Route as RouteIcon, MapPin, Search, ChevronLeft, Menu, LocateFixed, X, Sparkles, Layers, Store, Utensils, Hotel, Car, Trash2, Copy, Check, ExternalLink, Info, Clock } from 'lucide-react';
+import { 
+  Map, AlertCircle, Navigation, Star, Send, Bot, User, Compass, 
+  Route as RouteIcon, MapPin, Search, ChevronLeft, Menu, LocateFixed, 
+  X, Sparkles, Layers, Store, Utensils, Hotel, Car, Trash2, Copy, 
+  Check, ExternalLink, Info, Clock, Plane, Bus, Ship, Bike, DollarSign, ArrowRight 
+} from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import RoutingMachine from '../components/RoutingMachine';
+import { getClientTransportGuide } from '../utils/transportHelper';
 import './Explore.css';
 
 // HELPER: Membersihkan nilai 'nan', 'null', atau tanda strip dari database
@@ -286,13 +292,14 @@ const KECAMATAN_CENTERS = {
 };
 
 const QUICK_LOCATIONS = [
-  { name: 'Rekomendasi Balige', query: 'Tolong rekomendasikan tempat wisata, kuliner autentik, dan sentra UMKM terbaik di Balige' },
-  { name: 'Kuliner & Mie Gomak', query: 'Di mana tempat makan Mie Gomak, Naniura, dan kuliner khas autentik terenak?' },
-  { name: 'Filosofi Tenun Ulos', query: 'Jelaskan jenis-jenis kain tenun Ulos tradisional Batak (Ragidup, Sadum, Ragi Hotang) dan makna filosofisnya' },
-  { name: 'Sejarah Kaldera Toba', query: 'Ceritakan sejarah letusan supervolcano Danau Toba 74.000 tahun lalu dan geosite UNESCO-nya' },
-  { name: 'Itinerary 3 Hari Samosir', query: 'Buatkan rencana perjalanan itinerary 3 hari 2 malam keliling Pulau Samosir dan Toba yang lengkap dan ramah keluarga' },
-  { name: 'Kopi Arabika Lintong', query: 'Apa keistimewaan Kopi Arabika Lintong khas dataran tinggi Toba dan di mana tempat menikmatinya?' },
-  { name: 'Eksplorasi Laguboti', query: 'Tampilkan destinasi wisata, kuliner, dan sentra UMKM di Kecamatan Laguboti' }
+  { name: '✈️ Dari Bandara Silangit', query: 'Bagaimana cara dan tarif transportasi dari Bandara Silangit ke Balige, Parapat, dan Samosir?' },
+  { name: '🚢 Jadwal & Tarif Feri', query: 'Berapa jadwal dan tarif kapal feri penyeberangan Danau Toba dari Ajibata ke Ambarita dan Tomok?' },
+  { name: '💰 Estimasi Biaya Liburan', query: 'Berapa estimasi rincian biaya liburan 2 hari 1 malam di Danau Toba untuk backpacker dan keluarga?' },
+  { name: '🍲 Kuliner & Tempat Halal', query: 'Apa saja rekomendasi kuliner khas Batak dan pilihan rumah makan halal di sekitar Danau Toba?' },
+  { name: '🧵 Beli Ulos Asli Pengrajin', query: 'Di mana tempat terbaik membeli kain tenun Ulos asli langsung dari pengrajin warga dan berapa harganya?' },
+  { name: '🛵 Sewa Motor & Mobil', query: 'Berapa tarif sewa sepeda motor dan rental mobil per hari di Danau Toba dan apa saja tips rutenya?' },
+  { name: '🌤️ Cuaca & Tips Pakaian', query: 'Bagaimana kondisi cuaca kaldera Danau Toba dan apa tips pakaian serta waktu terbaik berkunjung?' },
+  { name: '🗺️ Itinerary 3D2N Samosir', query: 'Buatkan rencana perjalanan itinerary 3 hari 2 malam keliling Pulau Samosir dan Toba yang lengkap dan ramah keluarga' }
 ];
 
 const MAP_STYLES = {
@@ -463,7 +470,7 @@ const Explore = () => {
     }
   }, []);
 
-  // Listen for targetLocation passed via router state (from DestinationCard)
+  // Listen for targetLocation passed via router state (from DestinationCard, Chatbot, or Itinerary)
   useEffect(() => {
     if (location.state?.targetLocation) {
       const target = location.state.targetLocation;
@@ -482,6 +489,50 @@ const Explore = () => {
       ]);
     }
   }, [location.state]);
+
+  // Listen for real-time focus events dispatched by floating AIChatWidget while on /explore
+  useEffect(() => {
+    const handleCustomFocus = (e) => {
+      const target = e.detail;
+      if (target && target.latitude && target.longitude) {
+        setDisplayedMarkers([target]);
+        highlightLocationOnMap(target);
+        if (target.kecamatan) {
+          setActiveKecamatanName(target.kecamatan);
+        }
+        setChatMessages(prev => [
+          ...prev,
+          {
+            role: 'model',
+            text: `Navigasi rute aktif menuju **${target.nama}** (${target.kecamatan}). Peta telah difokuskan ke lokasi destinasi dengan titik awal GPS Anda!`,
+            recommendedPlaces: [target]
+          }
+        ]);
+      }
+    };
+
+    window.addEventListener('tobaroute:focus_poi', handleCustomFocus);
+    return () => window.removeEventListener('tobaroute:focus_poi', handleCustomFocus);
+  }, [userLocation]);
+
+  // Listen for query parameters in URL (?search=... or ?poi=... or ?name=...)
+  useEffect(() => {
+    if (!destinations || destinations.length === 0) return;
+    const params = new URLSearchParams(location.search);
+    const searchVal = params.get('search') || params.get('poi') || params.get('name') || params.get('q');
+    if (searchVal && !location.state?.targetLocation) {
+      const qLower = searchVal.trim().toLowerCase();
+      const found = destinations.find(d => 
+        String(d.id) === qLower || 
+        (d.nama || '').toLowerCase() === qLower ||
+        (d.nama || '').toLowerCase().includes(qLower)
+      );
+      if (found) {
+        setDisplayedMarkers([found]);
+        highlightLocationOnMap(found);
+      }
+    }
+  }, [destinations, location.search, location.state]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -508,6 +559,23 @@ const Explore = () => {
       });
       setRouteWaypoints([DEFAULT_START_ORIGIN, targetCoords]);
     }
+  };
+
+  // Navigasi rute dari Bandara Internasional Silangit (DTB)
+  const highlightLocationFromSilangit = (targetObj) => {
+    if (!targetObj || !targetObj.latitude || !targetObj.longitude) return;
+    const silangitCoords = [2.2590, 98.9950]; // Titik Koordinat Bandara Silangit DTB
+    const targetCoords = [targetObj.latitude, targetObj.longitude];
+    setActiveTarget(targetObj);
+    setMapCenter(targetCoords);
+    setMapZoom(13);
+
+    if (targetObj.kecamatan) {
+      setActiveKecamatanName(targetObj.kecamatan);
+    }
+
+    setRouteWaypoints([silangitCoords, targetCoords]);
+    setSelectedPoiModal(null);
   };
 
   // Process location query from chatbot
@@ -1361,7 +1429,7 @@ const Explore = () => {
               </div>
 
               {/* Description */}
-              <div style={{ marginBottom: '1.25rem' }}>
+              <div style={{ marginBottom: '1rem' }}>
                 <h4 style={{ margin: '0 0 0.4rem 0', fontSize: '0.95rem', color: '#0f172a', fontWeight: 700 }}>
                   Informasi & Deskripsi Lengkap
                 </h4>
@@ -1369,6 +1437,92 @@ const Explore = () => {
                   {formatDescription(selectedPoiModal.deskripsi_lengkap || selectedPoiModal.deskripsi_singkat)}
                 </p>
               </div>
+
+              {/* SECTION PANDUAN AKSES TRANSPORTASI WISATAWAN */}
+              {(() => {
+                const modalTransport = getClientTransportGuide(selectedPoiModal);
+                if (!modalTransport) return null;
+                return (
+                  <div style={{
+                    background: '#f0fdf4',
+                    border: '1.5px solid #86efac',
+                    borderRadius: '12px',
+                    padding: '1rem',
+                    marginBottom: '1.25rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', color: '#166534', fontWeight: 800, fontSize: '0.95rem' }}>
+                        <Bus size={18} color="#16a34a" />
+                        <span>Panduan Akses & Transportasi Wisatawan</span>
+                      </div>
+                      <span style={{ background: '#dcfce7', color: '#15803d', fontSize: '0.72rem', fontWeight: 700, padding: '0.2rem 0.55rem', borderRadius: '20px' }}>
+                        Terverifikasi
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.82rem' }}>
+                      {/* 1. Akses Bandara Silangit */}
+                      <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.65rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700, color: '#0284c7' }}>
+                            <Plane size={14} /> Dari Bandara Silangit (DTB)
+                          </span>
+                          <strong style={{ color: '#0f172a', fontSize: '0.78rem' }}>
+                            {modalTransport.durasi_bandara} ({modalTransport.jarak_bandara_km} km)
+                          </strong>
+                        </div>
+                        <p style={{ margin: 0, color: '#475569', fontSize: '0.78rem', lineHeight: '1.4' }}>
+                          {modalTransport.bandara_access?.rute_utama}. Tersedia Taksi Bandara, DAMRI Shuttle, dan Rental Mobil Bandara.
+                        </p>
+                      </div>
+
+                      {/* 2. Angkutan Umum & Ojek */}
+                      <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.65rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700, color: '#16a34a', marginBottom: '0.25rem' }}>
+                          <Bus size={14} /> Angkutan Umum & Ojek Lokal
+                        </div>
+                        <div style={{ color: '#334155', fontSize: '0.78rem', lineHeight: '1.4' }}>
+                          <div>• <strong>Trayek:</strong> {modalTransport.angkutan_umum?.trayek}</div>
+                          <div>• <strong>Ongkos:</strong> <span style={{ color: '#15803d', fontWeight: 700 }}>{modalTransport.angkutan_umum?.estimasi_tarif}</span></div>
+                          <div>• <strong>Titik Turun:</strong> {modalTransport.angkutan_umum?.titik_turun}</div>
+                        </div>
+                      </div>
+
+                      {/* 3. Kapal Feri (Jika Ada) */}
+                      {modalTransport.kapal_feri && modalTransport.kapal_feri.dermaga_pilihan && modalTransport.kapal_feri.dermaga_pilihan[0] && (
+                        <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.65rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700, color: '#0369a1', marginBottom: '0.25rem' }}>
+                            <Ship size={14} /> Penyeberangan Feri Danau Toba
+                          </div>
+                          <div style={{ color: '#334155', fontSize: '0.78rem', lineHeight: '1.4' }}>
+                            <div>• <strong>Rute:</strong> {modalTransport.kapal_feri.dermaga_pilihan[0].rute}</div>
+                            <div>• <strong>Kapal & Jadwal:</strong> {modalTransport.kapal_feri.dermaga_pilihan[0].kapal} ({modalTransport.kapal_feri.dermaga_pilihan[0].jadwal})</div>
+                            <div>• <strong>Tarif:</strong> {modalTransport.kapal_feri.dermaga_pilihan[0].tarif_orang}</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 4. Rental Kendaraan & Kondisi Jalan */}
+                      <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.65rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700, color: '#d97706', marginBottom: '0.25rem' }}>
+                          <Car size={14} /> Sewa Kendaraan & Kondisi Jalan
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', marginBottom: '0.3rem', fontSize: '0.76rem' }}>
+                          <span style={{ background: '#f8fafc', padding: '0.25rem 0.4rem', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                            🛵 <strong>Sewa Motor:</strong> {modalTransport.kendaraan_pribadi?.sewa_motor?.estimasi_tarif || 'Rp 80rb/hari'}
+                          </span>
+                          <span style={{ background: '#f8fafc', padding: '0.25rem 0.4rem', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                            🚗 <strong>Mobil + Sopir:</strong> {modalTransport.kendaraan_pribadi?.sewa_mobil?.estimasi_tarif || 'Rp 500rb/hari'}
+                          </span>
+                        </div>
+                        <p style={{ margin: 0, color: '#64748b', fontSize: '0.74rem' }}>
+                          🛣️ {modalTransport.kendaraan_pribadi?.kondisi_akses}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Action Buttons */}
               <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
@@ -1379,13 +1533,13 @@ const Explore = () => {
                     highlightLocationOnMap(item);
                   }}
                   style={{
-                    flex: 1,
+                    flex: '1 1 180px',
                     background: '#0284c7',
                     color: 'white',
                     border: 'none',
                     borderRadius: '8px',
                     padding: '0.65rem 1rem',
-                    fontSize: '0.88rem',
+                    fontSize: '0.86rem',
                     fontWeight: 700,
                     cursor: 'pointer',
                     display: 'flex',
@@ -1394,7 +1548,31 @@ const Explore = () => {
                     gap: '0.4rem'
                   }}
                 >
-                  <RouteIcon size={16} /> Navigasi Rute dari GPS Saya
+                  <RouteIcon size={16} /> Navigasi dari GPS Saya
+                </button>
+
+                <button 
+                  onClick={() => {
+                    const item = selectedPoiModal;
+                    highlightLocationFromSilangit(item);
+                  }}
+                  style={{
+                    flex: '1 1 180px',
+                    background: '#0f766e',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '0.65rem 1rem',
+                    fontSize: '0.86rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.4rem'
+                  }}
+                >
+                  <Plane size={16} /> Rute dari Bandara Silangit
                 </button>
                 
                 <a 
@@ -1407,11 +1585,12 @@ const Explore = () => {
                     border: '1px solid #cbd5e1',
                     borderRadius: '8px',
                     padding: '0.65rem 1rem',
-                    fontSize: '0.88rem',
+                    fontSize: '0.86rem',
                     fontWeight: 600,
                     textDecoration: 'none',
                     display: 'flex',
                     alignItems: 'center',
+                    justifyContent: 'center',
                     gap: '0.35rem'
                   }}
                 >

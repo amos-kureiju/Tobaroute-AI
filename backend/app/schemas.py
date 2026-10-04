@@ -95,6 +95,7 @@ class DestinasiBase(BaseModel):
     jumlah_ulasan: int = 0                  # Banyaknya ulasan (digunakan algoritma keadilan untuk deteksi UMKM)
     plus_code: Optional[str] = None         # Kode alamat digital (contoh: "6PVX+FP7")
     full_address: Optional[str] = None      # Gabungan alamat plus code dan nama jalan lengkap
+    akses_transportasi: Optional[dict] = None # Panduan akses transportasi (bandara, angkot, feri, rental, estimasi biaya)
 
 # SKEMA: DestinasiCreate
 # TUJUAN:
@@ -121,6 +122,7 @@ class DestinasiUpdate(BaseModel):
     jumlah_ulasan: Optional[int] = None
     plus_code: Optional[str] = None
     full_address: Optional[str] = None
+    akses_transportasi: Optional[dict] = None
 
 # SKEMA: DestinasiResponse
 # TUJUAN:

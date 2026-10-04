@@ -293,7 +293,7 @@ def ingest_dataset():
                 "jumlah_ulasan": 25 + (idx % 40),
                 "deskripsi_singkat": f"Objek wisata {tipe.lower()} unggulan dengan pesona alam asri di {kecamatan}.",
                 "deskripsi_lengkap": f"Fasilitas: {fasilitas}. Estimasi Biaya: {harga}. Jam Operasional: {jam}.",
-                "gambar_url": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80"
+                "gambar_url": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80"
             }
             if simpan_ke_db(payload):
                 total_added += 1
@@ -603,7 +603,7 @@ def ingest_dataset():
                 "jumlah_ulasan": 25 + idx,
                 "deskripsi_singkat": f"Atraksi wisata unggulan di Kabupaten {kab}.",
                 "deskripsi_lengkap": f"Detail Atraksi: {detail}",
-                "gambar_url": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80"
+                "gambar_url": "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800&q=80"
             }
             if simpan_ke_db(payload):
                 total_added += 1
@@ -696,7 +696,7 @@ def ingest_dataset():
                 "jumlah_ulasan": ulasan,
                 "deskripsi_singkat": f"{deskripsi.split('.')[0]}.",
                 "deskripsi_lengkap": f"{deskripsi}",
-                "gambar_url": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80"
+                "gambar_url": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80"
             }
             if simpan_ke_db(payload):
                 total_added += 1

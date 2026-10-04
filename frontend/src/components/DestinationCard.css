@@ -95,7 +95,7 @@
   display: flex;
   align-items: center;
   gap: 0.85rem;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.5rem;
   font-size: 0.82rem;
   color: #64748b;
 }
@@ -115,7 +115,7 @@
 .card-description {
   font-size: 0.85rem;
   color: #475569;
-  margin: 0 0 0.85rem 0;
+  margin: 0 0 0.65rem 0;
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -126,11 +126,50 @@
 }
 
 /* ==========================================================================
-   COMPACT INLINE DETAIL PANEL
+   QUICK TRANSPORT PREVIEW CHIPS
+   ========================================================================== */
+.card-transport-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.transport-chip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.transport-chip-badge.airport {
+  background: #f0f9ff;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+}
+
+.transport-chip-badge.transit {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.transport-chip-badge.ferry {
+  background: #f8fafc;
+  color: #0369a1;
+  border: 1px solid #cbd5e1;
+}
+
+/* ==========================================================================
+   COMPACT INLINE DETAIL PANEL & TABS
    ========================================================================== */
 .inline-detail-panel {
   margin: 0.25rem 0 0.85rem 0;
-  padding: 0.85rem;
+  padding: 0.75rem;
   background: #f8fafc;
   border-radius: 10px;
   border: 1px solid #e2e8f0;
@@ -140,6 +179,39 @@
 @keyframes slideDownFade {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.detail-panel-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.65rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.45rem;
+}
+
+.detail-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: transparent;
+  border: none;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #64748b;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.detail-tab-btn:hover {
+  color: #0f172a;
+  background: #f1f5f9;
+}
+
+.detail-tab-btn.active {
+  color: #0284c7;
+  background: #e0f2fe;
 }
 
 .compact-insight-box {
@@ -241,11 +313,176 @@
   word-break: break-word;
 }
 
-/* Action Buttons Grid */
-.card-actions {
+/* ==========================================================================
+   TAB CONTENT: TRANSPORTATION GUIDE
+   ========================================================================== */
+.tab-content-transport {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.transport-guide-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.transport-guide-card.airport-card {
+  border-left: 3px solid #0284c7;
+}
+
+.transport-guide-card.transit-card {
+  border-left: 3px solid #16a34a;
+}
+
+.transport-guide-card.ferry-card {
+  border-left: 3px solid #0369a1;
+}
+
+.transport-guide-card.rental-card {
+  border-left: 3px solid #d97706;
+}
+
+.transport-guide-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: #0f172a;
+}
+
+.badge-dist-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #0284c7;
+  background: #e0f2fe;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  margin-left: auto;
+}
+
+.transport-guide-desc {
+  font-size: 0.76rem;
+  color: #475569;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.transport-sub-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.72rem;
+  color: #64748b;
+  margin-top: 0.2rem;
+}
+
+.transport-row-detail {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.detail-key {
+  color: #94a3b8;
+  font-weight: 600;
+  width: 50px;
+  flex-shrink: 0;
+}
+
+.detail-val {
+  color: #334155;
+}
+
+.detail-val.fare {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.ferry-route-box {
+  background: #f8fafc;
+  padding: 0.4rem;
+  border-radius: 6px;
+  font-size: 0.73rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.ferry-rute-title {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.ferry-meta-row {
+  display: flex;
+  gap: 0.6rem;
+  color: #64748b;
+  font-size: 0.7rem;
+}
+
+.ferry-fare-row {
+  color: #0284c7;
+  font-weight: 600;
+  font-size: 0.7rem;
+}
+
+.rental-options-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+}
+
+.rental-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.3rem 0.45rem;
+}
+
+.rental-pill div {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.rental-pill strong {
+  font-size: 0.7rem;
+  color: #0f172a;
+}
+
+.rental-pill span {
+  font-size: 0.68rem;
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.road-condition-note {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin: 0.3rem 0 0 0;
+  line-height: 1.35;
+}
+
+/* ==========================================================================
+   ACTION BUTTONS GRID (3 COLUMNS)
+   ========================================================================== */
+.card-actions-3col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.4rem;
   margin-top: auto;
   padding-top: 0.65rem;
   border-top: 1px solid #f1f5f9;
@@ -255,13 +492,26 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
-  padding: 0.45rem 0.65rem;
+  gap: 0.25rem;
+  padding: 0.42rem 0.45rem;
   border-radius: 8px;
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-transport-toggle {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.btn-transport-toggle:hover, .btn-transport-toggle.active {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
 }
 
 .btn-detail {
@@ -284,4 +534,3 @@
 .btn-route:hover {
   background: #0369a1;
 }
-

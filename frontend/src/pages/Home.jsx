@@ -1,14 +1,24 @@
 // ====================================================================================================
 // FILE: frontend/src/pages/Home.jsx
+// TUJUAN:
+// Halaman Beranda Utama TobaRoute AI dengan Visual UI Modern & Travel-Oriented.
+// Fitur:
+// 1. Hero Banner dengan Latar Kaldera Toba, Trust Badges, dan Search Bar 5 Kategori Terpadu.
+// 2. Interactive Travel DNA Persona Selector (1-klik ganti & terapkan preferensi wisata).
+// 3. Bento Grid Kategori Favorit (Wisata Alam, Kuliner Batak, Sentra Tenun, Jalur Feri & Rute).
+// 4. Kartu Nilai Guna Nyata (Akses Transportasi Jelas, Keadilan UMKM, AI Precision Planner).
+// 5. Itinerary Timeline Interaktif (Jadwal jam-ke-jam, prakiraan cuaca, dan rute navigasi GIS).
+// 6. Kartu Rekomendasi Destinasi & UMKM dengan info transportasi terpadu.
 // ====================================================================================================
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   Search, MapPin, Sparkles, AlertCircle, Compass, ShieldCheck,
-  Route, Store, Clock, RotateCw, Car, Bike, Ship, Mountain,
+  Route, Store, Clock, RotateCw, Car, Bike, Ship, Mountain, Bus,
   Users, Sun, Wind, CheckCircle, Navigation, Award, Calendar,
-  ArrowRight, Utensils, ChevronRight, Thermometer, Star
+  ArrowRight, Utensils, ChevronRight, Thermometer, Star, Plane,
+  HeartHandshake, Map as MapIcon, Check, ExternalLink, Zap
 } from 'lucide-react';
 import { getFairRecommendation } from '../services/api';
 import DestinationCard from '../components/DestinationCard';
@@ -16,10 +26,11 @@ import RouteMap from '../components/RouteMap';
 import ReactMarkdown from 'react-markdown';
 
 const POPULAR_TAGS = [
-  { label: 'Wisata Alam Balige', query: 'Wisata alam dan pantai pemandangan indah di Balige' },
-  { label: 'Kuliner Khas Batak', query: 'Rumah makan kuliner khas Batak naniarsik dan mie gomak' },
-  { label: 'Sentra Tenun Ulos', query: 'Tempat pembuatan dan kerajinan Tenun Ulos buatan UMKM lokal' },
-  { label: 'Rute Feri Danau', query: 'Rute angkutan umum dan kapal feri penyeberangan Danau Toba' },
+  { label: '🏖️ Pantai Lumban Bulbul', query: 'Wisata alam pantai pasir putih lumban bulbul di Balige' },
+  { label: '🍲 Mie Gomak & Andaliman', query: 'Rumah makan kuliner khas Batak naniarsik dan mie gomak' },
+  { label: '🧵 Sentra Ulos Huta Raja', query: 'Tempat pembuatan dan kerajinan Tenun Ulos buatan UMKM lokal' },
+  { label: '🏔️ Bukit Holbung Sunset', query: 'Wisata alam bukit holbung dan panorama kaldera Danau Toba' },
+  { label: '🚢 Feri Ajibata – Tomok', query: 'Rute angkutan umum dan kapal feri penyeberangan Danau Toba' },
 ];
 
 const TRAVEL_PERSONAS = [
@@ -58,8 +69,43 @@ const TRAVEL_PERSONAS = [
 ];
 
 const WEATHER_PRESETS = [
-  { temp: '22 – 26°C', status: 'Cerah Berawan', humidity: '72%', wind: '12 km/jam', outfit: 'Pakaian santai katun, kacamata, dan jaket tipis untuk pagi/sore hari' },
-  { temp: '21 – 24°C', status: 'Semilir Angin Kaldera', humidity: '78%', wind: '15 km/jam', outfit: 'Jaket ringan tahan angin dan alas kaki nyaman untuk area danau' }
+  { temp: '22 – 26°C', status: 'Cerah Berawan', humidity: '72%', wind: '12 km/jam', outfit: 'Pakaian santai katun, kacamata hitam, dan jaket tipis untuk semilir angin danau' },
+  { temp: '21 – 24°C', status: 'Semilir Angin Kaldera', humidity: '78%', wind: '15 km/jam', outfit: 'Jaket ringan tahan angin dan alas kaki nyaman untuk area tepi danau' }
+];
+
+const BENTO_CATEGORIES = [
+  {
+    id: 'nature',
+    title: 'Pesona Alam & Geosite Kaldera',
+    subtitle: 'Bukit Holbung, Puncak Sipinsur, Air Terjun Situmurun & Pantai Pasir Putih',
+    image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80',
+    tag: 'UNESCO Geopark',
+    query: 'Wisata alam pemandangan kaldera bukit dan pantai di Danau Toba'
+  },
+  {
+    id: 'culinary',
+    title: 'Kuliner Batak & Kopi Lintong',
+    subtitle: 'Mie Gomak andaliman hangat, Dekke Naaniura, Ikan Arsik, dan Kopi Arabika',
+    image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80',
+    tag: 'Kuliner Autentik',
+    query: 'Rumah makan kuliner khas Batak naniarsik naniura mie gomak'
+  },
+  {
+    id: 'heritage',
+    title: 'Sentra Tenun Ulos & Budaya',
+    subtitle: 'Batikta Balige, Kampung Tenun Ulos Huta Raja, dan Museum TB Silalahi',
+    image: 'https://images.unsplash.com/photo-1606744824163-985d376605aa?auto=format&fit=crop&w=600&q=80',
+    tag: 'UMKM & Budaya',
+    query: 'Sentra kerajinan tenun ulos dan museum budaya Batak'
+  },
+  {
+    id: 'transport',
+    title: 'Akses Feri & Transportasi Terpadu',
+    subtitle: 'KMP Ihan Batak, KMP Tao Toba, Pelabuhan Mulia Raja, dan Angkot Balige',
+    image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=600&q=80',
+    tag: 'Logistik Wisatawan',
+    query: 'Rute transportasi angkutan umum dan penyeberangan kapal feri Danau Toba'
+  }
 ];
 
 const Home = () => {
@@ -135,7 +181,7 @@ const Home = () => {
       const d2 = destList[(dayIdx + 1) % Math.max(destList.length, 1)] || { nama: 'Sentra Tenun Ulos & Budaya', kecamatan: 'Meat' };
       return {
         dayNumber: dayIdx + 1,
-        title: dayIdx === 0 ? `Hari 1 — ${kecamatan || 'Balige'}` : `Hari 2 — Penyeberangan Samosir`,
+        title: dayIdx === 0 ? `Hari 1 — ${kecamatan || 'Balige & Sekitarnya'}` : `Hari 2 — Penyeberangan Samosir`,
         weather,
         slots: [
           { time: '08:00 – 09:30', title: 'Sarapan Mie Gomak & Kopi Arabika Toba', category: 'Kuliner Pagi', location: 'Kedai Lokal Tepi Danau', temp: '21°C', reason: 'Mengisi stamina dengan kuah santan berempah andaliman sebelum memulai perjalanan.', transit: '15 mnt berkendara (5.8 km) via jalan utama beraspal' },
@@ -153,35 +199,33 @@ const Home = () => {
   return (
     <>
       {/* ====================================================== */}
-      {/* HERO                                                   */}
+      {/* HERO SECTION DENGAN VISUAL MODERN                      */}
       {/* ====================================================== */}
-      <section className="polar-hero">
+      <section className="polar-hero-v2">
         <div className="container">
           <div className="polar-hero-grid">
 
-            {/* Left Column */}
+            {/* Left Column: Search & Value Prop */}
             <div className="polar-hero-left fade-in">
 
-              {/* Trust Row */}
+              {/* Trust & Category Badges */}
               <div className="polar-trust-badges">
                 <span className="polar-trust-item"><Award size={13} /> UNESCO Global Geopark</span>
                 <span className="polar-trust-sep">·</span>
-                <span className="polar-trust-item"><ShieldCheck size={13} /> Kemenparekraf RI</span>
+                <span className="polar-trust-item"><Bus size={13} /> Info Transportasi & Feri</span>
                 <span className="polar-trust-sep">·</span>
-                <span className="polar-trust-item"><CheckCircle size={13} /> 100% Fairness UMKM</span>
+                <span className="polar-trust-item"><ShieldCheck size={13} /> 100% Keadilan UMKM</span>
               </div>
 
               <h1 className="polar-hero-title">
-                AI Trip Planner yang<br />
-                <span className="glow-accent">Memahami Selera Wisata</span><br />
-                Danau Toba Anda.
+                Rencanakan Liburan Danau Toba dengan <span className="glow-accent">AI, Rute Transportasi</span> & Sentra UMKM.
               </h1>
 
               <p className="polar-hero-subtitle">
-                Jadwal presisi per jam, prakiraan cuaca mikro kaldera, rute adil yang memberdayakan UMKM lokal — semua dalam satu platform.
+                Jadwal presisi jam-ke-jam, panduan angkot & feri terpadu, serta rekomendasi tempat kuliner dan pengrajin lokal yang autentik.
               </p>
 
-              {/* SNCF Clean Search Bar */}
+              {/* Modern Search & Category Box */}
               <div className="sncf-search-wrapper">
 
                 <div className="sncf-search-tabs">
@@ -213,7 +257,7 @@ const Home = () => {
                     <Search className="sncf-icon" size={17} />
                     <input
                       type="text"
-                      placeholder="Apa yang ingin Anda jelajahi? (misal: wisata budaya keluarga)"
+                      placeholder="Mau jalan-jalan ke mana? (contoh: wisata alam sejuk dan makan arsik)"
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                     />
@@ -222,26 +266,26 @@ const Home = () => {
                   <div className="sncf-input-field">
                     <MapPin className="sncf-icon" size={16} />
                     <select value={kecamatan} onChange={(e) => setKecamatan(e.target.value)}>
-                      <option value="">Semua Kecamatan</option>
+                      <option value="">Semua Kecamatan (24 Wilayah)</option>
                       <option value="Balige">Balige & Toba Tengah</option>
-                      <option value="Samosir">Pulau Samosir</option>
+                      <option value="Samosir">Pulau Samosir (Pangururan/Tomok)</option>
                       <option value="Parapat">Parapat (Simalungun)</option>
                       <option value="Doloksanggul">Humbahas (Sipinsur)</option>
-                      <option value="Tarutung">Tapanuli Utara</option>
+                      <option value="Tarutung">Tapanuli Utara (Muara)</option>
                       <option value="Berastagi">Karo (Tongging)</option>
                       <option value="Sidikalang">Dairi (Silalahi)</option>
                     </select>
                   </div>
                   <button type="submit" className="sncf-submit-btn" disabled={loading}>
-                    {loading ? <div className="spinner" /> : <><Search size={15} /> Cari Rute</>}
+                    {loading ? <div className="spinner" /> : <><Sparkles size={15} /> Cari Rute AI</>}
                   </button>
                 </form>
 
               </div>
 
-              {/* Quick Tags */}
+              {/* Quick Inspiration Tags */}
               <div className="hero-quick-tags">
-                <span className="quick-tag-label">Inspirasi:</span>
+                <span className="quick-tag-label">Inspirasi Cepat:</span>
                 <div className="tags-wrapper">
                   {POPULAR_TAGS.map((tag, i) => (
                     <button key={i} className="tag-pill" onClick={() => handleSearch(null, tag.query)}>
@@ -259,69 +303,49 @@ const Home = () => {
 
             </div>
 
-            {/* Right Column — Phone Mockup */}
+            {/* Right Column: Travel DNA Persona Card */}
             <div className="polar-hero-right fade-in">
-              <div className="polar-phone-wrapper">
-
-                {/* Floating Persona Card */}
-                <div className="polar-floating-persona">
-                  <div className="persona-badge">Travel DNA</div>
-                  <div className="persona-title">{selectedPersona.title}</div>
-                  <div className="persona-avatar-wrap">
-                    <img src={selectedPersona.avatar} alt="Persona traveler" className="persona-avatar" />
-                  </div>
-                  <p style={{ fontSize: '0.7rem', color: '#64748B', lineHeight: 1.4, marginBottom: '0.65rem' }}>
-                    {selectedPersona.desc}
-                  </p>
-                  <button
-                    className="btn-persona-action"
+              <div className="travel-dna-card">
+                <div className="dna-card-header">
+                  <span className="dna-badge"><Sparkles size={12} /> Travel DNA Selector</span>
+                  <button 
+                    type="button" 
+                    className="btn-switch-persona"
                     onClick={() => {
                       const nextIdx = (TRAVEL_PERSONAS.findIndex(p => p.id === selectedPersona.id) + 1) % TRAVEL_PERSONAS.length;
                       setSelectedPersona(TRAVEL_PERSONAS[nextIdx]);
                     }}
                   >
-                    <RotateCw size={11} /> Ganti Persona
+                    <RotateCw size={12} /> Ganti Persona
                   </button>
                 </div>
 
-                {/* Phone Frame */}
-                <div className="polar-phone-frame">
-                  <div className="polar-phone-notch" />
-                  <div className="polar-phone-screen">
-                    <div className="polar-phone-map-bg">
-                      <div className="polar-phone-header">
-                        <span>Danau Toba Roadtrip</span>
-                        <span>2D1N</span>
-                      </div>
-                      <div className="polar-map-pin" style={{ top: '38%', left: '22%' }}>1 Balige</div>
-                      <div className="polar-map-pin" style={{ top: '55%', left: '52%', background: '#00875A' }}>2 Meat</div>
-                      <div className="polar-map-pin" style={{ top: '28%', right: '14%', background: '#6366F1' }}>3 Samosir</div>
-                      <div style={{ marginTop: 'auto', background: 'rgba(12,18,32,0.6)', borderRadius: '6px', padding: '3px 8px', alignSelf: 'flex-start', fontSize: '0.65rem', color: '#E0F2FE', fontWeight: 600 }}>
-                        23°C — Cerah Berawan
-                      </div>
-                    </div>
-                    <div className="polar-phone-sheet">
-                      <div className="polar-sheet-header">
-                        <span>Rute Aktif</span>
-                        <span>4 Titik</span>
-                      </div>
-                      {[
-                        { name: 'Balige Kota', sub: 'Sarapan Mie Gomak', time: '08:00' },
-                        { name: 'Desa Meat', sub: 'Sentra Tenun Ulos', time: '10:30' },
-                        { name: 'Pantai Pasir Putih', sub: 'Makan Siang Arsik', time: '13:00' },
-                      ].map((s, i) => (
-                        <div key={i} className="polar-stop-mini">
-                          <div>
-                            <strong>{s.name}</strong>
-                            <span style={{ fontSize: '0.68rem', color: '#94A3B8', display: 'block' }}>{s.sub}</span>
-                          </div>
-                          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0071CE' }}>{s.time}</span>
-                        </div>
-                      ))}
-                    </div>
+                <div className="dna-persona-body">
+                  <div className="dna-avatar-wrapper">
+                    <img src={selectedPersona.avatar} alt={selectedPersona.title} className="dna-avatar-img" />
+                    <span className="dna-category-pill">{selectedPersona.label}</span>
+                  </div>
+                  <div className="dna-text-group">
+                    <h3 className="dna-title">{selectedPersona.title}</h3>
+                    <p className="dna-desc">{selectedPersona.desc}</p>
                   </div>
                 </div>
 
+                <div className="dna-card-footer">
+                  <button 
+                    type="button" 
+                    className="btn-apply-persona"
+                    onClick={() => handleSearch(null, selectedPersona.defaultQuery)}
+                  >
+                    <Zap size={14} /> Terapkan Gaya Wisata Ini
+                  </button>
+                </div>
+
+                {/* Weather mini banner */}
+                <div className="dna-weather-mini">
+                  <Sun size={14} color="#f59e0b" />
+                  <span>Suhu Kaldera Hari Ini: <strong>23°C</strong> (Cerah Berawan & Sejuk)</span>
+                </div>
               </div>
             </div>
 
@@ -330,15 +354,136 @@ const Home = () => {
       </section>
 
       {/* ====================================================== */}
-      {/* RESULTS                                               */}
+      {/* SECTION BENTO KATEGORI WISATA & VALUE PROPOSITION      */}
       {/* ====================================================== */}
-      <main className="container main-content section-anchor" id="results-section" style={{ marginTop: '3rem' }}>
+      {!results && !loading && (
+        <section className="container home-showcase-container fade-in">
+          
+          {/* Section 1: Bento Categories */}
+          <div className="bento-section-header">
+            <span className="section-pill-tag">Katalog Eksplorasi</span>
+            <h2 className="section-title-large">Jelajahi Berdasarkan Kategori Favorit</h2>
+            <p className="section-subtitle">
+              Pilih tema perjalanan impian Anda — dari panorama alam kaldera, gastronomi Batak, hingga kerajinan tenun Ulos.
+            </p>
+          </div>
+
+          <div className="bento-categories-grid">
+            {BENTO_CATEGORIES.map((cat, idx) => (
+              <div 
+                key={cat.id} 
+                className={`bento-category-card card-${idx}`}
+                onClick={() => handleSearch(null, cat.query)}
+              >
+                <img 
+                  src={cat.image} 
+                  alt={cat.title} 
+                  className="bento-bg-img" 
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80';
+                  }}
+                />
+                <div className="bento-overlay" />
+                <div className="bento-content">
+                  <span className="bento-tag">{cat.tag}</span>
+                  <h3 className="bento-card-title">{cat.title}</h3>
+                  <p className="bento-card-sub">{cat.subtitle}</p>
+                  <span className="bento-action-link">
+                    Eksplorasi Rute <ArrowRight size={14} />
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Section 2: Mengapa Memilih TobaRoute AI? (Jawaban Keraguan Juri) */}
+          <div className="value-prop-section">
+            <div className="bento-section-header">
+              <span className="section-pill-tag green">Nilai Guna Wisatawan</span>
+              <h2 className="section-title-large">Mengapa Wisatawan Wajib Menggunakan TobaRoute AI?</h2>
+              <p className="section-subtitle">
+                Menjawab tuntas seluruh kebutuhan praktis pelancong dari luar daerah dengan solusi berbasis data nyata.
+              </p>
+            </div>
+
+            <div className="value-cards-grid">
+              <div className="value-card">
+                <div className="value-icon-box blue">
+                  <Bus size={24} />
+                </div>
+                <h3>1. Panduan Akses Transportasi Lengkap</h3>
+                <p>
+                  Tidak perlu bingung mencari rute. TobaRoute menyediakan estimasi jarak dari Bandara Silangit, trayek angkot lokal, tarif ojek, hingga jadwal kapal feri penyeberangan danau.
+                </p>
+                <div className="value-badge-row">
+                  <span>✈️ Bandara Silangit</span>
+                  <span>🚢 Feri RORO</span>
+                  <span>🚐 Angkot Lokal</span>
+                </div>
+              </div>
+
+              <div className="value-card">
+                <div className="value-icon-box green">
+                  <HeartHandshake size={24} />
+                </div>
+                <h3>2. 100% Pemberdayaan UMKM Lokal</h3>
+                <p>
+                  Algoritma Keadilan (Fairness Engine) menyandingkan tempat wisata populer dengan warung kuliner dan pengrajin warga setempat agar wisatawan merasakan pengalaman lokal yang autentik.
+                </p>
+                <div className="value-badge-row">
+                  <span>🍲 Kuliner Halal & Khas</span>
+                  <span>🧵 Pengrajin Ulos</span>
+                  <span>☕ Kopi Arabika</span>
+                </div>
+              </div>
+
+              <div className="value-card">
+                <div className="value-icon-box amber">
+                  <Sparkles size={24} />
+                </div>
+                <h3>3. Itinerary Presisi & Cuaca Mikro</h3>
+                <p>
+                  Rencana perjalanan jam-ke-jam yang disesuaikan dengan cuaca mikro kaldera Toba, dilengkapi tips pakaian yang nyaman dan navigasi jalan raya terhubung langsung ke GPS.
+                </p>
+                <div className="value-badge-row">
+                  <span>⏱️ Jadwal Per Jam</span>
+                  <span>☀️ Cuaca Kaldera</span>
+                  <span>🧭 GIS Navigation</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Stat Banner */}
+          <div className="stats-banner-v2">
+            {[
+              { num: '491+', label: 'Entitas Wisata & UMKM', icon: <Store size={18} color="#0284c7" /> },
+              { num: '24', label: 'Kecamatan Terdata', icon: <MapPin size={18} color="#16a34a" /> },
+              { num: '16', label: 'Geosite UNESCO', icon: <Award size={18} color="#f59e0b" /> },
+              { num: '100%', label: 'Keadilan Porsi UMKM', icon: <CheckCircle size={18} color="#10b981" /> },
+            ].map((s, i) => (
+              <div key={i} className="stat-card-v2">
+                <div className="stat-icon-wrap">{s.icon}</div>
+                <div className="stat-number-v2">{s.num}</div>
+                <div className="stat-label-v2">{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+        </section>
+      )}
+
+      {/* ====================================================== */}
+      {/* RESULTS SECTION                                        */}
+      {/* ====================================================== */}
+      <main className="container main-content section-anchor" id="results-section" style={{ marginTop: '2.5rem' }}>
 
         {loading && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div className="skeleton-loading" style={{ height: '160px', borderRadius: '16px' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '2rem 0' }}>
+            <div className="skeleton-loading" style={{ height: '180px', borderRadius: '16px' }} />
             <div className="grid">
-              {[1,2,3].map(i => <div key={i} className="skeleton-loading card-skeleton" />)}
+              {[1, 2, 3, 4].map(i => <div key={i} className="skeleton-loading card-skeleton" />)}
             </div>
           </div>
         )}
@@ -351,9 +496,12 @@ const Home = () => {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div>
-                  <h2 style={{ fontSize: '1.35rem', fontWeight: 800, marginBottom: '0.3rem' }}>Rencana Itinerary Perjalanan</h2>
-                  <p style={{ fontSize: '0.875rem', color: '#667085', margin: 0 }}>
-                    Jadwal jam-ke-jam, prakiraan cuaca mikro, estimasi jarak, dan singgah UMKM lokal.
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.3rem' }}>
+                    <Calendar size={18} color="#0284c7" />
+                    <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0 }}>Rencana Itinerary Perjalanan Pintar</h2>
+                  </div>
+                  <p style={{ fontSize: '0.875rem', color: '#64748b', margin: 0 }}>
+                    Jadwal jam-ke-jam, prakiraan cuaca mikro, estimasi jarak jalan, dan singgah UMKM lokal.
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
@@ -369,7 +517,7 @@ const Home = () => {
                     onClick={(e) => handleSearch(e, null, true)}
                     style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}
                   >
-                    <RotateCw size={14} /> Opsi Lain
+                    <RotateCw size={14} /> Opsi Alternatif
                   </button>
                 </div>
               </div>
@@ -400,7 +548,7 @@ const Home = () => {
                   </div>
                 </div>
                 <div className="weather-outfit-tip">
-                  <CheckCircle size={14} />
+                  <CheckCircle size={14} color="#16a34a" />
                   <span>{activePlan.weather.outfit}</span>
                 </div>
               </div>
@@ -433,7 +581,7 @@ const Home = () => {
                           style={{ fontSize: '0.78rem', padding: '0.4rem 0.75rem' }}
                           onClick={() => document.getElementById('map-section')?.scrollIntoView({ behavior: 'smooth' })}
                         >
-                          <Navigation size={13} /> Peta
+                          <Navigation size={13} /> Lihat di Peta
                         </button>
                       </div>
                     </div>
@@ -454,8 +602,10 @@ const Home = () => {
             <section className="ai-response section-anchor" id="map-section">
               <div className="ai-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                  <Sparkles size={18} color="#0071CE" />
-                  <h3>Kurasi Senior Travel Concierge TobaRoute</h3>
+                  <Sparkles size={18} color="#0284c7" />
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                    Kurasi Senior Travel Concierge TobaRoute AI
+                  </h3>
                 </div>
               </div>
               <div className="ai-body">
@@ -465,9 +615,14 @@ const Home = () => {
             </section>
 
             {/* Destinations */}
-            <section className="destinations-section">
+            <section className="destinations-section" style={{ marginTop: '2.5rem' }}>
               <div className="section-header">
-                <h2>Destinasi Utama</h2>
+                <div>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>Destinasi Wisata Utama</h2>
+                  <p style={{ margin: '0.2rem 0 0', color: '#64748b', fontSize: '0.88rem' }}>
+                    Tempat wisata primer paling relevan dengan minat perjalanan Anda.
+                  </p>
+                </div>
                 <div className="line" />
               </div>
               {results.destinasi_utama.length > 0 ? (
@@ -478,9 +633,17 @@ const Home = () => {
             </section>
 
             {/* UMKM */}
-            <section className="umkm-section">
+            <section className="umkm-section" style={{ marginTop: '2.5rem' }}>
               <div className="section-header">
-                <h2>Rekomendasi UMKM Lokal</h2>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Store size={20} color="#16a34a" />
+                    <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>Rekomendasi UMKM & Kuliner Lokal</h2>
+                  </div>
+                  <p style={{ margin: '0.2rem 0 0', color: '#64748b', fontSize: '0.88rem' }}>
+                    Warung kuliner khas, kedai kopi, dan pengrajin tenun Ulos di sekitar rute Anda (Keadilan Eksposur).
+                  </p>
+                </div>
                 <div className="line line-accent" />
               </div>
               {results.rekomendasi_umkm_sekitar.length > 0 ? (
@@ -489,205 +652,6 @@ const Home = () => {
                 </div>
               ) : <p className="no-data">Tidak ada rekomendasi UMKM untuk pencarian ini.</p>}
             </section>
-
-          </div>
-        )}
-
-        {/* ====================================================== */}
-        {/* SHOWCASE — Only shown before search                   */}
-        {/* ====================================================== */}
-        {!results && !loading && (
-          <div className="fade-in">
-
-            <div className="polar-showcase-section">
-
-              {/* Feature 1 */}
-              <div className="polar-showcase-row">
-                <div className="polar-preview-box">
-                  <div className="polar-preview-card-inner">
-                    <span className="badge badge-blue" style={{ marginBottom: '0.65rem' }}>Travel Style</span>
-                    <h4 style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '0.35rem' }}>The Culinary Adventurer</h4>
-                    <img
-                      src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80"
-                      alt="Culinary traveler"
-                      style={{ width: '100%', height: '130px', objectFit: 'cover', borderRadius: '10px', marginBottom: '0.75rem' }}
-                    />
-                    <p style={{ fontSize: '0.78rem', color: '#667085', lineHeight: 1.5 }}>
-                      Penjelajah kuliner yang mencari hidangan autentik rempah andaliman, sajian naniura segar, dan kopi di kedai lokal pinggir danau.
-                    </p>
-                  </div>
-                </div>
-                <div className="polar-showcase-text">
-                  <span className="badge badge-slate" style={{ marginBottom: '1rem' }}>Personalisasi</span>
-                  <h2>Mempelajari Gaya dan Selera Wisata Anda</h2>
-                  <p>
-                    Dari eksplorasi tenang tepi danau, petualangan trekking geosite kaldera, hingga berburu kuliner autentik Batak — TobaRoute AI mempelajari preferensi Anda untuk merancang rute yang benar-benar pas.
-                  </p>
-                  <button className="btn-primary" onClick={() => handleSearch(null, 'Wisata kuliner autentik Batak')}>
-                    Coba Sekarang <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Feature 2 */}
-              <div className="polar-showcase-row reverse">
-                <div className="polar-preview-box">
-                  <div className="polar-preview-card-inner">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                      <span style={{ fontSize: '0.78rem', fontWeight: 700 }}>Samosir Roadtrip</span>
-                      <span className="badge badge-blue" style={{ padding: '0.15rem 0.5rem', fontSize: '0.65rem' }}>2 Malam</span>
-                    </div>
-                    {[
-                      { name: 'Desa Tomok', sub: 'Batu Kursi & Makam Raja', day: 'Hari 1' },
-                      { name: 'Bukit Holbung', sub: 'Sunset Sabana Kaldera', day: 'Hari 2' },
-                    ].map((item, i) => (
-                      <div key={i} style={{ background: '#F9FAFB', border: '1px solid #E4E7EC', borderRadius: '8px', padding: '0.6rem 0.75rem', marginBottom: '0.4rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <strong style={{ fontSize: '0.82rem' }}>{item.name}</strong>
-                          <div style={{ fontSize: '0.68rem', color: '#94A3B8' }}>{item.sub}</div>
-                        </div>
-                        <span className={`badge ${i === 0 ? 'badge-blue' : 'badge-green'}`} style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem' }}>{item.day}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="polar-showcase-text">
-                  <span className="badge badge-slate" style={{ marginBottom: '1rem' }}>Itinerary</span>
-                  <h2>Edit dan Eksplorasi Jadwal Secara Bebas</h2>
-                  <p>
-                    Atur ulang urutan jam kunjungan, tambahkan singgah UMKM lokal, atau ubah durasi hari di Studio Planner. Peta rute GIS diperbarui seketika mengikuti perubahan Anda.
-                  </p>
-                  <NavLink to="/planner" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                    Buka Studio Itinerary <ArrowRight size={16} />
-                  </NavLink>
-                </div>
-              </div>
-
-              {/* Feature 3 */}
-              <div className="polar-showcase-row">
-                <div className="polar-preview-box">
-                  <div className="polar-preview-card-inner">
-                    <p style={{ fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.65rem' }}>Preferensi Perjalanan</p>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', marginBottom: '0.75rem' }}>
-                      <div style={{ border: '1.5px solid #0071CE', background: '#EBF4FF', borderRadius: '8px', padding: '0.5rem', textAlign: 'center', fontSize: '0.72rem', fontWeight: 700, color: '#0071CE' }}>
-                        Road Trip
-                      </div>
-                      <div style={{ border: '1px solid #E4E7EC', background: '#F9FAFB', borderRadius: '8px', padding: '0.5rem', textAlign: 'center', fontSize: '0.72rem', color: '#94A3B8' }}>
-                        Feri Danau
-                      </div>
-                    </div>
-                    <div style={{ background: '#F9FAFB', border: '1px solid #E4E7EC', borderRadius: '8px', padding: '0.6rem', fontSize: '0.72rem', color: '#475569', lineHeight: 1.5 }}>
-                      "Bersama keluarga dengan anak-anak, menginginkan rute santai dan bebas macet."
-                    </div>
-                  </div>
-                </div>
-                <div className="polar-showcase-text">
-                  <span className="badge badge-slate" style={{ marginBottom: '1rem' }}>Kustomisasi</span>
-                  <h2>Bentuk Rencana Sesuai Kebutuhan Anda</h2>
-                  <p>
-                    Beri tahu AI siapa yang ikut (keluarga, pasangan, solo), moda transportasi pilihan (mobil, motor, feri), dan lokasi wajib yang ingin dikunjungi.
-                  </p>
-                  <button className="btn-primary" onClick={() => handleSearch(null, 'Wisata keluarga balige pantai bulbul')}>
-                    <Users size={16} /> Rancang Trip Keluarga
-                  </button>
-                </div>
-              </div>
-
-              {/* Feature 4 */}
-              <div className="polar-showcase-row reverse">
-                <div className="polar-preview-box">
-                  <div className="polar-preview-card-inner">
-                    <img
-                      src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80"
-                      alt="Lake Toba ferry route"
-                      style={{ width: '100%', height: '130px', objectFit: 'cover', borderRadius: '10px', marginBottom: '0.75rem' }}
-                    />
-                    <div className="badge badge-green" style={{ marginBottom: '0.5rem', display: 'inline-flex' }}>Info Feri</div>
-                    <p style={{ fontSize: '0.75rem', color: '#374151', fontWeight: 600, lineHeight: 1.4 }}>
-                      Jadwal KMP Ihan Batak: 08.00 · 11.00 · 14.30 WIB<br />
-                      <span style={{ fontWeight: 400, color: '#94A3B8' }}>Ajibata – Ambarita (Samosir)</span>
-                    </p>
-                  </div>
-                </div>
-                <div className="polar-showcase-text">
-                  <span className="badge badge-slate" style={{ marginBottom: '1rem' }}>Navigasi</span>
-                  <h2>Perjalanan Cerdas Antar Titik Kunjungan</h2>
-                  <p>
-                    Estimasi waktu tempuh realistis terintegrasi dengan jadwal kapal feri penyeberangan Danau Toba. Liburan tetap efisien, bebas kebingungan, dan tepat waktu.
-                  </p>
-                  <button className="btn-primary" onClick={() => handleSearch(null, 'Rute feri ajibata ambarita dan transportasi')}>
-                    <Ship size={16} /> Cek Logistik Feri
-                  </button>
-                </div>
-              </div>
-
-              {/* Feature 5 */}
-              <div className="polar-showcase-row">
-                <div className="polar-preview-box">
-                  <div className="polar-preview-card-inner">
-                    <strong style={{ fontSize: '0.9rem', display: 'block', marginBottom: '0.2rem' }}>Desa Wisata Meat</strong>
-                    <span className="badge badge-green" style={{ marginBottom: '0.65rem', display: 'inline-flex' }}>Sentra Tenun Ulos</span>
-                    <div style={{ background: '#EBF4FF', borderLeft: '3px solid #0071CE', padding: '0.55rem 0.7rem', borderRadius: '0 8px 8px 0', fontSize: '0.78rem', color: '#1E3A5F', lineHeight: 1.5 }}>
-                      <strong>Mengapa cocok:</strong> Karena Anda menyukai keaslian budaya Batak dan ingin melihat proses tenun Ulos di tepi sawah kaldera.
-                    </div>
-                  </div>
-                </div>
-                <div className="polar-showcase-text">
-                  <span className="badge badge-slate" style={{ marginBottom: '1rem' }}>Transparansi AI</span>
-                  <h2>Pahami Mengapa Setiap Rekomendasi Cocok</h2>
-                  <p>
-                    Setiap destinasi dan UMKM dilengkapi penjelasan personal dari AI — mengapa tempat tersebut pas dengan minat dan kondisi cuaca saat kunjungan Anda.
-                  </p>
-                  <NavLink to="/umkm" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <Store size={16} /> Direktori Sentra UMKM
-                  </NavLink>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Stats */}
-            <div className="stats-banner">
-              {[
-                { num: '491', label: 'Entitas Wisata & UMKM' },
-                { num: '24', label: 'Kecamatan Terdata' },
-                { num: '16', label: 'Geosite UNESCO' },
-                { num: '100%', label: 'Keadilan Porsi UMKM' },
-              ].map((s, i, arr) => (
-                <React.Fragment key={i}>
-                  <div className="stat-item">
-                    <span className="stat-number">{s.num}</span>
-                    <span className="stat-label">{s.label}</span>
-                  </div>
-                  {i < arr.length - 1 && <div className="stat-divider" />}
-                </React.Fragment>
-              ))}
-            </div>
-
-            {/* CTA */}
-            <div style={{ marginTop: '2.5rem', background: '#0C1220', borderRadius: '24px', padding: '3rem 2.5rem', textAlign: 'center', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#38BDF8', marginBottom: '0.75rem' }}>Studio Perencana AI</p>
-              <h3 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#F1F5F9', letterSpacing: '-0.02em', marginBottom: '0.75rem', lineHeight: 1.25 }}>
-                Buka Studio Itinerary & Peta GIS<br />Interaktif
-              </h3>
-              <p style={{ fontSize: '0.95rem', color: '#64748B', maxWidth: '560px', margin: '0 auto 2rem', lineHeight: 1.65 }}>
-                Atur anggaran, checklist perlengkapan, dan navigasi rute jalan raya secara presisi dengan AI Concierge yang memahami seluruh kawasan Danau Toba.
-              </p>
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <NavLink
-                  to="/planner"
-                  style={{ background: '#0071CE', color: '#fff', fontWeight: 700, padding: '0.85rem 2rem', borderRadius: '12px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', transition: '0.2s' }}
-                >
-                  <Calendar size={17} /> Buka Studio Itinerary
-                </NavLink>
-                <NavLink
-                  to="/explore"
-                  style={{ background: 'rgba(255,255,255,0.07)', color: '#CBD5E1', border: '1px solid rgba(255,255,255,0.12)', fontWeight: 600, padding: '0.85rem 2rem', borderRadius: '12px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', transition: '0.2s' }}
-                >
-                  <Compass size={17} /> Jelajah Peta GIS
-                </NavLink>
-              </div>
-            </div>
 
           </div>
         )}

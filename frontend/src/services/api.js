@@ -8,8 +8,8 @@
 
 import axios from 'axios';
 
-// URL dasar API backend FastAPI (Mendukung port 8080 dan 8000 secara dinamis)
-const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || 'http://localhost:8080/api';
+// URL dasar API backend FastAPI (Mendukung port 8000 dan 8080 secara dinamis)
+const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 // Inisialisasi instance Axios dengan timeout 90 detik (agar RAG + Gemini punya waktu pemrosesan yang cukup)
 const apiClient = axios.create({

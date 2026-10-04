@@ -13,6 +13,7 @@ from typing import List, Optional
 from .database import engine, Base, get_db
 from . import crud, schemas, models
 from .ai_bot import generate_tourist_response, chat_with_bot, generate_destination_ai_insight
+from .transport_helper import get_transport_guide
 
 # Otomatis membuat tabel-tabel di PostgreSQL saat server backend pertama kali dijalankan
 Base.metadata.create_all(bind=engine)
@@ -35,7 +36,7 @@ app.add_middleware(
 
 # ====================================================================================================
 # HELPER: format_destinasi_response
-# TUJUAN: Menyeragamkan format objek destinasi sebelum dikirimkan ke frontend (termasuk Plus Code).
+# TUJUAN: Menyeragamkan format objek destinasi sebelum dikirimkan ke frontend (termasuk Plus Code & Transportasi).
 # ====================================================================================================
 import math
 
@@ -66,16 +67,30 @@ def format_destinasi_response(d):
     raw_reviews = getattr(d, 'jumlah_ulasan', 0)
     reviews = int(clean_float(raw_reviews, 15))
 
+    nama = clean_str(getattr(d, 'nama', 'Destinasi'))
+    kategori = clean_str(getattr(d, 'kategori', 'wisata'))
+    kecamatan = clean_str(getattr(d, 'kecamatan', 'Toba'))
     nama_jalan = clean_str(getattr(d, 'nama_jalan', ''))
+    
     plus = schemas.generate_plus_code(lat, lon)
     plus_short = f"{plus[:4]}+{plus[4:8]}" if len(plus) >= 8 else plus
     full_addr = f"{plus_short}, {nama_jalan}" if nama_jalan else plus_short
 
+    # Hitung panduan akses transportasi lengkap
+    transport_guide = get_transport_guide(
+        nama=nama,
+        kecamatan=kecamatan,
+        kategori=kategori,
+        latitude=lat,
+        longitude=lon,
+        nama_jalan=nama_jalan
+    )
+
     return {
         "id": int(getattr(d, 'id', 0)),
-        "nama": clean_str(getattr(d, 'nama', 'Destinasi')),
-        "kategori": clean_str(getattr(d, 'kategori', 'wisata')),
-        "kecamatan": clean_str(getattr(d, 'kecamatan', 'Toba')),
+        "nama": nama,
+        "kategori": kategori,
+        "kecamatan": kecamatan,
         "gambar_url": getattr(d, 'gambar_url', None) or None,
         "deskripsi_singkat": clean_str(getattr(d, 'deskripsi_singkat', 'Destinasi unggulan kawasan Danau Toba.')),
         "deskripsi_lengkap": clean_str(getattr(d, 'deskripsi_lengkap', '')),
@@ -85,7 +100,8 @@ def format_destinasi_response(d):
         "rating": rating,
         "jumlah_ulasan": reviews,
         "plus_code": plus_short,
-        "full_address": full_addr
+        "full_address": full_addr,
+        "akses_transportasi": transport_guide
     }
 
 # ====================================================================================================
@@ -182,7 +198,9 @@ def get_destinasi_ai_insight(destinasi_id: int, db: Session = Depends(get_db)):
         kecamatan=d.kecamatan,
         kategori=d.kategori,
         deskripsi_singkat=d.deskripsi_singkat,
-        nama_jalan=d.nama_jalan or ""
+        nama_jalan=d.nama_jalan or "",
+        latitude=getattr(d, 'latitude', 2.3387),
+        longitude=getattr(d, 'longitude', 99.0625)
     )
     return insight
 

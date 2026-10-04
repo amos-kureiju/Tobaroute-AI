@@ -2,18 +2,20 @@
 # FILE: backend/app/ai_bot.py
 # TUJUAN & PENJELASAN ARSITEKTUR:
 # File ini berfungsi sebagai modul kecerdasan buatan utama (AI Engine) TobaRoute.
-# Menggunakan Google GenAI SDK dengan model 'gemini-3.1-flash-lite'.
+# Menggunakan Google GenAI SDK dengan model 'gemini-3.1-flash-lite' & fallback 'gemini-3.6-flash'.
 #
-# BAGAIMANA SISTEM RAG (RETRIEVAL-AUGMENTED GENERATION) & UNIVERSAL CHATBOT BEKERJA?
+# BAGAIMANA SISTEM RAG & ASISTEN WISATAWAN PRAKTIS BEKERJA?
 # 1. RETRIEVAL (Pengambilan Data): Database SQL & Vektor mencari entitas, statistik wilayah, & POI relevan.
-# 2. AUGMENTATION (Pengayaan Konteks): Data destinasi terverifikasi disuntikkan ke dalam ENSILOPEDIA DANAU TOBA.
-# 3. GENERATION (Pembuatan Respon): Model LLM Gemini menyusun respons yang sangat kaya, mendalam,
-#    faktual, serta fleksibel untuk menjawab SEGALA pertanyaan pengguna (spesifik, budaya, kuantitatif,
-#    itinerary, maupun pertanyaan umum/random layaknya ChatGPT atau Gemini).
+# 2. PRACTICAL INTENT AUGMENTATION: Mendeteksi pertanyaan praktis pelancong (Transportasi Silangit/Kualanamu,
+#    Jadwal Feri, Sewa Motor/Mobil, Estimasi Biaya, Kuliner Halal, Sentra Ulos, Cuaca, Kontak Darurat).
+# 3. ENSIKLOPEDIA & REAL-WORLD LOGISTICS: Menyediakan informasi logistik nyata dan mendalam.
+# 4. GENERATION (Pembuatan Respon): Model LLM Gemini menyusun respons yang sangat kaya, terstruktur,
+#    faktual, serta fleksibel untuk menjawab SEGALA pertanyaan pengguna layaknya Senior Travel Concierge.
 # ====================================================================================================
 
 import os
 import json
+import math
 from pathlib import Path
 from dotenv import load_dotenv
 from google import genai
@@ -30,10 +32,10 @@ api_key = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=api_key)
 
 # ====================================================================================================
-# BASIS PENGETAHUAN ENSIKLOPEDIA RESMI & KOMPREHENSIF KAWASAN DANAU TOBA (UNESCO GLOBAL GEOPARK)
+# BASIS PENGETAHUAN ENSIKLOPEDIA RESMI & LOGISTIK PRAKTIS KAWASAN DANAU TOBA (UNESCO GLOBAL GEOPARK)
 # ====================================================================================================
 DANAU_TOBA_KNOWLEDGE_BASE = """
-=== ENSIKLOPEDIA & BASIS PENGETAHUAN RESMI KAWASAN DANAU TOBA (UNESCO GLOBAL GEOPARK) ===
+=== ENSIKLOPEDIA & PANDUAN LOGISTIK PRAKTIS KAWASAN DANAU TOBA (UNESCO GLOBAL GEOPARK) ===
 
 1. Geologi & Sejarah Kaldera Vulkanik Terbesar di Dunia:
    - Supererupsi Kaldera Toba (~74.000 tahun silam / Youngest Toba Tuff) berkekuatan VEI 8 melepaskan lebih dari 2.800 km³ material vulkanik, menyebabkan musim dingin vulkanik global (volcanic winter) selama bertahun-tahun dan mengubah iklim bumi purba.
@@ -83,7 +85,7 @@ DANAU_TOBA_KNOWLEDGE_BASE = """
    - Kopi Arabika Dataran Tinggi: Kopi Arabika Lintong (Humbahas), Sigarar Utang, dan Tipika berkarakter body tebal, aroma rempah herba (spicy), cokelat hitam, dan floral eksotis.
 
 4. Delapan (8) Kabupaten Lingkar Danau Toba:
-   - Kabupaten Toba (Ibukota: Balige): Sentra budaya, Institut Teknologi Del di Laguboti, Pantai Lumban Silintong, Desa Meat, Makam Raja Sisingamangaraja XII, Bukit Singgolom, Porsea.
+   - Kabupaten Toba (Ibukota: Balige): Sentra budaya, Pusat Riset Teknologi di Laguboti, Pantai Lumban Silintong, Desa Meat, Makam Raja Sisingamangaraja XII, Bukit Singgolom, Porsea.
    - Kabupaten Samosir (Ibukota: Pangururan): Pusat wisata pulau, Jembatan Tano Ponggol, Pemandian Air Panas Aek Rangat, Bukit Holbung, Menara Pandang Tele, Desa Wisata Tomok & Tuk-Tuk, Batu Kursi Persidangan Huta Siallagan.
    - Kabupaten Humbang Hasundutan (Ibukota: Doloksanggul): Geosite Sipinsur, Lembah Hijau Bakkara, Istana Raja Sisingamangaraja XII, Air Terjun Janji, Sentra Kopi Lintong.
    - Kabupaten Tapanuli Utara (Ibukota: Tarutung): Wisata Rohani Salib Kasih Siatas Barita, Pemandian Air Soda Parbubu (satu dari dua di dunia), Pemandian Air Panas Sipoholon, Panorama Huta Ginjang.
@@ -92,16 +94,75 @@ DANAU_TOBA_KNOWLEDGE_BASE = """
    - Kabupaten Dairi (Kawasan: Silahisabungan/Sidikalang): Pantai Tao Silalahi (pantai terpanjang di Danau Toba), Tugu Silahisabungan, Kopi Sidikalang legendaris.
    - Kabupaten Pakpak Bharat (Ibukota: Salak): Air Terjun Lae Mbilulu, Geopark Delleng Simpon, tradisi budaya suku Pakpak.
 
-5. Aksesibilitas, Navigasi & Logistik Transportasi:
-   - Bandara Internasional Sisingamangaraja XII / Silangit (DTB) di Siborongborong: Akses tercepat ke Balige (~30 mnt), Muara (~45 mnt), Doloksanggul (~45 mnt), dan Parapat (~1.5 jam).
-   - Bandara Internasional Kualanamu (KNO) di Deli Serdang: Akses via Jalan Tol Medan-Tebing Tinggi-Sinaksak menuju Parapat (~2.5 - 3.5 jam).
-   - Pelabuhan Feri Penyeberangan Ro-Ro Utama:
-     * Pelabuhan Ajibata ↔ Pelabuhan Ambarita (KMP Ihan Batak & KMP Pora-Pora).
-     * Pelabuhan Ajibata ↔ Pelabuhan Tomok (Kapal Motor Tradisional & Kapal Feri Tao Toba).
-     * Pelabuhan Tigaras (Simalungun) ↔ Pelabuhan Simanindo (Samosir).
-     * Pelabuhan Balige (Toba) ↔ Pelabuhan Onan Runggu (Samosir).
-     * Pelabuhan Muara (Taput) ↔ Pelabuhan Sipinggan (Samosir).
+5. PANDUAN PRAKTIS LOGISTIK & AKSES TRANSPORTASI WISATAWAN:
+   A. Dari Bandara Internasional Silangit / Raja Sisingamangaraja XII (DTB) di Siborongborong:
+      - Ke Balige: ~25 km (30-40 menit). Taksi resmi bandara: Rp 150.000 - Rp 200.000. Bus DAMRI: Rp 25.000 - Rp 35.000/orang.
+      - Ke Parapat: ~75 km (1.5 - 2 jam). Taksi resmi bandara: Rp 350.000 - Rp 450.000. Bus DAMRI: Rp 45.000 - Rp 65.000/orang.
+      - Ke Pangururan / Samosir (via Tele/Tano Ponggol): ~85 km (2 - 2.5 jam). Taksi bandara: Rp 500.000 - Rp 650.000.
+      - Ke Sipinsur / Doloksanggul: ~35 km (45 menit). Taksi bandara: Rp 150.000 - Rp 220.000.
+      - Ke Tarutung: ~30 km (40 menit). Taksi bandara: Rp 150.000 - Rp 200.000.
+   B. Dari Medan / Bandara Internasional Kualanamu (KNO):
+      - Travel Eksekutif (KBT, Sampri, Simpati Star, Tiomaz, Sejahtera): Rute via Tol Tebing Tinggi - Sinaksak - Pematang Siantar - Parapat (~2.5 - 3.5 jam). Tarif: Rp 90.000 - Rp 140.000/orang.
+      - Kereta Api: KA Siantar Ekspres (Medan - Pematang Siantar, Rp 22.000) lalu sambung Angkot Siantar - Parapat (Rp 20.000, 45 menit).
+   C. Jadwal & Tarif Kapal Feri Penyeberangan Danau Toba:
+      - Pelabuhan Ajibata (Parapat) ↔ Pelabuhan Ambarita (Samosir): KMP Ihan Batak & KMP Pora-Pora (Feri RORO). Berangkat setiap 1.5 - 2 jam mulai pukul 07.30 s/d 20.00 WIB. Tarif: Penumpang Rp 15.000 - Rp 20.000, Sepeda Motor Rp 25.000, Mobil Pribadi Rp 140.000 - Rp 170.000.
+      - Pelabuhan Ajibata ↔ Pelabuhan Tomok: KMP Tao Toba / Kapal Motor Tradisional. Setiap 1 jam. Tarif: Penumpang Rp 10.000 - Rp 15.000, Mobil Rp 135.000 - Rp 160.000.
+      - Pelabuhan Balige (Mulia Raja Napitupulu) ↔ Pelabuhan Onan Runggu (Samosir): KMP Kaldera Toba. Jadwal pagi 08.30 & siang 13.30 WIB. Tarif: Penumpang Rp 20.000, Mobil Rp 150.000.
+      - Pelabuhan Tigaras (Simalungun) ↔ Pelabuhan Simanindo (Samosir): KMP Sumut I & II. Berangkat setiap 1 - 2 jam. Tarif: Penumpang Rp 15.000, Mobil Rp 135.000.
+      - Pelabuhan Muara (Taput) ↔ Pelabuhan Sipinggan (Samosir): KMP Muara Putih & Kapal Tradisional.
+      - Rute Darat Tanpa Feri: Lewat Jembatan Tano Ponggol di Pangururan via Tele (dari arah Medan/Berastagi atau Doloksanggul).
+   D. Sewa Kendaraan & Transportasi Lokal:
+      - Sewa Sepeda Motor: Rp 70.000 - Rp 100.000 / 24 jam (banyak di Tuktuk Siadong, Tomok, Balige, Parapat). Wajib bawa SIM C dan helm.
+      - Sewa Mobil + Supir Lokal: Rp 500.000 - Rp 700.000 / hari (sangat disarankan karena medan kaldera berbukit dan jalan berliku).
+      - Angkot Lokal & Bentor (Becak Motor): Angkot trayek Balige - Laguboti - Porsea Rp 5.000 - Rp 15.000, Bentor Balige/Parapat Rp 10.000 - Rp 30.000.
+
+6. PANDUAN ANGGARAN & ESTIMASI BIAYA WISATA (BUDGET GUIDE):
+   - Paket Backpacker / Solo Traveler (2 Hari 1 Malam):
+     * Penginapan / Homestay warga: Rp 150.000 - Rp 250.000 / malam.
+     * Makan kuliner lokal (Mie Gomak, Nasi Ikan, Kopi): Rp 20.000 - Rp 35.000 / porsi.
+     * Sewa motor: Rp 80.000 / hari.
+     * Tiket masuk wisata (HTM): Rp 5.000 - Rp 15.000 / spot.
+     * Estimasi Total: ~Rp 450.000 - Rp 750.000 per orang (di luar tiket pesawat/kereta).
+   - Paket Keluarga / Rombongan (3 Hari 2 Malam, 4 Orang):
+     * Hotel / Resort tepi danau: Rp 550.000 - Rp 1.200.000 / kamar / malam.
+     * Restoran kuliner khas / cafe: Rp 60.000 - Rp 120.000 / orang / makan.
+     * Sewa mobil Avanza/Innova + supir + BBM: Rp 600.000 / hari.
+     * Belanja souvenir tenun Ulos & kopi: Rp 250.000 - Rp 600.000.
+     * Estimasi Total: ~Rp 1.100.000 - Rp 1.800.000 per orang.
+
+7. PANDUAN KULINER HALAL & RAMAH MUSLIM:
+   - Kawasan Danau Toba sangat ramah wisatawan Muslim dengan ketersediaan ragam menu halal:
+     * Menu Halal Khas Toba: Ikan Mas / Nila Bakar bumbu rempah Danau Toba, Mie Gomak kuah kuning andaliman halal, Ayam Pinadar bumbu rempah halal (kelapa sangrai), Kopi Arabika Lintong, Ombusombus, Pohulpohul, Tipatipa.
+     * Lokasi Rumah Makan Halal: Banyak tersebar di Balige (sepanjang Jl. SM Raja & Jl. Mulia Raja), Parapat (Jl. Haranggaol & Jl. SM Raja), Pangururan, Tarutung, dan Doloksanggul. Terdapat pula banyak Rumah Makan Minang/Padang dan Warung Muslim lokal.
+
+8. PANDUAN BELANJA TENUN ULOS & SOUVENIR ASLI DARI PENGRAJIN:
+   - Desa Wisata Meat (Tampahan, Balige): Sentra tenun Ulos asli di tepi sawah bertingkat, bisa melihat proses tenun manual dan beli langsung dari pengrajin warga (Rp 150.000 - Rp 800.000).
+   - Kampung Ulos Huta Raja (Lumban Suhi-suhi, Samosir): Desa tenun tradisional berderet Rumah Bolon purba.
+   - Galeri Batikta Balige: Pusat cenderamata, tenun Ulos terkurasi tinggi, batik motif gorga, dan pakaian etnik modern.
+   - Balerong Onan Raja Balige & Pasar Tomok: Pasar tradisional untuk berburu pernak-pernik ukiran kayu gorga, kain tenun, dan camilan kacang Sihobuk.
+
+9. CUACA MIKRO, MUSIM KUNJUNGAN & TIPS PAKAIAN:
+   - Suhu rata-rata harian: 20°C - 26°C (siang sejuk, pagi dan malam dingin berangin ~18°C - 21°C).
+   - Musim Terbaik: Mei hingga September (musim kemarau dengan pemandangan air danau tenang, langit biru cerah, dan sunset terbaik).
+   - Tips Pakaian: Pakaian katun santai, kacamata hitam, sunscreen, serta **wajib membawa jaket hangat / windbreaker** terutama saat menyeberang kapal feri atau berkunjung ke dataran tinggi (Tele, Sipinsur, Huta Ginjang).
+
+10. KONTAK DARURAT & POSKO WISATAWAN:
+    - Tourism Information Center (TIC) Parapat & Balige.
+    - Basarnas Pos SAR Danau Toba: 115 / (0625).
+    - RS HKBP Balige / RSUD Porsea / RSUD Hadrianus Sinaga Pangururan / RSUD Tarutung.
+    - Call Center Darurat: 112 / Polsek Balige, Polsek Parapat, Polres Samosir.
 """
+
+def calc_distance_km(lat1, lon1, lat2, lon2):
+    """Menghitung jarak geodesic Haversine (km) antara dua koordinat."""
+    if lat1 is None or lon1 is None or lat2 is None or lon2 is None:
+        return 999.0
+    R = 6371.0
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
 
 # ====================================================================================================
 # FUNGSI: format_fair_route_to_text
@@ -158,26 +219,19 @@ Anda adalah TobaRoute AI — Asisten Cerdas, Senior Travel Concierge, dan Kurato
 Pengguna menyampaikan pertanyaan/rencana perjalanan:
 "{user_query}"
 
-BASIS PENGETAHUAN ENSIKLOPEDIA DANAU TOBA:
-{DANAU_TOBA_KNOWLEDGE_BASE}
-
-DATA DESTINASI & STATISTIK DATABASE TERVERIFIKASI:
+DATA STATISTIK & DESTINASI DARI DATABASE TOBAROUTE AI:
 {formatted_data}
 
-PANDUAN MENJAWAB & GAYA BAHASA CERDAS:
-1. ATURAN JIKA PERTANYAAN KUANTITAS / JUMLAH:
-   - Jika pengguna menanyakan "berapa banyak", "jumlah", atau rekapitulasi tempat (misal: "berapa banyak lokasi wisata di Balige?"), Anda WAJIB MENYEBUTKAN ANGKA PASTI DARI DATA STATISTIK RESMI DI ATAS SECARA LENGKAP PADA AWAL KALIMAT (sebutkan total dan rincian per kategori wisata, kuliner, UMKM, dan penginapan), baru uraikan contoh-contoh unggulannya.
-2. ATURAN JIKA PERTANYAAN UMUM / RANDOM / DILUAR TOBA:
-3. ATURAN JIKA PERTANYAAN WISATA / KULINER / ITINERARY:
-   - Sajikan ulasan yang MENDALAM, ELEGAN, dan TERSTRUKTUR RAPI menggunakan Markdown (heading `###`, bullet points `-`, dan **bold** pada nama tempat).
-   - Rangkai rencana perjalanan per jam (misal: Pagi 08.00 - 09.30, Siang 10.00 - 12.30, Makan Siang 13.00 - 14.30, Sore 15.30 - 17.30, Malam 19.00 - 21.00) dan per hari jika multi-hari.
-   - Cantumkan estimasi prakiraan cuaca mikro kaldera Toba (suhu ~22-25°C, kondisi angin danau sejuk) dan tips pakaian/outfit yang nyaman untuk setiap aktivitas.
-   - Jelaskan keunikan tempat, latar belakang budaya/sejarah, pengalaman terbaik yang dapat dirasakan, panduan kuliner lokal (Mie Gomak, Kopi Lintong, Ombusombus, Arsik, dll.), serta tips transportasi/penyeberangan feri jika relevan.
-4. ATURAN PENTING: DILARANG KERAS MENGGUNAKAN SIMBOL EMOJI:
-   - DILARANG KERAS menggunakan simbol emoji apa pun (seperti 🌊, 🏛️, 🍽️, 📍, 💡, ✨, 🌿, ☕, ⭐, 🚗, dll.) baik pada judul heading Markdown maupun isi narasi. Gunakan tipografi teks editorial yang bersih, formal, elegan, dan profesional.
-5. Awali sapaan hangat dan sopan (misal "Horas!").
+BASIS PENGETAHUAN RESMI ENSIKLOPEDIA & LOGISTIK DANAU TOBA:
+{DANAU_TOBA_KNOWLEDGE_BASE}
+
+TUGAS UTAMA ANDA:
+1. Berikan rekomendasi rute terpadu yang sangat praktis, inspiratif, dan terstruktur.
+2. Jika relevan dengan transportasi/akses, sertakan panduan waktu tempuh dari Bandara Silangit, penyeberangan feri, atau tarif nyata.
+3. Sambungkan destinasi wisata utama dengan warung kuliner khas (Mie Gomak/Naniura/Arsik/Kopi Lintong) dan sentra pengrajin UMKM di sekitarnya.
+4. Gunakan gaya bahasa sopan, ramah, profesional, dan berwibawa khas Batak ("Horas!").
+5. DILARANG KERAS menggunakan simbol emoji apa pun. Gunakan tipografi Markdown yang rapi (Heading ###, list -, dan **bold**).
 """
-    
     try:
         response = client.models.generate_content(
             model='gemini-3.1-flash-lite',
@@ -185,7 +239,7 @@ PANDUAN MENJAWAB & GAYA BAHASA CERDAS:
         )
         return response.text
     except Exception as e:
-        print(f"[AI Error] Gagal menghubungi Gemini API: {e}")
+        print(f"[AI Error] Error in generate_tourist_response: {e}")
         try:
             response = client.models.generate_content(
                 model='gemini-3.6-flash',
@@ -193,40 +247,16 @@ PANDUAN MENJAWAB & GAYA BAHASA CERDAS:
             )
             return response.text
         except Exception as e2:
-            print(f"[AI Error] Fallback Gemini API gagal: {e2}")
-            return "Horas! Asisten AI TobaRoute sedang memperbarui rute navigasi. Silakan jelajahi kartu destinasi dan peta interaktif untuk memulai perjalanan Anda."
+            print(f"[AI Error] Fallback model error: {e2}")
+            return f"Horas! Berdasarkan penelusuran kami, kawasan Danau Toba menawarkan beragam pilihan wisata alam kaldera, kuliner berempah andaliman, serta kerajinan tenun Ulos autentik dari pelaku UMKM setempat."
 
-# ====================================================================================================
-# FUNGSI: calc_distance_km (Haversine)
-# ====================================================================================================
-def calc_distance_km(lat1, lon1, lat2, lon2):
-    if lat1 is None or lon1 is None or lat2 is None or lon2 is None:
-        return 999999.0
-    try:
-        import math
-        lat1, lon1, lat2, lon2 = float(lat1), float(lon1), float(lat2), float(lon2)
-        R = 6371.0
-        dlat = math.radians(lat2 - lat1)
-        dlon = math.radians(lon2 - lon1)
-        a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
-        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-        return R * c
-    except Exception:
-        return 999999.0
-
-# ====================================================================================================
-# FUNGSI: chat_with_bot
-# PENJELASAN:
-# Chatbot percakapan cerdas yang bertindak sebagai Universal AI Assistant (seperti ChatGPT/Gemini)
-# dengan keahlian mendalam ensiklopedia Danau Toba, budaya Batak, rute navigasi, dan integrasi database live.
-# ====================================================================================================
 def clean_norm(t: str) -> str:
     if not t:
         return ""
     import re
     return re.sub(r'[^a-z0-9]', '', t.lower())
 
-# KABUPATEN / PULAU MAPPINGS (Mencakup seluruh kecamatan pembentuknya di Kawasan Danau Toba)
+# KABUPATEN / PULAU MAPPINGS
 KABUPATEN_MAPPINGS = {
     'samosir': ['samosir', 'pangururan', 'simanindo', 'harian', 'sianjur mulamula', 'onan runggu', 'palipi', 'ronggur nihuta'],
     'pulau samosir': ['samosir', 'pangururan', 'simanindo', 'harian', 'sianjur mulamula', 'onan runggu', 'palipi', 'ronggur nihuta'],
@@ -296,8 +326,8 @@ KEY_LANDMARKS_MAP = {
 # ====================================================================================================
 # FUNGSI: chat_with_bot
 # PENJELASAN:
-# Chatbot percakapan cerdas yang bertindak sebagai Universal AI Assistant (seperti ChatGPT/Gemini)
-# dengan keahlian mendalam ensiklopedia Danau Toba, budaya Batak, rute navigasi, dan integrasi database live.
+# Chatbot percakapan cerdas yang bertindak sebagai Universal AI Assistant dengan keahlian mendalam
+# ensiklopedia Danau Toba, budaya Batak, rute navigasi, logistik praktis, dan integrasi database live.
 # ====================================================================================================
 def chat_with_bot(user_message: str, history: list, db = None) -> dict:
     db_context_text = ""
@@ -316,18 +346,24 @@ def chat_with_bot(user_message: str, history: list, db = None) -> dict:
         total_global = len(all_dests)
 
         # Cek intent kategori dari pesan pengguna
-        is_coffee_req = any(k in msg_lower for k in ['kopi', 'cafe', 'kafe', 'nongkrong', 'ngopi'])
-        is_food_req = any(k in msg_lower for k in ['makan', 'kuliner', 'mie gomak', 'resto', 'lapo', 'arsik', 'naniura', 'sarapan', 'malam'])
+        is_transport_req = any(k in msg_lower for k in ['transport', 'silangit', 'kualanamu', 'taksi', 'angkot', 'damri', 'sewa mobil', 'sewa motor', 'rental', 'ongkos', 'tarif', 'cara ke', 'naik apa', 'pesawat', 'kendaraan', 'ojek', 'bentor'])
+        is_ferry_req = any(k in msg_lower for k in ['feri', 'ferry', 'kapal', 'penyeberangan', 'pelabuhan', 'ajibata', 'tomok', 'ambarita', 'jadwal kapal', 'ihan batak', 'tao toba', 'dermaga', 'menyeberang', 'roro'])
+        is_budget_req = any(k in msg_lower for k in ['biaya', 'budget', 'estimasi', 'rupiah', 'ongkos', 'paket', 'murah', 'hemat', 'harga', 'berapa duit', 'pengeluaran', 'htm', 'tiket masuk'])
+        is_halal_req = any(k in msg_lower for k in ['halal', 'muslim', 'islam', 'aman', 'tidak makan babi', 'masjid', 'shalat', 'makanan halal'])
+        is_souvenir_req = any(k in msg_lower for k in ['ulos', 'oleh', 'suvenir', 'souvenir', 'beli', 'kain', 'batikta', 'kerajinan', 'pengrajin', 'tenun'])
+        is_weather_req = any(k in msg_lower for k in ['cuaca', 'suhu', 'hujan', 'pakaian', 'baju', 'musim', 'angin', 'dingin', 'panas', 'outfit'])
+        is_emergency_req = any(k in msg_lower for k in ['darurat', 'rumah sakit', 'polisi', 'kontak', 'hotline', 'bantuan', 'puskesmas', 'kecelakaan', 'sar'])
+        is_coffee_req = any(k in msg_lower for k in ['kopi', 'cafe', 'kafe', 'nongkrong', 'ngopi', 'arabika', 'lintong'])
+        is_food_req = any(k in msg_lower for k in ['makan', 'kuliner', 'mie gomak', 'resto', 'lapo', 'arsik', 'naniura', 'sarapan', 'malam', 'siang', 'ombusombus'])
         is_umkm_req = any(k in msg_lower for k in ['umkm', 'oleh', 'ulos', 'souvenir', 'belanja', 'kerajinan', 'tenun'])
-        is_hotel_req = any(k in msg_lower for k in ['hotel', 'penginapan', 'homestay', 'resort', 'menginap', 'villa'])
+        is_hotel_req = any(k in msg_lower for k in ['hotel', 'penginapan', 'homestay', 'resort', 'menginap', 'villa', 'kamar'])
 
-        # TAHAP 1: Deteksi Nama Tempat / Destinasi Spesifik / Landmark (misal: "Huta Ginjang", "Sipinsur", "Bukit Holbung", dll)
+        # TAHAP 1: Deteksi Nama Tempat / Destinasi Spesifik / Landmark
         matched_target_dest = None
 
-        # 1A. Cari via KEY_LANDMARKS_MAP (menangani variasi tanpa spasi seperti "hutaginjang", "bukitholbung", dll)
+        # 1A. Cari via KEY_LANDMARKS_MAP
         for k_alias, k_target in KEY_LANDMARKS_MAP.items():
             if k_alias in msg_lower or clean_norm(k_alias) in norm_msg:
-                # Cari destinasi yang mengandung k_target di namanya
                 for d in all_dests:
                     d_nama_low = (d.nama or '').lower()
                     if k_target in d_nama_low or clean_norm(k_target) in clean_norm(d_nama_low):
@@ -336,7 +372,7 @@ def chat_with_bot(user_message: str, history: list, db = None) -> dict:
                 if matched_target_dest:
                     break
 
-        # 1B. Jika belum ketemu, periksa kecocokan nama destinasi langsung di database (dengan normalisasi string)
+        # 1B. Jika belum ketemu, periksa kecocokan nama destinasi langsung di database
         if not matched_target_dest:
             best_match_len = 0
             stop_words = {'wisata', 'pantai', 'hotel', 'resto', 'taman', 'kopi', 'kafe', 'desa', 'bukit', 'air', 'danau'}
@@ -352,7 +388,6 @@ def chat_with_bot(user_message: str, history: list, db = None) -> dict:
             matched_kec = matched_target_dest.kecamatan
             matched_places = [matched_target_dest]
 
-            # Cari tempat kuliner / kopi / UMKM / wisata sekitar dalam radius 15-20 km
             nearby_list = []
             if matched_target_dest.latitude and matched_target_dest.longitude:
                 for d in all_dests:
@@ -396,7 +431,7 @@ Detail Fasilitas/Rute: {matched_target_dest.deskripsi_lengkap}
                 db_context_text += f"{idx}. {p.nama} ({p.kategori}) - Wilayah: {p.kecamatan} - Alamat: {p.nama_jalan} | Info: {p.deskripsi_singkat}\n"
 
         else:
-            # TAHAP 3: Deteksi Wilayah Kabupaten / Pulau (misal: Samosir, Toba, Taput, Humbahas, Simalungun, Karo, Dairi)
+            # TAHAP 3: Deteksi Wilayah Kabupaten / Pulau
             matched_kab = None
             for kab_key in sorted(KABUPATEN_MAPPINGS.keys(), key=lambda x: len(x), reverse=True):
                 if kab_key in msg_lower or clean_norm(kab_key) in norm_msg:
@@ -416,7 +451,7 @@ Detail Fasilitas/Rute: {matched_target_dest.deskripsi_lengkap}
 
                 if is_coffee_req or is_food_req:
                     selected = sorted(kuliner_items, key=lambda d: float(d.rating or 4.0), reverse=True)[:6]
-                elif is_umkm_req:
+                elif is_umkm_req or is_souvenir_req:
                     selected = sorted(umkm_items, key=lambda d: float(d.rating or 4.0), reverse=True)[:6]
                 elif is_hotel_req:
                     selected = sorted(penginapan_items, key=lambda d: float(d.rating or 4.0), reverse=True)[:6]
@@ -465,7 +500,7 @@ Wilayah Target: {region_label} (Mencakup Kecamatan: {', '.join([k.title() for k 
 
                     if is_coffee_req or is_food_req:
                         selected = sorted(kuliner_items, key=lambda d: float(d.rating or 4.0), reverse=True)[:6]
-                    elif is_umkm_req:
+                    elif is_umkm_req or is_souvenir_req:
                         selected = sorted(umkm_items, key=lambda d: float(d.rating or 4.0), reverse=True)[:6]
                     elif is_hotel_req:
                         selected = sorted(penginapan_items, key=lambda d: float(d.rating or 4.0), reverse=True)[:6]
@@ -499,7 +534,7 @@ Total Lokasi Terdaftar di Seluruh 8 Kabupaten Kawasan Danau Toba: {total_global}
 - Sentra Pengrajin Tenun Ulos Tradisional & UMKM Oleh-Oleh
 - Pelabuhan Feri & Dermaga Penyeberangan Danau
 """
-                    keywords = ["mie gomak", "naniura", "arsik", "kopi", "ulos", "sipiso", "sipinsur", "holbung", "meat", "siallagan", "tomok", "sigura", "aek rangat", "batikta", "andaliman", "ombusombus"]
+                    keywords = ["mie gomak", "naniura", "arsik", "kopi", "ulos", "sipiso", "sipinsur", "holbung", "meat", "siallagan", "tomok", "sigura", "aek rangat", "batikta", "andaliman", "ombusombus", "silangit", "ferry", "feri", "ajibata", "ambarita"]
                     found_keywords = [kw for kw in keywords if kw in msg_lower or clean_norm(kw) in norm_msg]
                     if found_keywords:
                         matched_pool = []
@@ -515,41 +550,40 @@ Total Lokasi Terdaftar di Seluruh 8 Kabupaten Kawasan Danau Toba: {total_global}
         print(f"[Chatbot DB Context Warn] {e}")
 
     # ================================================================================================
-    # INSTRUKSI SISTEM UNTUK GEMINI FLASH LITE (UNIVERSAL INTELLIGENCE + DEEP CULTURAL CONCIERGE)
+    # INSTRUKSI SISTEM UNTUK GEMINI FLASH LITE (UNIVERSAL INTELLIGENCE + PRACTICAL TOURIST CONCIERGE)
     # ================================================================================================
     system_instruction = f"""
-Anda adalah TobaRoute AI — Asisten Cerdas Universal, Senior Travel Concierge, dan Master Pemandu Budaya Kawasan Danau Toba (UNESCO Global Geopark).
+Anda adalah TobaRoute AI — Asisten Cerdas Universal, Senior Travel Concierge, dan Master Pemandu Budaya serta Logistik Praktis Kawasan Danau Toba (UNESCO Global Geopark).
 
-KEMAMPUAN UTAMA & PERAN MULTI-DIMENSI:
-1. UNIVERSAL INTELLIGENCE (SEPERTI CHATGPT & GOOGLE GEMINI):
-   - Anda adalah Large Language Model yang sangat cerdas, berwawasan luas, dan serbaguna.
-   - JIKA pengguna bertanya tentang topik APAPUN di luar pariwisata Danau Toba (seperti: pengetahuan umum, sains, fisika, sejarah dunia, teknologi, pemrograman/coding, matematika, resep masakan umum, tips kehidupan, psikologi, perbandingan budaya, puisi, maupun pertanyaan santai/random):
-     * ANDA WAJIB MENJAWAB DENGAN CERDAS, LENGKAP, AKURAT, DAN MENARIK!
-     * DILARANG KERAS menolak pertanyaan atau mengatakan kalimat seperti "Maaf, pertanyaan ini di luar jangkauan saya" atau "Saya hanya bisa menjawab tentang Danau Toba". Jawablah pertanyaan pengguna dengan tuntas dan mendalam layaknya ChatGPT/Gemini!
-     * Setelah memberikan jawaban yang memuaskan untuk topik umum, Anda dapat memberikan salam ramah khas atau menawarkan bantuan eksplorasi jika mereka ingin berlibur ke Danau Toba.
+KEMAMPUAN UTAMA & PANDUAN MENJAWAB PERTANYAAN PRAKTIS WISATAWAN:
 
-2. KEAHLIAN MENDALAM PARIWISATA, BUDAYA BATAK & ITINERARY DANAU TOBA:
-   - JIKA pertanyaan berkaitan dengan Danau Toba, Sumatra Utara, pariwisata, budaya Batak, atau kuliner:
-     * Berikan penjelasan yang SANGAT DETAIL, KAYA KONTEKS, EDUKATIF, dan MENGALIR INDAH.
-     * Gunakan format Markdown yang rapi: Heading (`###`), poin-poin (`-`), dan **bold** pada istilah/lokasi penting.
-     * Jika diminta ITINERARY (misal: "buatkan rencana 3 hari 2 malam", "trip keluarga dengan lansia", "backpacker hemat"):
-       - Buatlah itinerary terstruktur lengkap dengan pembagian Waktu (Pagi, Siang, Sore, Malam), estimasi rute/waktu tempuh, rekomendasi kuliner lokal pendamping (Mie Gomak, Kopi Lintong, Ombusombus), tips pakaian/cuaca, dan estimasi logistik penyeberangan feri.
-     * Jika ditanya tentang BUDAYA/SEJARAH (Dalihan Na Tolu, Ulos Ragidup/Sadum, Rumah Bolon Gorga, letusan kaldera 74.000 tahun silam, Si Raja Batak):
-       - Uraikan secara filosofis dan historis dengan penjelasan yang mendalam, tidak setengah-setengah!
+1. KEMAMPUAN MENJAWAB PERTANYAAN PRAKTIS WISATAWAN SECARA NYATA & RINCI:
+   - JIKA pengguna bertanya tentang TRANSPORTASI / CARA KE SANA (Bandara Silangit, Kualanamu, Taksi, Damri, Rental Mobil/Motor, Angkot):
+     * Berikan rute langkah-demi-langkah, jarak km, durasi perjalanan, jenis armada transportasi, dan ESTIMASI TARIF RUPIAH NYATA sesuai data resmi di bawah.
+   - JIKA pengguna bertanya tentang PENYEBERANGAN KAPAL FERI (Jadwal, Tarif, Pelabuhan Ajibata, Ambarita, Tomok, Tigaras, Balige):
+     * Berikan nama kapal (KMP Ihan Batak, KMP Pora-Pora, KMP Tao Toba, KMP Kaldera Toba), frekuensi jam keberangkatan, serta tarif tiket orang, motor, dan mobil pribadi.
+   - JIKA pengguna bertanya tentang ESTIMASI BIAYA / BUDGET (Berapa biaya liburan 2D1N / 3D2N / backpacker / keluarga):
+     * Berikan rincian anggaran yang masuk akal (penginapan/homestay, makan per porsi, transportasi/sewa kendaraan, HTM wisata) beserta total estimasi per orang.
+   - JIKA pengguna bertanya tentang KULINER HALAL & RESTORAN RAMAH MUSLIM:
+     * Jelaskan dengan ramah pilihan kuliner halal khas Toba (Ikan bakar rempah, mie gomak halal, kopi Lintong, ombusombus) dan sebutkan lokasi rumah makan halal di Balige, Parapat, dan sekitarnya.
+   - JIKA pengguna bertanya tentang TENUN ULOS & SOUVENIR:
+     * Rekomendasikan tempat beli ulos asli langsung dari pengrajin warga (Desa Meat, Kampung Ulos Huta Raja, Batikta Balige) beserta kisaran harganya.
+   - JIKA pengguna bertanya tentang CUACA, PAKAIAN, ATAU WAKTU TERBAIK BERKUNJUNG:
+     * Jelaskan suhu sejuk kaldera (20-26°C), musim terbaik (Mei-September), dan saran pakaian praktis (termasuk wajib jaket hangat/windbreaker).
 
-3. PRESISI JAWABAN KUANTITATIF & REKAPITULASI DATA:
-   - JIKA pengguna menanyakan jumlah, berapa banyak lokasi, atau rekapitulasi data (misalnya: "berapa banyak lokasi wisata atau umkm di Balige?"):
-     * ANDA WAJIB MENJAWAB DENGAN ANGKA PASTI DARI DATA STATISTIK RESMI DI BAWAH PADA KALIMAT PERTAMA (sebutkan total lokasi terdaftar dan rincian per kategori wisata, kuliner, UMKM, dan penginapan), baru kemudian rekomendasikan tempat-tempat populernya.
-     * JANGAN PERNAH mengabaikan pertanyaan jumlah dengan hanya memberi pengantar umum tanpa angka!
+2. UNIVERSAL INTELLIGENCE (SEPERTI CHATGPT & GOOGLE GEMINI):
+   - JIKA pengguna bertanya tentang topik APAPUN di luar Danau Toba (sains, teknologi, koding, sejarah dunia, resep umum, matematika, puisi, curhat/santai):
+     * JAWABLAH SECARA LENGKAP, CERDAS, DAN AKURAT! DILARANG KERAS menolak pertanyaan umum.
 
-4. GAYA BAHASA & LARANGAN EMOJI (STRICT):
-   - Ramah, sopan, berwibawa, dan hangat (bisa diawali dengan salam khas "Horas!").
-   - DILARANG KERAS menggunakan simbol emoji atau emoticon apa pun (seperti 🌊, 🏛️, 🍽️, 📍, 💡, ✨, 🌿, ☕, ⭐, 🚗, dll.). Gunakan tipografi teks editorial yang bersih, formal, dan profesional.
+3. STRUKTUR & TIPOGRAFI JAWABAN:
+   - Gunakan format Markdown yang rapi: Heading (###), poin-poin (-), nomor (1.), dan **bold** pada nama tempat, tarif, dan tips penting.
+   - DILARANG KERAS MENGGUNAKAN SIMBOL EMOJI / EMOTICON APAPUN (seperti 🚗, ✈️, 🚢, 💡, 📍, dll.). Gunakan bahasa tulis editorial yang bersih, ramah, dan profesional.
+   - Awali dengan sapaan khas Batak: "Horas!"
 
-DATA DATABASE SISTEM TOBAROUTE AI SAAT INI:
+DATA STATISTIK & REKOMENDASI DATABASE TOBAROUTE AI SAAT INI:
 {db_context_text}
 
-ENSIKLOPEDIA RESMI KAWASAN DANAU TOBA:
+PANDUAN ENSIKLOPEDIA & LOGISTIK RESMI KAWASAN DANAU TOBA:
 {DANAU_TOBA_KNOWLEDGE_BASE}
 """
 
@@ -570,7 +604,6 @@ ENSIKLOPEDIA RESMI KAWASAN DANAU TOBA:
         reply_text = response.text
     except Exception as e:
         print(f"[AI Error] Error in chat_with_bot: {e}")
-        # Coba fallback model jika terjadi gangguan jaringan sementara
         try:
             response = client.models.generate_content(
                 model='gemini-3.6-flash',
@@ -587,97 +620,97 @@ ENSIKLOPEDIA RESMI KAWASAN DANAU TOBA:
         "target_kecamatan": matched_kec
     }
 
-# ====================================================================================================
-# FUNGSI: generate_heuristic_insight
-# ====================================================================================================
-def generate_heuristic_insight(nama: str, kecamatan: str, kategori: str, deskripsi_singkat: str) -> dict:
-    nama_lower = (nama or "").lower()
-    kat_lower = (kategori or "").lower()
-    desk_lower = (deskripsi_singkat or "").lower()
-
-    if any(k in nama_lower or k in kat_lower or k in desk_lower for k in ["ulos", "tenun", "songket"]):
-        return {
-            "storytelling": f"Sentra kerajinan tangan di {kecamatan} ini melestarikan teknik tenun tradisional Batak secara turun-temurun, di mana setiap helai kain Ulos ditenun dengan teliti dan sarat makna berkat serta doa leluhur.",
-            "must_try": "Melihat langsung proses pembuatan motif Ulos tradisional (seperti Sadum atau Ragi Hotang) serta membeli kain tenun asli langsung dari pengrajin warga setempat.",
-            "travel_tips": "Disarankan berkunjung pada pagi atau siang hari saat pengrajin aktif menenun. Anda juga dapat berkonsultasi mengenai makna filosofis setiap motif ulos.",
-            "highlight_tags": ["Tenun Tangan Asli", "Pemberdayaan UMKM", "Warisan Budaya Batak"]
-        }
-    elif any(k in nama_lower or k in desk_lower for k in ["gula", "aren", "palm sugar", "nira"]):
-        return {
-            "storytelling": f"Diproduksi secara murni dari sadapan pohon enau alami perbukitan {kecamatan} tanpa bahan kimia pengawet, menghasilkan cita rasa manis karamel legit yang harum khas tanah vulkanik Danau Toba.",
-            "must_try": "Membeli gula aren cetak murni dan sirup aren alami yang sangat cocok sebagai pemanis kopi Arabika Toba atau bahan baku kue tradisional.",
-            "travel_tips": "Simpan di tempat sejuk dan kedap udara agar keaslian rasa dan aroma legitnya tetap terjaga prima.",
-            "highlight_tags": ["Nira Aren Murni", "Tanpa Pengawet", "Produksi Rumahan Warga"]
-        }
-    elif any(k in kat_lower or k in nama_lower for k in ["kuliner", "makan", "resto", "kopi", "cafe", "warung"]):
-        return {
-            "storytelling": f"Destinasi kuliner autentik di kawasan {kecamatan} yang menghidangkan kekayaan bumbu rempah tradisional khas Batak Toba (seperti andaliman, asam cikala, dan lokio) yang dimasak segar setiap hari.",
-            "must_try": "Mencicipi sajian andalan hangat yang diracik dengan bumbu rempah andaliman segar untuk pengalaman gastronomi Danau Toba yang berkesan.",
-            "travel_tips": "Waktu terbaik berkunjung adalah menjelang jam makan siang (11.30 - 13.30 WIB) untuk menikmati sajian yang baru matang.",
-            "highlight_tags": ["Rempah Andaliman", "Kuliner Tradisional", "Bahan Segar Lokal"]
-        }
-    elif any(k in kat_lower or k in nama_lower for k in ["penginapan", "hotel", "homestay", "resort"]):
-        return {
-            "storytelling": f"Akomodasi berkonsep ramah keluarga di {kecamatan} yang menawarkan suasana menginap tenang dengan udara sejuk dan panorama asri bentang kaldera Danau Toba.",
-            "must_try": "Menikmati secangkir kopi hangat di pagi hari sambil menyaksikan kabut dan matahari terbit di atas perairan Danau Toba.",
-            "travel_tips": "Lakukan konfirmasi pemesanan terlebih dahulu terutama saat akhir pekan atau musim liburan.",
-            "highlight_tags": ["Udara Sejuk", "Suasana Tenang", "Akses Strategis"]
-        }
-    else:
-        return {
-            "storytelling": f"Destinasi unggulan di wilayah {kecamatan} yang menyuguhkan keindahan panorama alam kaldera Danau Toba (UNESCO Global Geopark) dengan suasana damai yang sangat asri.",
-            "must_try": "Menikmati pemandangan bentang alam danau dari sudut pandang terbaik, berfoto di spot panorama alami, dan menikmati ketenangan alam.",
-            "travel_tips": "Gunakan pakaian santai yang nyaman dan bawa jaket ringan karena embusan angin danau yang sejuk di pagi/sore hari.",
-            "highlight_tags": ["UNESCO Geopark", "Spot Panorama", "Alam Asri"]
-        }
 
 # ====================================================================================================
 # FUNGSI: generate_destination_ai_insight
+# TUJUAN:
+# Menghasilkan wawasan budaya, tips wisatawan, rekomendasi must-try, dan tag keunikan produk/lokasi
+# secara cerdas menggunakan Google Gemini AI (dengan fallback heuristik berkecepatan 0 ms).
 # ====================================================================================================
-def generate_destination_ai_insight(nama: str, kecamatan: str, kategori: str, deskripsi_singkat: str, nama_jalan: str = "") -> dict:
-    prompt = f"""
-Anda adalah Kurator Budaya dan Penulis Panduan Perjalanan Resmi Kawasan Danau Toba.
-Berikan ringkasan wawasan mendalam dan panduan pengalaman wisatawan yang faktual, kaya konteks, dan alami untuk entitas berikut:
+def generate_destination_ai_insight(
+    nama: str,
+    kecamatan: str,
+    kategori: str,
+    deskripsi_singkat: str,
+    nama_jalan: str = "",
+    latitude: float = 2.3387,
+    longitude: float = 99.0625
+) -> dict:
+    n = (nama or '').lower()
+    k = (kategori or '').lower()
+    d = (deskripsi_singkat or '').lower()
 
-Nama Tempat: {nama}
-Kecamatan: {kecamatan}, Kawasan Danau Toba
+    # Fallback Heuristik Lokal
+    if any(kw in n or kw in k or kw in d for kw in ['ulos', 'tenun', 'batik']):
+        default_insight = {
+            "storytelling": f"Sentra kerajinan tangan di {kecamatan} yang melestarikan teknik tenun Ulos tradisional Batak sarat makna doa leluhur.",
+            "must_try": "Melihat proses tenun motif Sadum / Ragi Hotang dan membeli kain asli dari pengrajin warga.",
+            "travel_tips": "Kunjungi pada pagi atau siang hari saat pengrajin aktif menenun.",
+            "highlight_tags": ["Tenun Asli", "UMKM Lokal", "Budaya Batak"]
+        }
+    elif any(kw in n or kw in d for kw in ['gula', 'aren', 'nira']):
+        default_insight = {
+            "storytelling": f"Diproduksi murni dari sadapan pohon enau alami {kecamatan} tanpa bahan pengawet kimia.",
+            "must_try": "Membeli gula aren cetak dan sirup aren alami untuk pemanis kopi Arabika Toba.",
+            "travel_tips": "Simpan di tempat sejuk dan kedap udara agar keaslian aroma terjaga.",
+            "highlight_tags": ["Nira Murni", "Produksi Warga", "Tanpa Pengawet"]
+        }
+    elif any(kw in k or kw in n for kw in ['kuliner', 'makan', 'resto', 'kopi', 'warung', 'cafe']):
+        default_insight = {
+            "storytelling": f"Kuliner autentik di {kecamatan} yang menghidangkan kekayaan bumbu rempah tradisional khas Batak Toba.",
+            "must_try": "Mencicipi sajian andalan dengan bumbu rempah andaliman segar.",
+            "travel_tips": "Waktu terbaik berkunjung adalah jam makan siang (11.30 - 13.30 WIB).",
+            "highlight_tags": ["Rempah Andaliman", "Kuliner Khas", "Bahan Segar"]
+        }
+    elif any(kw in k or kw in n for kw in ['penginapan', 'hotel', 'homestay', 'resort']):
+        default_insight = {
+            "storytelling": f"Akomodasi ramah keluarga di {kecamatan} dengan suasana tenang dan panorama asri Danau Toba.",
+            "must_try": "Menikmati kopi hangat di pagi hari dengan pemandangan danau kaldera.",
+            "travel_tips": "Lakukan reservasi terlebih dahulu terutama saat akhir pekan atau musim libur.",
+            "highlight_tags": ["Suasana Tenang", "Pemandangan Danau", "Akses Strategis"]
+        }
+    else:
+        default_insight = {
+            "storytelling": f"Destinasi alam unggulan di wilayah {kecamatan} dengan panorama bentang alam kaldera Danau Toba.",
+            "must_try": "Menikmati pemandangan bentang danau dari sudut terbaik dan berfoto di spot alami.",
+            "travel_tips": "Gunakan pakaian santai yang nyaman dan bawa jaket ringan karena udara sejuk.",
+            "highlight_tags": ["UNESCO Geopark", "Panorama Alam", "Spot Foto"]
+        }
+
+    try:
+        if client:
+            prompt = f"""
+Buatkan wawasan singkat dan tips wisata dalam format JSON murni untuk destinasi berikut di kawasan Danau Toba:
+Nama: {nama}
+Kecamatan: {kecamatan}
 Kategori: {kategori}
+Deskripsi: {deskripsi_singkat}
 Alamat: {nama_jalan}
-Deskripsi Singkat: {deskripsi_singkat}
 
-REFERENSI PENGETAHUAN KAWASAN:
-{DANAU_TOBA_KNOWLEDGE_BASE}
-
-ATURAN GAYA BAHASA (STRICT):
-1. DILARANG KERAS menggunakan emoji, emoticon, atau simbol dekoratif apa pun.
-2. Gunakan bahasa Indonesia editorial yang elegan, natural, dan informatif layaknya buku panduan pariwisata profesional.
-
-Format output HARUS murni JSON valid (tanpa markdown backtick ```json, murni raw text JSON) dengan struktur berikut:
+Format JSON yang wajib dihasilkan (hanya kembalikan JSON tanpa markdown / backtick):
 {{
-  "storytelling": "Penjelasan mendalam 2-3 kalimat mengenai keunikan sejarah/alam/proses pembuatan atau nilai tradisi lokal tempat ini.",
-  "must_try": "1-2 hal atau aktivitas yang paling disarankan untuk dicoba/dinikmati wisatawan di sini.",
-  "travel_tips": "Saran praktis untuk pengunjung (waktu terbaik berkunjung, tips berbelanja, atau kenyamanan akses).",
-  "highlight_tags": ["Tag 1", "Tag 2", "Tag 3"]
+  "storytelling": "Narasi 1-2 kalimat tentang keunikan sejarah/alam/budaya tempat ini",
+  "must_try": "Aktivitas atau menu yang wajib dicoba wisatawan di sini",
+  "travel_tips": "Tips praktis waktu terbaik / pakaian / persiapan berkunjung",
+  "highlight_tags": ["Tag1", "Tag2", "Tag3"]
 }}
 """
-    try:
-        response = client.models.generate_content(
-            model='gemini-3.1-flash-lite',
-            contents=prompt,
-        )
-        text = response.text.strip()
-        if text.startswith("```json"):
-            text = text[7:]
-        if text.startswith("```"):
-            text = text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
-        text = text.strip()
-        
-        data = json.loads(text)
-        if isinstance(data, dict) and "storytelling" in data:
-            return data
-        return generate_heuristic_insight(nama, kecamatan, kategori, deskripsi_singkat)
-    except Exception as e:
-        print(f"[AI Insight Error] {e}")
-        return generate_heuristic_insight(nama, kecamatan, kategori, deskripsi_singkat)
+            resp = client.models.generate_content(
+                model='gemini-3.1-flash-lite',
+                contents=prompt
+            )
+            raw_text = resp.text.strip()
+            if raw_text.startswith("```json"):
+                raw_text = raw_text[7:]
+            if raw_text.startswith("```"):
+                raw_text = raw_text[3:]
+            if raw_text.endswith("```"):
+                raw_text = raw_text[:-3]
+            parsed = json.loads(raw_text.strip())
+            if isinstance(parsed, dict) and "storytelling" in parsed:
+                return parsed
+    except Exception:
+        pass
+
+    return default_insight
+
