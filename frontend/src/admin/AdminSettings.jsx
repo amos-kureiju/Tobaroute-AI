@@ -22,7 +22,7 @@ const AdminSettings = () => {
   const [pineconeIndex, setPineconeIndex] = useState('tobaguide-index');
   const [vectorDim, setVectorDim] = useState('1024');
   const [fairnessBoost, setFairnessBoost] = useState('1.25');
-  const [geminiModel, setGeminiModel] = useState('gemini-2.5-flash');
+  const [geminiModel, setGeminiModel] = useState('gemini-3.1-flash-lite');
 
   // State Profil Akun Admin
   const [adminName, setAdminName] = useState('Budi Santoso');
@@ -189,8 +189,8 @@ const AdminSettings = () => {
                 <div className="form-group-admin">
                   <label>LLM GENERATIVE MODEL</label>
                   <select value={geminiModel} onChange={(e) => setGeminiModel(e.target.value)}>
-                    <option value="gemini-2.5-flash">Google Gemini 2.5 Flash [Rekomendasi Utama]</option>
-                    <option value="gemini-1.5-flash">Google Gemini 1.5 Flash [Respon Cepat]</option>
+                    <option value="gemini-3.1-flash-lite">Google Gemini 3.1 Flash Lite [Rekomendasi Cepat]</option>
+                    <option value="gemini-3.5-flash">Google Gemini 3.5 Flash</option>
                   </select>
                 </div>
               </div>
@@ -241,7 +241,7 @@ const AdminSettings = () => {
               <div style={{ background: '#f0fdf4', padding: '0.85rem', borderRadius: '8px', border: '1px solid #bbf7d0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#166534', display: 'block' }}>Google Gemini LLM</span>
-                  <span style={{ fontSize: '0.75rem', color: '#15803d' }}>gemini-2.5-flash</span>
+                  <span style={{ fontSize: '0.75rem', color: '#15803d' }}>gemini-3.1-flash-lite</span>
                 </div>
                 <span style={{ background: '#16a34a', color: 'white', fontSize: '0.7rem', padding: '0.2rem 0.6rem', borderRadius: '12px', fontWeight: 700 }}>AKTIF</span>
               </div>

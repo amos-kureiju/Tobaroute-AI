@@ -1,8 +1,9 @@
 # ====================================================================================================
 # FILE: backend/app/database.py
 # TUJUAN:
-# Mengatur koneksi ke database PostgreSQL dengan auto-fallback cerdas ke SQLite lokal (tobaguide.db)
-# jika server PostgreSQL sedang tidak aktif atau koneksi terputus.
+# Mengatur koneksi ke database PostgreSQL menggunakan SQLAlchemy Engine dan Sessionmaker.
+# Menyediakan Dependency Injection `get_db()` yang otomatis membuka sesi database saat ada request API
+# dan menutupnya kembali setelah request selesai agar memori server tetap aman dan efisien.
 # ====================================================================================================
 
 import os
@@ -11,40 +12,40 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
 
+# Menemukan path absolut ke file .env di folder root backend
 BASE_DIR = Path(__file__).resolve().parent.parent
 dotenv_path = BASE_DIR / ".env"
 
+# Memuat file .env (tanpa menimpa environment variable bawaan Docker/sistem)
 if dotenv_path.exists():
     load_dotenv(dotenv_path=dotenv_path, override=False)
 else:
     load_dotenv(override=False)
 
-DEFAULT_SQLITE_URL = f"sqlite:///{BASE_DIR / 'tobaguide.db'}"
-RAW_DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_SQLITE_URL)
+# Mengambil DATABASE_URL dari .env (PostgreSQL connection string)
+SQLALCHEMY_DATABASE_URL = os.getenv(
+    "DATABASE_URL", 
+    "postgresql://postgres:amos123@localhost:5432/tobaguide_db"
+)
 
-# Uji koneksi ke PostgreSQL; jika gagal, beralih otomatis ke SQLite lokal
-def init_engine_with_fallback(db_url):
-    if db_url.startswith("sqlite"):
-        return create_engine(db_url, connect_args={"check_same_thread": False})
-    
-    try:
-        eng = create_engine(db_url, pool_pre_ping=True)
-        # Test koneksi cepat
-        with eng.connect() as conn:
-            pass
-        print(f"[DATABASE] Terhubung ke PostgreSQL: {db_url.split('@')[-1]}")
-        return eng
-    except Exception as e:
-        print(f"[DATABASE WARN] PostgreSQL tidak terjangkau ({e}). Beralih otomatis ke basis data SQLite lokal: {DEFAULT_SQLITE_URL}")
-        return create_engine(DEFAULT_SQLITE_URL, connect_args={"check_same_thread": False})
+# Inisialisasi engine koneksi database PostgreSQL
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
-engine = init_engine_with_fallback(RAW_DATABASE_URL)
+# Factory pembuat sesi database per-request
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Base class untuk seluruh deklarasi model tabel database
 Base = declarative_base()
 
+# ====================================================================================================
+# FUNGSI: get_db
+# TUJUAN:
+# FastAPI Dependency yang menyuntikkan sesi database (db session) ke dalam fungsi endpoint API.
+# Menggunakan generator `yield` agar sesi selalu ditutup (db.close()) setelah response dikirim.
+# ====================================================================================================
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
-        db.close()
+        db.close()

@@ -12,8 +12,7 @@ start "TobaRoute Frontend (Vite)" cmd /k "cd /d "%~dp0frontend" && npm run dev"
 echo.
 echo ===================================================
 echo  Semua Server Berhasil Dijalankan!
-echo  Membuka browser di http://localhost:3000 ...
+echo  Membuka browser di http://localhost:5173 ...
 echo ===================================================
-timeout /t 3
-start http://localhost:3000
-
+timeout /t 4
+start http://localhost:5173

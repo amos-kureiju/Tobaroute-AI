@@ -23,115 +23,52 @@ BASE_DIR = Path(__file__).resolve().parent
 sys.path.append(str(BASE_DIR))
 
 def init_database():
-    """Inisialisasi database PostgreSQL / SQLite dan pembuatan skema tabel."""
-    from urllib.parse import urlparse
-    from app.database import Base, engine, SQLALCHEMY_DATABASE_URL
-    from app import models
-
-    print("\n--- 1. INISIALISASI DATABASE ---")
-    if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
-        print("[INFO] Menggunakan basis data SQLite.")
-        print("[INFO] Membuat skema tabel ORM...")
-        Base.metadata.create_all(bind=engine)
-        print("[OK] Skema tabel database SQLite telah siap!\n")
-        return
-
+    """Inisialisasi database PostgreSQL 'tobaguide_db' dan pembuatan skema tabel."""
     import psycopg2
     from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+    from app.database import Base, engine
+    from app import models
 
+    print("\n--- 1. INISIALISASI DATABASE POSTGRESQL ---")
     try:
-        url = urlparse(SQLALCHEMY_DATABASE_URL)
-        username = url.username or 'postgres'
-        password = url.password or 'postgres'
-        host = url.hostname or 'localhost'
-        port = url.port or 5432
-        dbname = url.path.lstrip('/') or 'tobaguide_db'
-
         conn = psycopg2.connect(
             dbname='postgres',
-            user=username,
-            password=password,
-            host=host,
-            port=port
+            user='postgres',
+            host='localhost',
+            port=5432
         )
         conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         cursor = conn.cursor()
         
-        cursor.execute(f"SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{dbname}'")
+        cursor.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = 'tobaguide_db'")
         exists = cursor.fetchone()
         
         if not exists:
-            print(f"[INFO] Membuat database '{dbname}'...")
-            cursor.execute(f"CREATE DATABASE {dbname}")
-            print(f"[OK] Database '{dbname}' berhasil dibuat!")
+            print("[INFO] Membuat database 'tobaguide_db'...")
+            cursor.execute("CREATE DATABASE tobaguide_db")
+            print("[OK] Database 'tobaguide_db' berhasil dibuat!")
         else:
-            print(f"[OK] Database '{dbname}' terdeteksi aktif.")
+            print("[OK] Database 'tobaguide_db' terdeteksi aktif.")
             
         cursor.close()
         conn.close()
-
-        print("[INFO] Membuat skema tabel ORM...")
-        Base.metadata.create_all(bind=engine)
-        print("[OK] Skema tabel database PostgreSQL telah siap!\n")
-
     except Exception as e:
-        print(f"\n[ERROR] Inisialisasi basis data PostgreSQL gagal: {e}")
-        print("\n" + "="*70)
-        print("[PETUNJUK SOLUSI]:")
-        print("1. Pastikan server PostgreSQL sudah berjalan di host & port yang benar (port 5432).")
-        print("   - Jika menggunakan Docker: Jalankan Docker Desktop, lalu jalankan `docker compose up -d db`")
-        print("   - Jika PostgreSQL terinstall lokal: Pastikan service PostgreSQL sudah dimulakan (Started).")
-        print("2. Opsi alternatif (SQLite tanpa PostgreSQL):")
-        print("   Ubah DATABASE_URL di file `backend/.env` menjadi:")
-        print("   DATABASE_URL=\"sqlite:///./tobaguide.db\"")
-        print("="*70 + "\n")
-        sys.exit(1)
+        print(f"[WARN] Inisialisasi basis data PostgreSQL: {e}")
+
+    print("[INFO] Membuat skema tabel ORM...")
+    Base.metadata.create_all(bind=engine)
+    print("[OK] Skema tabel database telah siap!\n")
 
 def ingest_dataset():
-    """Mengimpor dataset pariwisata dari JSON/Excel ke PostgreSQL / SQLite."""
-    import json
+    """Mengimpor dataset pariwisata dari Excel ke PostgreSQL."""
+    import pandas as pd
     from app.database import SessionLocal
     from app import models
 
-    json_file = BASE_DIR / "dataset" / "toba_491_dataset.json"
-    if json_file.exists():
-        print("\n--- 2. INGESTION DATASET PARIWISATA (569 ENTITAS RESMI) ---")
-        with open(json_file, 'r', encoding='utf-8') as f:
-            entities = json.load(f)
-        db = SessionLocal()
-        try:
-            db.query(models.Destinasi).delete()
-            db.commit()
-        except Exception as e:
-            print(f"[WARN] Reset DB: {e}")
-        count = 0
-        for item in entities:
-            baru = models.Destinasi(
-                nama=item.get("nama"),
-                kategori=item.get("kategori", "wisata"),
-                kecamatan=item.get("kecamatan", "Balige"),
-                nama_jalan=item.get("nama_jalan", ""),
-                latitude=item.get("latitude"),
-                longitude=item.get("longitude"),
-                rating=item.get("rating", 4.7),
-                jumlah_ulasan=item.get("jumlah_ulasan", 25),
-                deskripsi_singkat=item.get("deskripsi_singkat", ""),
-                deskripsi_lengkap=item.get("deskripsi_lengkap", ""),
-                gambar_url=item.get("gambar_url", "")
-            )
-            db.add(baru)
-            count += 1
-        db.commit()
-        db.close()
-        print(f"[OK] Ingestion dataset 100% selesai: {count} data tersimpan di basis data.")
-        return
-
-    import pandas as pd
     EXCEL_FILE = BASE_DIR / "dataset" / "Dataset HackathonTourism - IT DEL.xlsx"
     if not os.path.exists(EXCEL_FILE):
         print(f"[ERROR] Berkas dataset '{EXCEL_FILE}' tidak ditemukan.")
         return
-
 
     print("\n--- 2. INGESTION DATASET PARIWISATA ---")
     xl = pd.ExcelFile(EXCEL_FILE)
@@ -307,15 +244,9 @@ def ingest_dataset():
             return True
 
     print("[INFO] Membersihkan seluruh data lama di database (Purge Old/Dummy Data)...")
-    try:
-        db.query(models.Destinasi).delete()
-        db.commit()
-        print("[OK] Database bersih. Memulai ingestion 100% murni dari file Excel resmi panitia...")
-    except Exception as e:
-        print(f"\n[ERROR] Gagal berkomunikasi dengan database: {e}")
-        print("Pastikan database sudah terhubung dan diinisialisasi (`python manage_data.py --init-db`).")
-        db.close()
-        sys.exit(1)
+    db.query(models.Destinasi).delete()
+    db.commit()
+    print("[OK] Database bersih. Memulai ingestion 100% murni dari file Excel resmi panitia...")
 
     total_added = 0
     total_updated = 0
@@ -823,18 +754,11 @@ def sync_pinecone():
 
     db = SessionLocal()
     destinasis = db.query(models.Destinasi).all()
-    print(f"[INFO] Mengambil {len(destinasis)} destinasi dari database SQL...")
+    print(f"[INFO] Mengambil {len(destinasis)} destinasi dari PostgreSQL...")
 
     if not destinasis:
-        print("[INFO] Database SQL kosong, memuat seluruh data dari toba_491_dataset.json...")
-        import json
-        json_file = BASE_DIR / "dataset" / "toba_491_dataset.json"
-        if json_file.exists():
-            with open(json_file, 'r', encoding='utf-8') as f:
-                destinasis = json.load(f)
-        else:
-            print("[WARN] Dataset JSON tidak ditemukan.")
-            return
+        print("[WARN] Database kosong.")
+        return
 
     def get_embeddings_batch(texts):
         if provider == "openai":
@@ -872,35 +796,29 @@ def sync_pinecone():
         except Exception:
             return default
 
-    def get_val(obj, key, default=""):
-        if isinstance(obj, dict):
-            return obj.get(key, default)
-        return getattr(obj, key, default)
-
     for i in range(0, len(destinasis), batch_size):
         batch_items = destinasis[i:i + batch_size]
         batch_texts = [
-            f"Nama: {get_val(d, 'nama')} | Kategori: {get_val(d, 'kategori')} | Kecamatan: {get_val(d, 'kecamatan')} | Deskripsi: {get_val(d, 'deskripsi_singkat')} {get_val(d, 'deskripsi_lengkap')} | Jalan: {get_val(d, 'nama_jalan')}"
+            f"Nama: {d.nama} | Kategori: {d.kategori} | Kecamatan: {d.kecamatan} | Deskripsi: {d.deskripsi_singkat} {d.deskripsi_lengkap or ''} | Jalan: {d.nama_jalan}"
             for d in batch_items
         ]
         
         try:
             embeddings = get_embeddings_batch(batch_texts)
             for item, vector in zip(batch_items, embeddings):
-                item_id = str(get_val(item, "id"))
                 vectors_to_upsert.append({
-                    "id": item_id,
+                    "id": str(item.id),
                     "values": vector,
                     "metadata": {
-                        "nama": str(get_val(item, "nama", "")),
-                        "kategori": str(get_val(item, "kategori", "wisata")),
-                        "kecamatan": str(get_val(item, "kecamatan", "Balige")),
-                        "deskripsi_singkat": str(get_val(item, "deskripsi_singkat", ""))[:500],
-                        "nama_jalan": str(get_val(item, "nama_jalan", "")),
-                        "rating": safe_float(get_val(item, "rating"), 4.5),
-                        "jumlah_ulasan": safe_int(get_val(item, "jumlah_ulasan"), 10),
-                        "latitude": safe_float(get_val(item, "latitude"), 2.3333),
-                        "longitude": safe_float(get_val(item, "longitude"), 99.0667)
+                        "nama": str(item.nama or ""),
+                        "kategori": str(item.kategori or "wisata"),
+                        "kecamatan": str(item.kecamatan or "Balige"),
+                        "deskripsi_singkat": str(item.deskripsi_singkat or "")[:500],
+                        "nama_jalan": str(item.nama_jalan or ""),
+                        "rating": safe_float(item.rating, 4.5),
+                        "jumlah_ulasan": safe_int(item.jumlah_ulasan, 10),
+                        "latitude": safe_float(item.latitude, 2.3333),
+                        "longitude": safe_float(item.longitude, 99.0667)
                     }
                 })
         except Exception as e:
@@ -912,7 +830,6 @@ def sync_pinecone():
 
     db.close()
     print(f"[OK] Berhasil mengunggah {len(vectors_to_upsert)} vektor ke Pinecone!\n")
-
 
 def main():
     parser = argparse.ArgumentParser(description="TobaRoute Data Management Tool")

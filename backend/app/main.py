@@ -15,11 +15,8 @@ from . import crud, schemas, models
 from .ai_bot import generate_tourist_response, chat_with_bot, generate_destination_ai_insight
 from .transport_helper import get_transport_guide
 
-# Otomatis membuat tabel-tabel di database saat server backend pertama kali dijalankan
-try:
-    Base.metadata.create_all(bind=engine)
-except Exception as e:
-    print(f"[WARN] Inisialisasi tabel database saat startup: {e}")
+# Otomatis membuat tabel-tabel di PostgreSQL saat server backend pertama kali dijalankan
+Base.metadata.create_all(bind=engine)
 
 # Inisialisasi aplikasi FastAPI
 app = FastAPI(
@@ -280,5 +277,5 @@ def get_system_metrics(db: Session = Depends(get_db)):
         "fairness_percentage": fairness_pct,
         "vector_dimensions": 1024,
         "embedding_model": "cohere-embed-multilingual-v3.0",
-        "llm_model": "gemini-2.5-flash"
+        "llm_model": "gemini-3.1-flash-lite"
     }

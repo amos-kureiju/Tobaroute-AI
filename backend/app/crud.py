@@ -11,64 +11,24 @@
 # ====================================================================================================
 
 import math
-import json
-from pathlib import Path
 from sqlalchemy.orm import Session
 from . import models, schemas
 
 # ====================================================================================================
-# AUTO-SEEDING DATASET RESMI (491+ ENTITAS) KE DATABASE
-# ====================================================================================================
-def seed_from_json_if_empty(db: Session):
-    try:
-        count = db.query(models.Destinasi).count()
-        if count == 0:
-            dataset_file = Path(__file__).resolve().parent.parent / "dataset" / "toba_491_dataset.json"
-            if dataset_file.exists():
-                with open(dataset_file, "r", encoding="utf-8") as f:
-                    items = json.load(f)
-                    for item in items:
-                        d = models.Destinasi(
-                            nama=item.get("nama"),
-                            kategori=item.get("kategori", "wisata"),
-                            kecamatan=item.get("kecamatan", "Balige"),
-                            nama_jalan=item.get("nama_jalan", ""),
-                            latitude=item.get("latitude"),
-                            longitude=item.get("longitude"),
-                            rating=item.get("rating", 4.7),
-                            jumlah_ulasan=item.get("jumlah_ulasan", 25),
-                            deskripsi_singkat=item.get("deskripsi_singkat", ""),
-                            deskripsi_lengkap=item.get("deskripsi_lengkap", ""),
-                            gambar_url=item.get("gambar_url", "")
-                        )
-                        db.add(d)
-                    db.commit()
-                    print(f"[AUTO-SEED] Berhasil mengimpor {len(items)} destinasi dari {dataset_file.name} ke database SQL!")
-    except Exception as e:
-        print(f"[AUTO-SEED WARN] {e}")
-        try:
-            db.rollback()
-        except Exception:
-            pass
-
-# ====================================================================================================
-# 1. OPERASI CRUD DASAR UNTUK DESTINASI & UMKM (DATABASE POSTGRESQL / SQLITE)
+# 1. OPERASI CRUD DASAR UNTUK DESTINASI & UMKM (DATABASE POSTGRESQL)
 # ====================================================================================================
 
 # FUNGSI: get_destinasi
 # PENJELASAN:
-# Mengambil seluruh baris data dari tabel 'destinasi' di database.
+# Mengambil seluruh baris data dari tabel 'destinasi' di PostgreSQL.
 # Jika parameter 'kecamatan' diisi (misal: 'Balige'), query menggunakan filter 'ilike' (Case-Insensitive Like)
 # agar pencarian nama kecamatan tidak sensitif huruf besar/kecil.
 def get_destinasi(db: Session, kecamatan: str = None, limit: int = 1000):
-    seed_from_json_if_empty(db)
     query = db.query(models.Destinasi)
     if kecamatan:
         query = query.filter(models.Destinasi.kecamatan.ilike(kecamatan))
     # Urutkan berdasarkan ID terbaru (descending) dan batasi jumlah data maksimal
-    results = query.order_by(models.Destinasi.id.asc()).limit(limit).all()
-    return results
-
+    return query.order_by(models.Destinasi.id.desc()).limit(limit).all()
 
 # FUNGSI: create_destinasi
 # PENJELASAN:
@@ -136,22 +96,21 @@ def delete_destinasi(db: Session, destinasi_id: int):
 # ====================================================================================================
 # 2. INTEGRASI RAG & DATABASE VEKTOR PINECONE + COHERE EMBEDDINGS
 # ====================================================================================================
+from pinecone import Pinecone  # type: ignore
+from openai import OpenAI  # type: ignore
 from app.config import settings
 
 # FUNGSI: get_pinecone_index
 # PENJELASAN:
 # Membuka koneksi aman ke Pinecone Vector Database menggunakan API Key dan Index Name yang ada di konfigurasi.
 def get_pinecone_index():
-    if not (settings.PINECONE_API_KEY and settings.PINECONE_INDEX_NAME):
-        return None
-    try:
-        from pinecone import Pinecone  # type: ignore
-        pc = Pinecone(api_key=settings.PINECONE_API_KEY)
-        return pc.Index(settings.PINECONE_INDEX_NAME)
-    except Exception as e:
-        print(f"[RAG] Gagal inisialisasi Pinecone: {e}")
-        return None
-
+    if settings.PINECONE_API_KEY and settings.PINECONE_INDEX_NAME:
+        try:
+            pc = Pinecone(api_key=settings.PINECONE_API_KEY)
+            return pc.Index(settings.PINECONE_INDEX_NAME)
+        except Exception as e:
+            print(f"[RAG] Gagal inisialisasi Pinecone: {e}")
+    return None
 
 # FUNGSI: get_cohere_embedding
 # PENJELASAN TEKNOLOGI EMBEDDING:
@@ -204,73 +163,48 @@ def sync_single_destinasi_vector(d):
         }
     }])
 
+# FUNGSI: sync_all_vectors
+# PENJELASAN:
+# Fitur sinkronisasi massal untuk Administrator. Mengulang seluruh 491 destinasi di PostgreSQL
+# dan menyinkronkan vektornya ke Pinecone.
 def sync_all_vectors(db: Session):
     index = get_pinecone_index()
     if not index:
         return {"status": "error", "message": "Pinecone API Key tidak terkonfigurasi."}
     
-    seed_from_json_if_empty(db)
     all_dest = db.query(models.Destinasi).all()
-    if not all_dest:
-        return {"status": "warning", "message": "Database kosong.", "synced_count": 0, "total": 0}
-
-    from cohere import Client as CohereClient
-    co = CohereClient(api_key=settings.COHERE_API_KEY, timeout=15.0) if settings.COHERE_API_KEY else None
-    
-    batch_size = 90
-    vectors_to_upsert = []
     count = 0
-
-    for i in range(0, len(all_dest), batch_size):
-        batch_items = all_dest[i:i + batch_size]
-        batch_texts = [
-            f"Nama: {d.nama} | Kategori: {d.kategori} | Kecamatan: {d.kecamatan} | "
-            f"Deskripsi: {d.deskripsi_singkat} {d.deskripsi_lengkap or ''} | Jalan: {d.nama_jalan or ''}"
-            for d in batch_items
-        ]
+    for d in all_dest:
         try:
-            if co:
-                res = co.embed(texts=batch_texts, model="embed-multilingual-v3.0", input_type="search_document")
-                embeddings = res.embeddings
-                for d, vec in zip(batch_items, embeddings):
-                    vectors_to_upsert.append({
-                        "id": str(d.id),
-                        "values": vec,
-                        "metadata": {
-                            "nama": str(d.nama or ""),
-                            "kategori": str(d.kategori or "wisata"),
-                            "kecamatan": str(d.kecamatan or "Balige"),
-                            "deskripsi_singkat": str(d.deskripsi_singkat or "")[:500],
-                            "nama_jalan": str(d.nama_jalan or ""),
-                            "rating": float(d.rating or 4.7),
-                            "jumlah_ulasan": int(d.jumlah_ulasan or 25),
-                            "latitude": float(d.latitude or 2.3328),
-                            "longitude": float(d.longitude or 99.0638)
-                        }
-                    })
-                    count += 1
+            sync_single_destinasi_vector(d)
+            count += 1
         except Exception as e:
-            print(f"[Sync Batch Error] {e}")
-
-    for i in range(0, len(vectors_to_upsert), 50):
-        upsert_batch = vectors_to_upsert[i:i + 50]
-        try:
-            index.upsert(vectors=upsert_batch)
-        except Exception as e:
-            print(f"[Pinecone Upsert Batch Error] {e}")
-
+            print(f"[Sync Error] ID {d.id}: {e}")
+            
     return {"status": "success", "synced_count": count, "total": len(all_dest)}
-
 
 # FUNGSI: cari_destinasi_semantik
 # PENJELASAN PENCARIAN VEKTOR (VECTOR SIMILARITY SEARCH):
 # 1. Mengonversi query teks pencarian wisatawan (misal: "makanan tradisional ikan bumbu andaliman") menjadi vektor.
 # 2. Melakukan Cosine Similarity Search di Pinecone untuk menemukan 'top_k' ID destinasi yang paling cocok secara makna.
 def cari_destinasi_semantik(query_user: str, top_k: int = 20):
-    query_vector = get_cohere_embedding(query_user)
+    query_vector = None
+    if settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("sk-proj-placeholder"):
+        try:
+            client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=5.0)
+            response = client.embeddings.create(
+                input=[query_user],
+                model="text-embedding-3-small"
+            )
+            query_vector = response.data[0].embedding
+        except Exception as e:
+            print(f"[RAG] OpenAI Embedding gagal: {e}. Beralih ke Cohere...")
+            query_vector = get_cohere_embedding(query_user)
+    else:
+        query_vector = get_cohere_embedding(query_user)
+
     if not query_vector:
         return []
-
 
     index = get_pinecone_index()
     if index:
@@ -401,9 +335,7 @@ def get_fair_route_with_rag(
     user_lat: float = None,
     user_lon: float = None
 ):
-    seed_from_json_if_empty(db)
     query_lower = query.lower() if query else ""
-
     target_kecamatan_clean = None
 
     # TAHAP 0: Deteksi Otomatis Nama Kecamatan
@@ -431,15 +363,14 @@ def get_fair_route_with_rag(
             allowed_kecamatans = [target_kec_key]
 
     # TAHAP 1: Deteksi Intensi (Intent Extraction) Kata Kunci Pengguna
-    hotel_keywords = ['hotel', 'penginapan', 'homestay', 'resort', 'villa', 'wisma', 'losmen', 'menginap', 'inap', 'kamar', 'stay', 'cottage', 'glamping', 'akomodasi']
-    food_keywords = ['makanan', 'kuliner', 'makan', 'enak', 'terenak', 'laper', 'lapar', 'resto', 'restoran', 'rumah makan', 'warung', 'menu', 'lapo', 'naniarsik', 'arsik', 'mie gomak', 'naniura', 'saksang', 'bpk', 'andaliman', 'sambal', 'tuktuk', 'kopi', 'kue', 'ombus', 'sihobuk', 'minum', 'sarapan', 'santap', 'kafe', 'cafe']
-    umkm_keywords = ['umkm', 'oleh-oleh', 'oleh', 'ulos', 'souvenir', 'toko', 'kerajinan', 'kacang', 'belanja', 'sentra', 'batikta', 'tenun', 'pasar']
-    wisata_keywords = ['wisata', 'pantai', 'museum', 'bukit', 'air terjun', 'taman', 'alam', 'rekreasi', 'liburan', 'jalan-jalan', 'lihat', 'tempat', 'spot', 'geosite', 'danau', 'pemandangan', 'sunset', 'sunrise', 'tugu', 'sejarah']
+    # Membedakan apakah wisatawan mencari Kuliner/Makanan, Belanja UMKM/Oleh-oleh, atau Wisata Alam.
+    food_keywords = ['makanan', 'kuliner', 'makan', 'enak', 'terenak', 'rekomendasi', 'laper', 'lapar', 'resto', 'rumah makan', 'warung', 'menu', 'lapo', 'naniarsik', 'arsik', 'mie gomak', 'naniura', 'saksang', 'bpk', 'andaliman', 'sambal', 'tuktuk', 'kopi', 'kue', 'ombus', 'sihobuk', 'minum']
+    umkm_keywords = ['umkm', 'oleh-oleh', 'oleh', 'ulos', 'souvenir', 'toko', 'kerajinan', 'kacang', 'belanja', 'sentra']
+    wisata_keywords = ['wisata', 'pantai', 'museum', 'bukit', 'air terjun', 'taman', 'alam', 'rekreasi', 'liburan', 'jalan-jalan', 'lihat', 'tempat']
 
-    is_hotel_query = any(k in query_lower for k in hotel_keywords)
-    is_food_query = any(k in query_lower for k in food_keywords) and not is_hotel_query
-    is_umkm_query = any(k in query_lower for k in umkm_keywords) and not is_hotel_query
-    is_wisata_query = any(k in query_lower for k in wisata_keywords) or (not is_food_query and not is_umkm_query and not is_hotel_query)
+    is_food_query = any(k in query_lower for k in food_keywords)
+    is_umkm_query = any(k in query_lower for k in umkm_keywords)
+    is_wisata_query = any(k in query_lower for k in wisata_keywords) or (not is_food_query and not is_umkm_query)
 
     # TAHAP 2: Filtering Data dengan Geofencing Presisi
     all_dests = db.query(models.Destinasi).all()
@@ -464,43 +395,36 @@ def get_fair_route_with_rag(
             # Geofence 2: Pembatasan Jarak Radius Maksimal (Hard Cap 12 - 20 KM dari pusat)
             if target_center:
                 dist_to_center = haversine_km(target_center[0], target_center[1], d.latitude, d.longitude)
-                if d_kec == target_kecamatan_clean.lower() and dist_to_center > 15.0:
+                if d_kec == target_kecamatan_clean.lower() and dist_to_center > 12.0:
                     continue
-                if dist_to_center > 25.0:
+                if dist_to_center > 20.0:
                     continue
 
             candidate_pool.append(d)
 
         # PENJELASAN PENGURUTAN MULTI-TIER (candidate_sort_key):
-        # 1. 'cat_match': Kategori yang tepat sesuai intensi query pengguna ditempatkan di prioritas #1 (0 = match, 1 = general).
-        # 2. 'tier': 0 untuk kecamatan target utama, 1 untuk kecamatan tetangga.
-        # 3. '-rating_val': Rating tertinggi (5.0) diurutkan lebih dulu.
-        # 4. 'dist_to_center': Jarak terdekat dari pusat kecamatan.
+        # Python mengurutkan tuple secara leksikografis (elemen pertama diuji dulu, lalu kedua, dst):
+        # 1. 'tier' (0 untuk kecamatan target utama, 1 untuk kecamatan tetangga).
+        # 2. 'cat_match' (0 jika kategori tepat sesuai query user, 1 jika kategori umum).
+        # 3. '-rating_val' (tanda minus membuat rating tertinggi [5.0] berada di urutan paling atas).
+        # 4. 'dist_to_center' (jarak kilometer terdekat menjadi penentu utama jika rating sama).
         def candidate_sort_key(d):
             d_kec = (d.kecamatan or '').strip().lower()
             tier = 0 if d_kec == target_kecamatan_clean.lower() else 1
             
             d_cat = (d.kategori or '').strip().lower()
-            d_name = (d.nama or '').strip().lower()
-            
             cat_match = 1
-            if is_hotel_query:
-                if any(h in d_cat for h in ['penginapan', 'hotel', 'homestay', 'resort', 'wisma', 'villa']) or any(h in d_name for h in ['hotel', 'homestay', 'resort', 'inn', 'villa', 'cottage', 'guest house', 'wisma', 'penginapan']):
-                    cat_match = 0
-            elif is_food_query:
-                if any(f in d_cat for f in ['kuliner', 'makan', 'resto', 'kafe', 'kopi', 'warung']) or any(f in d_name for f in ['rm', 'rumah makan', 'resto', 'cafe', 'warung', 'kopi', 'lapo']):
-                    cat_match = 0
-            elif is_umkm_query:
-                if any(u in d_cat for u in ['umkm', 'oleh', 'ulos', 'kerajinan', 'toko', 'pasar']) or any(u in d_name for u in ['ulos', 'batikta', 'souvenir', 'oleh-oleh', 'kerajinan', 'tenun']):
-                    cat_match = 0
-            elif is_wisata_query:
-                if 'wisata' in d_cat or any(w in d_cat for w in ['alam', 'budaya', 'rekreasi', 'pantai', 'bukit', 'museum']):
-                    cat_match = 0
+            if is_food_query and 'kuliner' in d_cat:
+                cat_match = 0
+            elif is_umkm_query and ('umkm' in d_cat or 'oleh' in d_cat or 'ulos' in d_cat):
+                cat_match = 0
+            elif is_wisata_query and 'wisata' in d_cat:
+                cat_match = 0
 
             rating_val = float(d.rating or 4.0)
             dist_to_center = haversine_km(target_center[0], target_center[1], d.latitude, d.longitude) if target_center else 0.0
 
-            return (cat_match, tier, -rating_val, dist_to_center)
+            return (tier, cat_match, -rating_val, dist_to_center)
 
         candidate_pool.sort(key=candidate_sort_key)
     else:
@@ -517,11 +441,8 @@ def get_fair_route_with_rag(
             for d in all_dests:
                 if d.id in int_ids:
                     d_cat = (d.kategori or '').strip().lower()
-                    if is_hotel_query:
-                        if any(h in d_cat for h in ['penginapan', 'hotel', 'homestay', 'resort', 'wisma', 'villa']):
-                            temp_pool.append(d)
-                    elif is_food_query:
-                        if any(f in d_cat for f in ['kuliner', 'resto', 'makan', 'kafe', 'kopi']):
+                    if is_food_query:
+                        if 'kuliner' in d_cat or 'resto' in d_cat or 'makan' in d_cat:
                             temp_pool.append(d)
                     elif is_umkm_query:
                         if 'umkm' in d_cat or 'oleh' in d_cat or 'ulos' in d_cat:
@@ -533,9 +454,7 @@ def get_fair_route_with_rag(
                         temp_pool.append(d)
             
             if not temp_pool:
-                if is_hotel_query:
-                    temp_pool = [d for d in all_dests if any(h in (d.kategori or '').strip().lower() for h in ['penginapan', 'hotel', 'homestay', 'resort', 'wisma', 'villa'])]
-                elif is_food_query:
+                if is_food_query:
                     temp_pool = [d for d in all_dests if 'kuliner' in (d.kategori or '').strip().lower()]
                 elif is_umkm_query:
                     temp_pool = [d for d in all_dests if 'umkm' in (d.kategori or '').strip().lower()]
@@ -544,25 +463,14 @@ def get_fair_route_with_rag(
 
             candidate_pool = temp_pool
 
-        # Jika masih kosong, urutkan berdasarkan kesesuaian kategori dan rating
+        # Jika masih kosong, urutkan berdasarkan rating dan kedekatan dengan titik GPS wisatawan
         if not candidate_pool:
             ref_lat = user_lat or 2.3387
             ref_lon = user_lon or 99.0625
-            
-            def generic_sort_key(d):
-                d_cat = (d.kategori or '').strip().lower()
-                c_match = 1
-                if is_hotel_query and any(h in d_cat for h in ['penginapan', 'hotel', 'homestay', 'resort', 'wisma', 'villa']):
-                    c_match = 0
-                elif is_food_query and any(f in d_cat for f in ['kuliner', 'resto', 'makan', 'kafe', 'kopi']):
-                    c_match = 0
-                elif is_umkm_query and any(u in d_cat for u in ['umkm', 'oleh', 'ulos']):
-                    c_match = 0
-                elif is_wisata_query and 'wisata' in d_cat:
-                    c_match = 0
-                return (c_match, -float(d.rating or 4.0), haversine_km(ref_lat, ref_lon, d.latitude, d.longitude))
-
-            candidate_pool = sorted(all_dests, key=generic_sort_key)
+            candidate_pool = sorted(
+                all_dests, 
+                key=lambda d: (-float(d.rating or 4.0), haversine_km(ref_lat, ref_lon, d.latitude, d.longitude))
+            )
 
     # PENJELASAN ROTASI OFFSET DESTINASI UTAMA (CYCLIC SLIDING WINDOW):
     # Menggunakan operator modulo '%' sehingga saat pengguna menekan 'Cari Opsi Lain',

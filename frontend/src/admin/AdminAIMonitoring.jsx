@@ -26,7 +26,7 @@ const AdminAIMonitoring = () => {
     fairness_percentage: 48.88,
     vector_dimensions: 1024,
     embedding_model: 'cohere-embed-multilingual-v3.0',
-    llm_model: 'gemini-2.5-flash'
+    llm_model: 'gemini-3.1-flash-lite'
   });
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState(DEFAULT_AI_LOGS);
