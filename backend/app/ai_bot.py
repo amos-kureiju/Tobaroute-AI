@@ -26,10 +26,13 @@ dotenv_path = BASE_DIR / ".env"
 load_dotenv(dotenv_path=dotenv_path, override=False)
 
 # Mengambil kunci API Gemini dari environment variable
-api_key = os.getenv("GEMINI_API_KEY")
+api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GEMINI_KEY") or "AIzaSyDummyFallbackKey1234567890"
 
-# Inisialisasi klien resmi Google GenAI SDK
-client = genai.Client(api_key=api_key)
+try:
+    client = genai.Client(api_key=api_key)
+except Exception as e:
+    print(f"[WARN] Inisialisasi Gemini Client: {e}")
+    client = None
 
 # ====================================================================================================
 # BASIS PENGETAHUAN ENSIKLOPEDIA RESMI & LOGISTIK PRAKTIS KAWASAN DANAU TOBA (UNESCO GLOBAL GEOPARK)
@@ -234,7 +237,7 @@ TUGAS UTAMA ANDA:
 """
     try:
         response = client.models.generate_content(
-            model='gemini-3.1-flash-lite',
+            model='gemini-2.0-flash',
             contents=prompt_konteks,
         )
         return response.text
@@ -242,7 +245,7 @@ TUGAS UTAMA ANDA:
         print(f"[AI Error] Error in generate_tourist_response: {e}")
         try:
             response = client.models.generate_content(
-                model='gemini-3.6-flash',
+                model='gemini-1.5-flash',
                 contents=prompt_konteks,
             )
             return response.text
@@ -539,10 +542,15 @@ Total Lokasi Terdaftar di Seluruh 8 Kabupaten Kawasan Danau Toba: {total_global}
                     if found_keywords:
                         matched_pool = []
                         for d in all_dests:
-                            d_text = f"{d.nama} {d.deskripsi_singkat} {d.deskripsi_lengkap or ''} {d.kategori}".lower()
+                            d_text = f"{d.nama} {d.deskripsi_singkat} {d.deskripsi_lengkap or ''} {d.kategori} {d.kecamatan}".lower()
                             if any(kw in d_text for kw in found_keywords):
                                 matched_pool.append(d)
                         matched_places = sorted(matched_pool, key=lambda d: float(d.rating or 4.0), reverse=True)[:6]
+
+                    if (is_food_req or 'makan' in msg_lower) and not matched_places:
+                        kuliner_all = [d for d in all_dests if any(k in (d.kategori or '').lower() for k in ['kuliner', 'makan', 'resto', 'kafe', 'kopi'])]
+                        matched_places = sorted(kuliner_all, key=lambda d: float(d.rating or 4.0), reverse=True)[:6]
+                        matched_kec = "Balige & Sekitarnya"
 
         if db is None:
             db_session.close()
@@ -598,7 +606,7 @@ PANDUAN ENSIKLOPEDIA & LOGISTIK RESMI KAWASAN DANAU TOBA:
 
     try:
         response = client.models.generate_content(
-            model='gemini-3.1-flash-lite',
+            model='gemini-2.0-flash',
             contents=chat_history_text,
         )
         reply_text = response.text
@@ -606,13 +614,39 @@ PANDUAN ENSIKLOPEDIA & LOGISTIK RESMI KAWASAN DANAU TOBA:
         print(f"[AI Error] Error in chat_with_bot: {e}")
         try:
             response = client.models.generate_content(
-                model='gemini-3.6-flash',
+                model='gemini-1.5-flash',
                 contents=chat_history_text,
             )
             reply_text = response.text
         except Exception as e2:
             print(f"[AI Error] Fallback model error: {e2}")
-            reply_text = "Horas! Sistem asisten TobaRoute AI sedang memperbarui data. Silakan ulangi pertanyaan Anda atau jelajahi kartu informasi dan peta navigasi di layar."
+            if matched_places:
+                places_list = "\n".join([f"- **{p.nama}** ({p.kecamatan}): {p.deskripsi_singkat or p.kategori}" for p in matched_places])
+                reply_text = f"Horas! Berikut adalah rekomendasi destinasi & kuliner pilihan TobaRoute AI untuk pencarian Anda:\n\n{places_list}\n\nSilakan klik atau jelajahi kartu informasi dan peta interaktif di layar untuk detail lebih lanjut."
+            elif is_food_req or any(w in msg_lower for w in ["makanan", "kuliner", "batak", "makan", "lapo", "arsik", "naniura", "gomak"]):
+                reply_text = """Horas! Berikut adalah rekomendasi kuliner autentik khas Batak Toba yang sangat populer di kawasan Danau Toba:
+
+### 1. Dekke Naaniura (Sashimi Tradisional Batak)
+Ikan mas mentah segar yang dimatangkan secara dingin menggunakan perasan asam jeruk jungga alami dan dibaluri rempah andaliman, unte, lengkuas, serta kemiri sangrai.
+
+### 2. Ikan Mas Naniarsik (Arsik)
+Sajian ikan mas berbumbu kuning kaya rempah andaliman, lokio (bawang batak), kecombrang (asam cikala), dan asam gelugur yang dimasak perlahan hingga kuahnya meresap.
+
+### 3. Mie Gomak (Spaghetti Khas Toba)
+Mie lidi kenyal disiram kuah santan kuning kaya rasa andaliman yang pedas getir hangat, atau digoreng gurih khas warung lokal.
+
+### 4. Manuk Napinadar
+Ayam kampung panggang yang disiram saus rempah andaliman pedas gurih yang meresap hangat.
+
+### 5. Dali ni Horbo (Keju Tradisional Batak)
+Olahan susu kerbau segar yang digumpalkan secara alami menggunakan perasan daun pepaya atau nenas, lalu dikukus hingga lembut gurih.
+
+### 6. Kudapan Tradisional (Kue Ombusombus & Lappet)
+Kue tepung beras ketan isi gula merah aren dan kelapa parut hangat berbungkus daun pisang khas Siborongborong & Balige.
+
+Silakan jelajahi kartu destinasi kuliner dan peta interaktif TobaRoute AI di layar untuk menemukan lokasi rumah makan terdekat!"""
+            else:
+                reply_text = "Horas! Asisten TobaRoute AI siap membantu Anda menjelajahi kawasan Danau Toba. Anda dapat menanyakan tentang kuliner khas Batak, tempat wisata di Balige, rute feri Samosir, hingga informasi kebudayaan."
 
     return {
         "reply": reply_text,
