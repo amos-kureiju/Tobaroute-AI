@@ -298,11 +298,6 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
     );
   }, [umkmSekitar]);
 
-  // Jika tidak ada data sama sekali, jangan render
-  if (uniqueDestinasi.length === 0 && uniqueUmkm.length === 0) {
-    return null;
-  }
-
   // 3. Susun Target Rute & Urutan Navigasi Presisi
   const rawTargets = useMemo(() => {
     return [
@@ -375,6 +370,11 @@ const RouteMap = ({ destinasiUtama = [], umkmSekitar = [] }) => {
     localStorage.setItem('tobaroute_user_gps', JSON.stringify(newCoords));
     setFocusTarget(newCoords);
   };
+
+  // Jika tidak ada data sama sekali, jangan render
+  if (uniqueDestinasi.length === 0 && uniqueUmkm.length === 0) {
+    return null;
+  }
 
   return (
     <div className="route-map-container" style={{ marginTop: '1.5rem' }}>

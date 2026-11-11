@@ -8,8 +8,8 @@
 
 import axios from 'axios';
 
-// URL dasar API backend FastAPI (Mendukung port 8000 dan 8080 secara dinamis)
-const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || 'http://localhost:8000/api';
+// URL dasar API backend FastAPI (Mendukung port 8000 dan 8080 secara dinamis, atau /api pada environment produksi)
+const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || (import.meta.env?.PROD ? '/api' : 'http://localhost:8000/api');
 
 // Inisialisasi instance Axios dengan timeout 90 detik (agar RAG + Gemini punya waktu pemrosesan yang cukup)
 const apiClient = axios.create({
@@ -27,17 +27,19 @@ apiClient.interceptors.response.use(
     const config = error.config;
     // Jangan retry jika timeout (ECONNABORTED) agar tidak memicu delay ganda
     if (config && !config.__isRetry && error.code === 'ERR_NETWORK') {
-      config.__isRetry = true;
       const currentUrl = config.baseURL || API_BASE_URL;
-      const altUrl = currentUrl.includes('8080')
-        ? currentUrl.replace('8080', '8000')
-        : currentUrl.replace('8000', '8080');
-      
-      config.baseURL = altUrl;
-      try {
-        return await axios(config);
-      } catch (retryErr) {
-        return Promise.reject(retryErr);
+      if (currentUrl.includes('8080') || currentUrl.includes('8000')) {
+        config.__isRetry = true;
+        const altUrl = currentUrl.includes('8080')
+          ? currentUrl.replace('8080', '8000')
+          : currentUrl.replace('8000', '8080');
+        
+        config.baseURL = altUrl;
+        try {
+          return await axios(config);
+        } catch (retryErr) {
+          return Promise.reject(retryErr);
+        }
       }
     }
     return Promise.reject(error);
