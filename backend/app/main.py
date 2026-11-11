@@ -10,12 +10,12 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from .database import engine, Base, get_db
+from .database import engine, Base, get_db, SessionLocal
 from . import crud, schemas, models
 from .ai_bot import generate_tourist_response, chat_with_bot, generate_destination_ai_insight
 from .transport_helper import get_transport_guide
 
-# Otomatis membuat tabel-tabel di PostgreSQL saat server backend pertama kali dijalankan
+# Otomatis membuat tabel-tabel di database saat server backend pertama kali dijalankan
 Base.metadata.create_all(bind=engine)
 
 # Inisialisasi aplikasi FastAPI
@@ -33,6 +33,47 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+def auto_seed_database():
+    """
+    Otomatis mengisi database dengan dataset 510 destinasi & UMKM jika tabel masih kosong.
+    Sangat krusial untuk initial deployment di cloud (Render, Railway, dll).
+    """
+    import json
+    from pathlib import Path
+    db = SessionLocal()
+    try:
+        count = db.query(models.Destinasi).count()
+        if count == 0:
+            dataset_path = Path(__file__).resolve().parent.parent / "dataset" / "toba_491_dataset.json"
+            if dataset_path.exists():
+                with open(dataset_path, "r", encoding="utf-8") as f:
+                    items = json.load(f)
+                new_objs = []
+                for item in items:
+                    obj = models.Destinasi(
+                        nama=item.get("nama", ""),
+                        kategori=item.get("kategori", "wisata"),
+                        kecamatan=item.get("kecamatan", ""),
+                        gambar_url=item.get("gambar_url", ""),
+                        deskripsi_singkat=item.get("deskripsi_singkat", ""),
+                        deskripsi_lengkap=item.get("deskripsi_lengkap", ""),
+                        nama_jalan=item.get("nama_jalan", ""),
+                        latitude=float(item.get("latitude", 0.0)),
+                        longitude=float(item.get("longitude", 0.0)),
+                        rating=float(item.get("rating", 4.5)),
+                        jumlah_ulasan=int(item.get("jumlah_ulasan", 0))
+                    )
+                    new_objs.append(obj)
+                db.bulk_save_objects(new_objs)
+                db.commit()
+                print(f"[STARTUP] Sukses melakukan auto-seeding {len(new_objs)} destinasi & UMKM!")
+    except Exception as e:
+        print(f"[STARTUP ERROR] Gagal melakukan auto-seeding database: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
 # ====================================================================================================
 # HELPER: format_destinasi_response

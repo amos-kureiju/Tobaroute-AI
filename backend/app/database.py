@@ -22,14 +22,22 @@ if dotenv_path.exists():
 else:
     load_dotenv(override=False)
 
-# Mengambil DATABASE_URL dari .env (PostgreSQL connection string)
-SQLALCHEMY_DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "postgresql://postgres:amos123@localhost:5432/tobaguide_db"
-)
+# Mengambil DATABASE_URL dari .env (PostgreSQL connection string) atau fallback aman
+raw_db_url = os.getenv("DATABASE_URL", "").strip()
 
-# Inisialisasi engine koneksi database PostgreSQL
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+if not raw_db_url:
+    # Fallback aman ke SQLite jika belum ada PostgreSQL cloud terkonfigurasi
+    SQLALCHEMY_DATABASE_URL = "sqlite:///./tobaguide.db"
+    connect_args = {"check_same_thread": False}
+else:
+    # Normalisasi 'postgres://' ke 'postgresql://' untuk kompatibilitas SQLAlchemy di Render/Railway/Supabase
+    if raw_db_url.startswith("postgres://"):
+        raw_db_url = raw_db_url.replace("postgres://", "postgresql://", 1)
+    SQLALCHEMY_DATABASE_URL = raw_db_url
+    connect_args = {}
+
+# Inisialisasi engine koneksi database
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=connect_args)
 
 # Factory pembuat sesi database per-request
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
