@@ -34,10 +34,10 @@ services:
       - SECRET_KEY=development_secret_key_please_change_in_production_12345
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=10080
-      - PINECONE_API_KEY=${PINECONE_API_KEY:-pcsk_38mDkG_AUrnQ5yf4rG5How1Jn3zw5X4p646dii4mq7pxJnvS1M2EPSMLAVkxtpmQhrEhNn}
+      - PINECONE_API_KEY=${PINECONE_API_KEY:-your_pinecone_api_key}
       - PINECONE_INDEX_NAME=${PINECONE_INDEX_NAME:-tobaguide-index}
-      - COHERE_API_KEY=${COHERE_API_KEY:-gFVspCBouVSx08IEQ66yWvoKGuw2a8aU4a6rcBGa}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-AQ.Ab8RN6KUv2Ow_M3S84uVD5t_cXNcuAZHxZq29bZp2SyalEYtQw}
+      - COHERE_API_KEY=${COHERE_API_KEY:-your_cohere_api_key}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-your_gemini_api_key}
     depends_on:
       db:
         condition: service_healthy

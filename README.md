@@ -83,13 +83,13 @@ ALGORITHM="HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES=10080
 
 # RAG & Vector Database Settings
-PINECONE_API_KEY="pcsk_38mDkG_AUrnQ5yf4rG5How1Jn3zw5X4p646dii4mq7pxJnvS1M2EPSMLAVkxtpmQhrEhNn"
+PINECONE_API_KEY="your_pinecone_api_key_here"
 PINECONE_INDEX_NAME="tobaguide-index"
 OPENAI_API_KEY="sk-proj-placeholder"
-COHERE_API_KEY="gFVspCBouVSx08IEQ66yWvoKGuw2a8aU4a6rcBGa"
+COHERE_API_KEY="your_cohere_api_key_here"
 
 # Gemini API Key
-GEMINI_API_KEY="AQ.Ab8RN6KUv2Ow_M3S84uVD5t_cXNcuAZHxZq29bZp2SyalEYtQw"
+GEMINI_API_KEY="your_gemini_api_key_here"
 ```
 
 ---
