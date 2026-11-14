@@ -75,6 +75,9 @@ def auto_seed_database():
     finally:
         db.close()
 
+# Pastikan auto-seeding juga berjalan saat module di-import di environment serverless (misal Vercel)
+auto_seed_database()
+
 # ====================================================================================================
 # HELPER: format_destinasi_response
 # TUJUAN: Menyeragamkan format objek destinasi sebelum dikirimkan ke frontend (termasuk Plus Code & Transportasi).

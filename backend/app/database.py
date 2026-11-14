@@ -26,8 +26,9 @@ else:
 raw_db_url = os.getenv("DATABASE_URL", "").strip()
 
 if not raw_db_url:
-    # Fallback aman ke SQLite jika belum ada PostgreSQL cloud terkonfigurasi
-    SQLALCHEMY_DATABASE_URL = "sqlite:///./tobaguide.db"
+    # Fallback aman ke SQLite; gunakan /tmp jika di serverless read-only seperti Vercel
+    db_path = "/tmp/tobaguide.db" if os.getenv("VERCEL") else "./tobaguide.db"
+    SQLALCHEMY_DATABASE_URL = f"sqlite:///{db_path}"
     connect_args = {"check_same_thread": False}
 else:
     # Normalisasi 'postgres://' ke 'postgresql://' untuk kompatibilitas SQLAlchemy di Render/Railway/Supabase
